@@ -29,7 +29,9 @@
 #include "Arduino.h"
 #include "pico4drive.h"
 
+#define MAX_VOLTAGE_USAGE 5.5
 
+//VERIFICAR A DEFINICAO DOS DRV! FALTA B não?!
 int p4d_pwm_pins[4][2] = {{DRIVER_1A_PIN, DRIVER_1A_PIN},
                           {DRIVER_2A_PIN, DRIVER_2A_PIN},
                           {DRIVER_3A_PIN, DRIVER_3A_PIN},
@@ -37,14 +39,16 @@ int p4d_pwm_pins[4][2] = {{DRIVER_1A_PIN, DRIVER_1A_PIN},
 
 SerialPIO SerialTiny(NOPIN, 21);
 
+//set the levels allowed in the use of PWM to control when initializing a pico4drive
 pico4drive_t::pico4drive_t()
 {
+  //resolution for representation of our PWM with 10 bits
   analogWriteBits = 10; 
   analogWriteMax = (1 << analogWriteBits) - 1; 
   
   battery_voltage = 7.4;
   
-  PWM_limit = analogWriteMax * 5.5 / battery_voltage;
+  PWM_limit = MAX_VOLTAGE_USAGE/battery_voltage * analogWriteMax;//limit my pwm signal to 5.5V MAX
 }
 
 void pico4drive_t::init(uint32_t PWM_freq)
@@ -56,6 +60,7 @@ void pico4drive_t::init(uint32_t PWM_freq)
   
   SerialTiny.begin();
 
+  //configures the PWM System(how many bites/cycle & freq)
   analogWriteResolution(analogWriteBits);
   analogWriteFreq(PWM_freq); //16000 
 
@@ -101,6 +106,7 @@ void pico4drive_t::set_driver_PWM(int new_PWM, int pin_a, int pin_b)
   if (new_PWM < -PWM_limit) new_PWM = -PWM_limit;
   
   if (new_PWM == 0) {  // Both outputs 0 -> A = H, B = H
+    //the config is that HIGH PWM - OFF
     analogWrite(pin_a, PWM_max);
     analogWrite(pin_b, PWM_max);
   } else if (new_PWM > 0) {
@@ -114,7 +120,9 @@ void pico4drive_t::set_driver_PWM(int new_PWM, int pin_a, int pin_b)
 
 void pico4drive_t::set_driver_PWM(int new_PWM, driver_num_t driver_num)
 {
-  set_driver_PWM(new_PWM, p4d_pwm_pins[driver_num][0], p4d_pwm_pins[driver_num][1]);
+  //p4d_pwm_pins tem todos os pins definidos, tenho de meter driver_num - 1 -> nº do DRV
+  //DRV1 -> p4d_pwm_pins[0][]
+  set_driver_PWM(new_PWM, p4d_pwm_pins[driver_num -1][0], p4d_pwm_pins[driver_num-1][1]);
 }
 
 
