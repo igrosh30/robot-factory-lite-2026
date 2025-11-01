@@ -45,17 +45,10 @@
 #define DRIVER_2A_PIN 13
 #define DRIVER_2B_PIN 12
 
-#define DRIVER_3A_PIN 15
-#define DRIVER_3B_PIN 14
-
-#define DRIVER_4A_PIN 17
-#define DRIVER_4B_PIN 16
 
 typedef enum { 
-  p2d_drv1 = 0,
-  p2d_drv2,
-  p2d_drv3,
-  p2d_drv4
+  p4d_drv1 = 0,
+  p4d_drv2,
 } driver_num_t;
 
 

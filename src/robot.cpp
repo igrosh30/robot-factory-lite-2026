@@ -2,6 +2,7 @@
 #include "robot.h"
 #include <math.h>
 #include "pico4drive.h"
+#include "MotorController.h"
 
 robot_t robot;
 
@@ -84,8 +85,6 @@ void robot_t::calcMotorsVoltage(void)
   {
     u1 = u1_req;
     u2 = u2_req;
-    u3 = u3_req;
-    u4 = u4_req;
 
     return;
   }

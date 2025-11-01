@@ -1,118 +1,41 @@
-// 2023 Paulo Costa
-// Periodic Interrupts for Quadrature Encoder reading and serial commands example
-// It also has the PWM generation code to drive an H-bridge like the DRV8212PDSGR
-
 #include <Arduino.h>
-
 #include <WiFi.h>
-
-// #include <RPi_Pico_TimerInterrupt.h>
-// #include <ArduinoOTA.h>
-
-#include <WiFiUdp.h>
-#include <LittleFS.h>
-
-
-#define max_wifi_str 32
-
-char ssid[max_wifi_str];
-char password[max_wifi_str];
-
-const char *fname_wifi = "/wifi.txt";
-
-int udp_on, ip_on;
-
-WiFiUDP Udp;
-unsigned int localUdpPort = 4224; // local port to listen on
-
-#define UDP_MAX_SIZE 512
-uint8_t UdpInPacket[UDP_MAX_SIZE];  // buffer for incoming packets
-uint8_t UdpOutPacket[UDP_MAX_SIZE]; // buffer for outgoing packets
-int UdpBufferSize = UDP_MAX_SIZE;
-
-// Select the timer you're using, from ITimer0(0)-ITimer3(3)
-// Init RPI_PICO_Timer
-// RPI_PICO_Timer ITimer1(1);
-
+#include "robot.h"
+#include "MotorController.h"
 #include "pico4drive.h"
-pico4drive_t pico4drive;
-
 #include "PicoEncoder.h"
 
-#define ENC1_PIN_A 2
-#define ENC1_PIN_B 3
+#define ENC1_PIN_A 8 
+#define ENC1_PIN_B 9
 
-#define ENC2_PIN_A 0
-#define ENC2_PIN_B 1
+#define ENC2_PIN_A 6
+#define ENC2_PIN_B 7
 
 #define NUM_ENCODERS 2
 PicoEncoder encoders[NUM_ENCODERS];
 pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 
-bool calibration_requested;
-
-#define TEST_PIN 27
-
-// #define digitalWriteFast(pin, val)  (val ? sio_hw->gpio_set = (1 << pin) : sio_hw->gpio_clr = (1 << pin))
-// #define digitalReadFast(pin)        (((1 << pin) & sio_hw->gpio_in) >> pin)
-
-// #define pinIsHigh(pin, pins)        (((1 << pin) & pins) >> pin)
-
-// bool timer_handler(struct repeating_timer *t)
-//{
-//
-// }
-
-// PWM stuff
-
-
-//pins do DRV1 referentes na pico
-#define MOTOR1A_PIN 11
+//pins do DRV1 referentes na pico(motor)
 #define MOTOR1B_PIN 10
+#define MOTOR1A_PIN 11
 
-//pins do DRV2 referentes na pico -ACHO QUE ESTA MAL!!VERIFICAR!!! 
-#define MOTOR2A_PIN 12
-#define MOTOR2B_PIN 13
-
-//pins do DRV3 referentes na pico
-#define MOTOR3A_PIN 15
-#define MOTOR3B_PIN 14
-
-//pins do DRV4 referentes na pico
-#define MOTOR4A_PIN 16
-#define MOTOR4B_PIN 17
+//pins do DRV2 referentes na pico(motor)
+#define MOTOR2B_PIN 12
+#define MOTOR2A_PIN 13
 
 #define SOLENOID_PIN_A 12
 #define SOLENOID_PIN_B 13
 
-int debug;
-
-// #define HAS_VL53L0X 1
-#include <Wire.h>
-#ifdef HAS_VL53L0X
-#include <VL53L0X.h>
-VL53L0X tof;
-#endif
-
-// #define HAS_INA266
-#ifdef HAS_INA266
-#include <INA226_WE.h>
-
-// There are several ways to create your INA226 object:
-// INA226_WE ina226 = INA226_WE(); -> uses I2C Address = 0x40 / Wire
-// INA226_WE ina226 = INA226_WE(I2C_ADDRESS);
-// INA226_WE ina226 = INA226_WE(&Wire); -> uses I2C_ADDRESS = 0x40, pass any Wire Object
-// INA226_WE ina226 = INA226_WE(&Wire, I2C_ADDRESS);
-
-INA226_WE ina226 = INA226_WE(0x40);
-#endif
-
-#include "robot.h"
-
+/*------------------------------------------------------------------------------------------------------------ 
+                                           VARIABLES DECLARATIONS    
+------------------------------------------------------------------------------------------------------------*/
+pico4drive_t pico4drive;
 void init_control(robot_t &robot);
 void control(robot_t &robot);
 
-
+int count = 0;
+unsigned long last_cycle;
+char command = 's';//default stopped
 
 /*
 PID_pars_t wheel_PID_pars;
@@ -322,8 +245,21 @@ void send_file(const char *filename, int log_high)
   Serial.flush();
 }
 */
-// void init_PIO_dual_encoders(int enc1_pin_A, int enc2_pin_A);
-// int read_PIO_encoder(int sm);
+
+/*------------------------------------------------------------------------------------------------------------
+                                              Funcoes Auxiliares
+-------------------------------------------------------------------------------------------------------------*/
+void output_Serial()
+{
+  Serial.println("-----------------------Robot Variables------------------------");
+  Serial.print("Enc0: "); Serial.println(robot.enc1);
+  Serial.print("Enc1: "); Serial.println(robot.enc2);
+  Serial.print("x [m]: "); Serial.println(robot.xe);
+  Serial.print("y [m]: "); Serial.println(robot.ye);
+  Serial.print("θ [rad]: "); Serial.println(robot.thetae);
+  Serial.print("Rel_s [m]: "); Serial.println(robot.rel_s);
+  Serial.println();
+}
 
 void read_PIO_encoders(void)
 {
@@ -331,27 +267,14 @@ void read_PIO_encoders(void)
   // robot.enc2 = read_PIO_encoder(1);
   encoders[0].update();
   encoders[1].update();
-  robot.enc1 = encoders[0].speed;
-  robot.Senc1 += robot.enc1;
+  robot.enc1 = -encoders[0].speed;
   robot.enc2 = encoders[1].speed;
 }
 
 void SetWheelsPWM(void)
 {
-  robot.PWM_3 = pico4drive.voltage_to_PWM(robot.u3);
-  robot.PWM_4 = pico4drive.voltage_to_PWM(robot.u4);
-}
-
-void serial_write(const char *buffer, size_t size)
-{
-  Serial.write(buffer, size);
-  if (udp_on)
-  {
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(buffer, size);
-    // Serial.print("Sent="); Serial.println(Udp.endPacket());
-    Udp.endPacket();
-  }
+  //robot.PWM_3 = pico4drive.voltage_to_PWM(robot.u3);
+  //robot.PWM_4 = pico4drive.voltage_to_PWM(robot.u4);
 }
 
 const char *encToString(uint8_t enc)
@@ -391,111 +314,20 @@ void wifi_list(void)
   }
 }
 
-/*
-void init_OTA(void)
-{
-  ArduinoOTA.setPort(2040); // this is default for RP 2040
 
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else {  // U_FS
-      type = "filesystem";
-    }
-    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
-    Serial.println("Start updating " + type);
-  });
 
-  ArduinoOTA.onEnd([]() { Serial.println("\nEnd"); });
 
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
+/*------------------------------------------------------------------------------------------------------------
+                                              Setup e loop
+------------------------------------------------------------------------------------------------------------*/
 
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
-    }
-  });
-
-  ArduinoOTA.begin();
-}*/
-
-#ifdef HAS_INA266
-int setup_ina226(void)
-{
-  // Set Number of measurements for shunt and bus voltage which shall be averaged
-  //* Mode *     * Number of samples *
-  // AVERAGE_1            1 (default)
-  // AVERAGE_4            4
-  // AVERAGE_16          16
-  // AVERAGE_64          64
-  // AVERAGE_128        128
-  // AVERAGE_256        256
-  // AVERAGE_512        512
-  // AVERAGE_1024      1024
-
-  // ina226.setAverage(AVERAGE_64); // choose mode and uncomment for change of default
-  ina226.setAverage(AVERAGE_4); // choose mode and uncomment for change of default
-
-  // Set conversion time in microseconds
-  // One set of shunt and bus voltage conversion will take:
-  // number of samples to be averaged x conversion time x 2
-  //
-  // * Mode *         * conversion time *
-  // CONV_TIME_140          140 µs
-  // CONV_TIME_204          204 µs
-  // CONV_TIME_332          332 µs
-  // CONV_TIME_588          588 µs
-  // CONV_TIME_1100         1.1 ms (default)
-  // CONV_TIME_2116       2.116 ms
-  // CONV_TIME_4156       4.156 ms
-  // CONV_TIME_8244       8.244 ms
-
-  // ina226.setConversionTime(CONV_TIME_1100); //choose conversion time and uncomment for change of default
-  ina226.setConversionTime(CONV_TIME_4156);
-  // ina226.setConversionTime(CONV_TIME_204);
-
-  // Set measure mode
-  // POWER_DOWN - INA226 switched off
-  // TRIGGERED  - measurement on demand
-  // CONTINUOUS  - continuous measurements (default)
-
-  // ina226.setMeasureMode(CONTINUOUS); // choose mode and uncomment for change of default
-
-  // Set Current Range
-  //* Mode *   * Max Current *
-  // MA_400          400 mA
-  // MA_800          800 mA (default)
-
-  // ina226.setCurrentRange(MA_800); // choose gain and uncomment for change of default
-
-  // If the current values delivered by the INA226 differ by a constant factor
-  // from values obtained with calibrated equipment you can define a correction factor.
-  // Correction factor = current delivered from calibrated equipment / current delivered by INA226
-
-  // ina226.setCorrectionFactor(0.95);
-
-  Serial.println("INA226 Current Sensor - Continuous");
-
-  ina226.waitUntilConversionCompleted(); // if you comment this line the first data might be zero
-  return 1;
-}
-#endif
 
 void setup()
 {
-
+  //add Serial Communication:
+  Serial.begin();
+  Serial.print("System ready");
+  
   // Set the pins as input or output as needed
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -504,8 +336,6 @@ void setup()
   pinMode(ENC2_PIN_A, INPUT_PULLUP);
   pinMode(ENC2_PIN_B, INPUT_PULLUP);
 
-  pinMode(TEST_PIN, OUTPUT);
-
   // Motor driver pins
   pinMode(MOTOR1A_PIN, OUTPUT);
   pinMode(MOTOR1B_PIN, OUTPUT);
@@ -513,22 +343,18 @@ void setup()
   pinMode(MOTOR2A_PIN, OUTPUT);
   pinMode(MOTOR2B_PIN, OUTPUT);
 
-  pinMode(MOTOR3A_PIN, OUTPUT);
-  pinMode(MOTOR3B_PIN, OUTPUT);
 
-  pinMode(MOTOR4A_PIN, OUTPUT);
-  pinMode(MOTOR4B_PIN, OUTPUT);
-
-  pinMode(SOLENOID_PIN_A, OUTPUT);
-  pinMode(SOLENOID_PIN_B, OUTPUT);
+  //pinMode(SOLENOID_PIN_A, OUTPUT);
+  //pinMode(SOLENOID_PIN_B, OUTPUT);
 
   encoders[0].begin(encoder_pins[0]);
   encoders[1].begin(encoder_pins[1]);
-  // encoders[1].setPhases(0x562B54);
 
+  last_cycle = millis();
   pico4drive.init();
 
   analogReadResolution(10);
+}
 /*
   pars_list.register_command("kf", &(wheel_PID_pars.Kf));
   pars_list.register_command("kc", &(wheel_PID_pars.Kc));
@@ -654,9 +480,57 @@ void setup()
   set_interval(control_interval); // In seconds
   init_control(robot);
 }
+*/
 
-void loop()
-{
+void loop(){
+
+  //checks how many bytes we have in serial buffer
+  if(Serial.available())
+  {
+    command = Serial.read();//either m(move)/s(stop)
+  }
+
+  
+  uint32_t curr_time = millis();
+  uint32_t cycle_duration = curr_time - last_cycle;
+
+  if(cycle_duration >= (robot.dt*1000))
+  {
+    last_cycle = curr_time;
+    
+    if(command == 'm')
+    {
+      robot.motors.driveMotor(1,1);
+    }
+    else if(command == 's')
+    {
+      robot.motors.driveMotor(0,0);
+    }
+    else if(command == 'o')
+    {
+      output_Serial();
+    }
+    read_PIO_encoders();
+    robot.odometry();
+  }
+  
+  /*
+
+  if(robot.ds != 0){
+      //Print Encoders, ds for every 40ms!
+      Serial.print("Cycle Duration:");
+      Serial.println(cycle_duration);
+
+      Serial.println("___________________________________");
+
+      Serial.print("Encoder 0: ");
+      Serial.println(robot.enc1);
+      Serial.print("Encoder 1: ");
+      Serial.println(robot.enc2);
+
+      Serial.print("ds in cm:");
+      Serial.println(robot.rel_s*100);//in cm!
+    }
   if (WiFi.connected() && !ip_on)
   {
     // Connection established
@@ -667,7 +541,7 @@ void loop()
     Serial.printf("Now listening at IP %s, UDP port %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
   }
 
-  /*
+  
   if (calibration_requested) {
     calibration_requested = false;
     int phases = encoders[1].measurePhases();
@@ -683,9 +557,6 @@ void loop()
     }
 
   }
-  */
-
-  /*
   if (ip_on)
   {
     // ArduinoOTA.handle();
@@ -785,17 +656,13 @@ void loop()
     SetWheelsPWM();
     // Função Criada pelo Zezinho para definir o PWM nas quatro rodas.
 
-    */
-    /*
     if (robot.stoped)
     {
       robot.PWM_1 = 0;
       robot.PWM_2 = 0;
       robot.solenoid_PWM = 0;
     }
-    */
 
-    /*
     //pico4drive.set_driver_PWM(robot.PWM_1, MOTOR1A_PIN, MOTOR1B_PIN);
     //pico4drive.set_driver_PWM(robot.PWM_2, MOTOR2A_PIN, MOTOR2B_PIN);
     pico4drive.set_driver_PWM(robot.PWM_3, MOTOR3A_PIN, MOTOR3B_PIN);
@@ -880,5 +747,5 @@ void loop()
 
     http_ota.handle();
   }
-    */
+  */
 }

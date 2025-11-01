@@ -4,10 +4,10 @@
 
 #include <Arduino.h>
 #include <math.h>
+#include "MotorController.h"
 
 #ifndef NUM_WHEELS
-#define NUM_WHEELS 4
-//1- num_wheels 4?!
+#define NUM_WHEELS 2
 
 typedef enum
 {
@@ -20,10 +20,12 @@ typedef enum
 class robot_t
 {
 public:
+
+  MotorController motors;
   int enc1, enc2;
   int Senc1, Senc2;
-  float w1e, w2e, w3e, w4e;
-  float v1e, v2e, v3e, v4e;
+  float w1e, w2e;
+  float v1e, v2e;
   float p1e, p2e;
   float ve, we;
   float ds, dtheta;
@@ -37,17 +39,17 @@ public:
 
   float wheel_radius, wheel_dist;
 
-  float v1ref, v2ref, v3ref, v4ref;
-  float w1ref, w2ref, w3ref, w4ref;
+  float v1ref, v2ref;
+  float w1ref, w2ref;
   float p1ref;
-  float u1, u2, u3, u4;
-  float u1_req, u2_req, u3_req, u4_req;
+  float u1, u2;
+  float u1_req, u2_req;
   float i_sense, u_sense;
   float i_lambda;
-  int PWM_1, PWM_2, PWM_3, PWM_4;
+  int PWM_1, PWM_2;
   bool stoped;
   // int PWM_1_req, PWM_2_req;
-  float w1_req, w2_req, w3_req, w4_req;
+  float w1_req, w2_req;
   float p1_req;
   control_mode_t control_mode;
   float follow_v, follow_k;

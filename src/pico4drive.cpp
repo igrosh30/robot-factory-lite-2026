@@ -31,11 +31,8 @@
 
 #define MAX_VOLTAGE_USAGE 5.5
 
-//VERIFICAR A DEFINICAO DOS DRV! FALTA B não?!
-int p4d_pwm_pins[4][2] = {{DRIVER_1A_PIN, DRIVER_1A_PIN},
-                          {DRIVER_2A_PIN, DRIVER_2A_PIN},
-                          {DRIVER_3A_PIN, DRIVER_3A_PIN},
-                          {DRIVER_4A_PIN, DRIVER_4A_PIN}};
+int p4d_pwm_pins[2][2] = {{DRIVER_1A_PIN, DRIVER_1B_PIN},
+                          {DRIVER_2A_PIN, DRIVER_2B_PIN},};
 
 SerialPIO SerialTiny(NOPIN, 21);
 
@@ -64,7 +61,7 @@ void pico4drive_t::init(uint32_t PWM_freq)
   analogWriteResolution(analogWriteBits);
   analogWriteFreq(PWM_freq); //16000 
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 2; i++) {
     pinMode(p4d_pwm_pins[i][0], OUTPUT);
     pinMode(p4d_pwm_pins[i][1], OUTPUT);
   }
@@ -120,9 +117,15 @@ void pico4drive_t::set_driver_PWM(int new_PWM, int pin_a, int pin_b)
 
 void pico4drive_t::set_driver_PWM(int new_PWM, driver_num_t driver_num)
 {
-  //p4d_pwm_pins tem todos os pins definidos, tenho de meter driver_num - 1 -> nº do DRV
-  //DRV1 -> p4d_pwm_pins[0][]
-  set_driver_PWM(new_PWM, p4d_pwm_pins[driver_num -1][0], p4d_pwm_pins[driver_num-1][1]);
+  /*
+  p4d_pwm_pins tem todos os pins definidos, tenho de meter driver_num -> nº do DRV
+  DRV1 -> p4d_pwm_pins[0][]
+  int p4d_pwm_pins[2][2] = {{DRIVER_1A_PIN, DRIVER_1B_PIN},
+                          {DRIVER_2A_PIN, DRIVER_2B_PIN},};
+  0 -> Pin A
+  1 -> Pin B
+  */
+  set_driver_PWM(new_PWM, p4d_pwm_pins[driver_num][0], p4d_pwm_pins[driver_num][1]);
 }
 
 
