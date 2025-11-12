@@ -5,23 +5,22 @@
 #include "pico4drive.h"
 
 
+
 class MotorController
 {
     public:
-    pico4drive_t pico4drive;
-    
-    float v_ref, p_ref;
-    
-    float kp,ki;
-    float prev_Ierro;
+    MotorController();
+    void setWhellsW(float wr);
+    void driveMotor(float u);
 
-    float setWhellW(float w1r,float w2r, float w1e, float w2e);
-    float compute_PI(float erro);//gives-me the u
-
-    void driveMotor(float u1,float u2);
-
-    
     private:
+    float kp,ki;
+    float integral;
+    float last_e;
+    pico4drive_t pico4drive;
+
+    float PID_to_votlage(float wr, float we);
+    float compute_PID(float erro);//returns u for PID
 };
 
 #endif //MotorController

@@ -3,30 +3,48 @@
 #include "math.h"
 #include "robot.h"
 
-
-
-void MotorController:: driveMotor(float u1,float u2)
+MotorController:: MotorController()
 {
-    pico4drive.set_driver_voltage(u1,p4d_drv1);
-    pico4drive.set_driver_voltage(u2,p4d_drv2);
-}//robot.setW(w1r,w2r) -> this will calculate the u1 and u2 to move the motors
-
-//set wheel W
-float MotorController:: setWhellW(float w1r,float w2r, float w1e, float w2e)
-{
-    //ned the w calculated to compute the error:
-    float erro1 = w1r - w1e;
-    float erro2 = w2r - w2e;
-
-    float u1 = compute_PI(erro1);
-    float u2 = compute_PI(erro2);
-
-    return u1,u2;
+    kp = 1;
+    ki = 1;
+    integral = 0;
+    last_e = 0;
 }
 
-float MotorController:: compute_PI(float erro)
-{    
-    return erro*kp + prev_Ierro + robot.dt*erro;
+void MotorController:: setWhellsW(float wr)
+{
+    float u= PID_to_votlage(wr,robot.w1e);
+    
+    driveMotor(u);
+}
+
+void MotorController:: driveMotor(float u)
+{
+    pico4drive.set_driver_voltage(u,p4d_drv1);
+}
+
+//returns u1&u2 calculated with PID
+float MotorController:: PID_to_votlage(float wr, float we)
+{
+    //ned the w calculated to compute the error:
+    float erro = wr - we;
+    float u = compute_PID(erro);
+    
+    return u;
+}
+
+//PID calculation
+float MotorController:: compute_PID(float erro)
+{   
+    integral += robot.dt * erro;
+    float u = kp * erro + ki * integral;
+    
+    if(abs(u) >= 5.5)//5.5- saturation level
+    {
+        u = kp * erro; 
+        integral -= robot.dt * erro;
+    }
+    return  u;
 }
 
 

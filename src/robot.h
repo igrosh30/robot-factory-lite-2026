@@ -21,7 +21,8 @@ class robot_t
 {
 public:
 
-  MotorController motors;
+  MotorController motor1;
+  MotorController motor2;
   int enc1, enc2;
   int Senc1, Senc2;
   float w1e, w2e;
