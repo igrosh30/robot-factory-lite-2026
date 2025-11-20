@@ -4,27 +4,13 @@
 #include "MotorController.h"
 #include "pico4drive.h"
 #include "PicoEncoder.h"
-
-#define ENC1_PIN_A 8 
-#define ENC1_PIN_B 9
-
-#define ENC2_PIN_A 6
-#define ENC2_PIN_B 7
+#include "config.h"
 
 #define NUM_ENCODERS 2
 PicoEncoder encoders[NUM_ENCODERS];
 pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 
-//pins do DRV1 referentes na pico(motor)
-#define MOTOR1B_PIN 10
-#define MOTOR1A_PIN 11
 
-//pins do DRV2 referentes na pico(motor)
-#define MOTOR2B_PIN 12
-#define MOTOR2A_PIN 13
-
-#define SOLENOID_PIN_A 12
-#define SOLENOID_PIN_B 13
 
 /*------------------------------------------------------------------------------------------------------------ 
                                            VARIABLES DECLARATIONS    
@@ -55,8 +41,6 @@ void output_Serial()
 
 void read_PIO_encoders(void)
 {
-  // robot.enc1 = read_PIO_encoder(0);
-  // robot.enc2 = read_PIO_encoder(1);
   encoders[0].update();
   encoders[1].update();
   robot.enc1 = -encoders[0].speed;
@@ -162,16 +146,15 @@ void loop(){
   if(cycle_duration >= (robot.dt*1000))
   {
     last_cycle = curr_time;
-    
+    //robot.setState(MOVE);
     if(command == 'm')
     {
-      robot.motor1.setWhellsW(1,1);
-      robot.motor2.setWhellsW(1,1);
+      
+    
     }
     else if(command == 's')
     {
-      robot.motor1.setWhellsW(0,0);
-      robot.motor2.setWhellsW(0,0);
+     
     }
     else if(command == 'o')
     {

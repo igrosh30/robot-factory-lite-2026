@@ -64,6 +64,7 @@ void robot_t::odometry(void)
 
 void robot_t::setRobotVW(float Vnom, float Wnom)
 {
+  //Sets que v_requested and w_requested for the robot
   v_req = Vnom;
   w_req = Wnom;
 }
