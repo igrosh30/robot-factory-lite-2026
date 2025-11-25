@@ -12,6 +12,7 @@ class MotorController
     public:
     MotorController();
     void driveMotor(float u);
+    void PID_to_votlage();
 
     private:
     float kp1,ki1;
@@ -20,9 +21,8 @@ class MotorController
     float last_e1,last_e2;
     pico4drive_t pico4drive;
 
-    void PID_to_votlage();
+    
     MotorVoltages compute_PID(float erro1,float erro2);//returns the structure MotorVotages with u1&u2
-    void setVW(MotorController motor1, MotorController motor2);
 };
 
 #endif //MotorController

@@ -1,24 +1,13 @@
+#ifndef STATES_H
+#define STATES_H
 
-class States
-{
-    typedef enum
-    {
-        STOP = 0,
-        MOVE_FOR = 101,
-        MOVE_BAC = 100,
-    }RobotState;
-private:
-    /* data */
-    void setState(RobotState state);
+#include "config.h"
+
+class States {
 public:
-    States(/* args */);
-    ~States();
+
+    void setState(RobotState new_state);
+
 };
 
-States::States(/* args */)
-{
-}
-
-States::~States()
-{
-}
+#endif

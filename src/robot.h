@@ -5,6 +5,8 @@
 #include <Arduino.h>
 #include <math.h>
 #include "MotorController.h"
+#include "States.h"
+#include "config.h"
 
 #ifndef NUM_WHEELS
 #define NUM_WHEELS 2
@@ -20,9 +22,11 @@ typedef enum
 class robot_t
 {
 public:
-
+  MotorController motors;
   MotorController motor1;
   MotorController motor2;
+  States state;
+  
   int enc1, enc2;
   int Senc1, Senc2;
   float w1e, w2e;

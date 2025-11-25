@@ -146,22 +146,15 @@ void loop(){
   if(cycle_duration >= (robot.dt*1000))
   {
     last_cycle = curr_time;
-    //robot.setState(MOVE);
-    if(command == 'm')
-    {
-      
+    //definition of robot variables...
+    robot.state.setState(STATE_FORWARD);//v_req & w_req
+    read_PIO_encoders();//enc values
+    robot.odometry();//calculate v and w
     
-    }
-    else if(command == 's')
-    {
-     
-    }
-    else if(command == 'o')
-    {
-      output_Serial();
-    }
-    read_PIO_encoders();
-    robot.odometry();
+    
+    robot.motors.PID_to_votlage();
+    //robot.motor1.PID_to_votlage(); in one instance motor we already calculate the 
+    //robot.motor2.PID_to_votlage(); u1&u2 for the motors so we go with v and w!
   }
   
 }
