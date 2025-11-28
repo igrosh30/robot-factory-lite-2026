@@ -27,17 +27,6 @@ char command = 's';//default stopped
 /*------------------------------------------------------------------------------------------------------------
                                               Funcoes Auxiliares
 -------------------------------------------------------------------------------------------------------------*/
-void output_Serial()
-{
-  Serial.println("-----------------------Robot Variables------------------------");
-  Serial.print("Enc0: "); Serial.println(robot.enc1);
-  Serial.print("Enc1: "); Serial.println(robot.enc2);
-  Serial.print("x [m]: "); Serial.println(robot.xe);
-  Serial.print("y [m]: "); Serial.println(robot.ye);
-  Serial.print("θ [rad]: "); Serial.println(robot.thetae);
-  Serial.print("Rel_s [m]: "); Serial.println(robot.rel_s);
-  Serial.println();
-}
 
 void read_PIO_encoders(void)
 {
@@ -89,7 +78,35 @@ void wifi_list(void)
   }
 }
 
+void processSerialCommands()
+{
+    static String input = "";
 
+    while (Serial.available()) {
+        char c = Serial.read();
+
+        if (c == '\n' || c == '\r') {           // Enter pressed
+            if (input.length() > 0) {
+                float value = input.toFloat();
+
+                switch (input[0]) {
+                    case 'v': case 'V':  robot.setRobotVW(value, 0.0f);
+                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
+                    case 'w': case 'W':  robot.setRobotVW(0.0f, value);
+                                         Serial.printf(">>> ω = %.3f rad/s\n", value); break;
+                    case 's': case 'S':  robot.setRobotVW(0.0f, 0.0f);
+                                         Serial.println(">>> STOP"); break;
+                    default:             robot.setRobotVW(value, 0.0f);
+                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
+                }
+                input = "";
+            }
+        }
+        else {
+            input += c;
+        }
+    }
+}
 
 
 /*------------------------------------------------------------------------------------------------------------
@@ -146,15 +163,32 @@ void loop(){
   if(cycle_duration >= (robot.dt*1000))
   {
     last_cycle = curr_time;
+
+    
+    if (command == 's')
+    {
+      //robot.motors.driveMotor(0,0);
+      robot.state.setState(STATE_STOP);
+      Serial.println("-----------------------Robot Variables------------------------");
+      Serial.print("V_req: ");
+      Serial.println(robot.v_req);
+      Serial.print("W_req:");
+      Serial.println(robot.w_req);
+    }
+    else if(command == 'm')
+    {
+      //robot.motors.driveMotor(1,1);
+      robot.state.setState(STATE_FORWARD);//v_req & w_req
+    }
+    else if (command == 'o'){
+      robot.state.setState(STATE_OUTPUT);
+    }
+
     //definition of robot variables...
-    robot.state.setState(STATE_FORWARD);//v_req & w_req
     read_PIO_encoders();//enc values
     robot.odometry();//calculate v and w
     
-    
-    robot.motors.PID_to_votlage();
-    //robot.motor1.PID_to_votlage(); in one instance motor we already calculate the 
-    //robot.motor2.PID_to_votlage(); u1&u2 for the motors so we go with v and w!
+    robot.motors.PIDController_Update();//takes v&w req and computes the PID
   }
   
 }

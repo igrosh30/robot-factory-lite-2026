@@ -42,7 +42,8 @@ typedef enum {
     STATE_TURN_90_RIGHT = 203,
     STATE_PICKUP_BOX    = 301,
     STATE_DROP_BOX      = 302,
-    STATE_FINISHED      = 999
+    STATE_FINISHED      = 999,
+    STATE_OUTPUT        = 1
 } RobotState;
 
 #endif

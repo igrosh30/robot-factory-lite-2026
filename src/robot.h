@@ -23,8 +23,8 @@ class robot_t
 {
 public:
   MotorController motors;
-  MotorController motor1;
-  MotorController motor2;
+  //MotorController motor1;
+  //MotorController motor2;
   States state;
   
   int enc1, enc2;
