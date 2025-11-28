@@ -5,6 +5,7 @@
 #include "pico4drive.h"
 #include "PicoEncoder.h"
 #include "config.h"
+#include "communication.h"
 
 #define NUM_ENCODERS 2
 PicoEncoder encoders[NUM_ENCODERS];
@@ -78,35 +79,6 @@ void wifi_list(void)
   }
 }
 
-void processSerialCommands()
-{
-    static String input = "";
-
-    while (Serial.available()) {
-        char c = Serial.read();
-
-        if (c == '\n' || c == '\r') {           // Enter pressed
-            if (input.length() > 0) {
-                float value = input.toFloat();
-
-                switch (input[0]) {
-                    case 'v': case 'V':  robot.setRobotVW(value, 0.0f);
-                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
-                    case 'w': case 'W':  robot.setRobotVW(0.0f, value);
-                                         Serial.printf(">>> ω = %.3f rad/s\n", value); break;
-                    case 's': case 'S':  robot.setRobotVW(0.0f, 0.0f);
-                                         Serial.println(">>> STOP"); break;
-                    default:             robot.setRobotVW(value, 0.0f);
-                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
-                }
-                input = "";
-            }
-        }
-        else {
-            input += c;
-        }
-    }
-}
 
 
 /*------------------------------------------------------------------------------------------------------------
@@ -116,9 +88,9 @@ void processSerialCommands()
 
 void setup()
 {
-  //add Serial Communication:
-  Serial.begin();
-  Serial.print("System ready");
+  // Add Serial Communication:
+  Serial.begin(115200);  // Make sure baud rate is specified
+  Serial.println("System ready");
   
   // Set the pins as input or output as needed
   pinMode(LED_BUILTIN, OUTPUT);
@@ -146,9 +118,17 @@ void setup()
   pico4drive.init();
 
   analogReadResolution(10);
+
+  // Initialize ComRobot communication (ADD THIS)
+  communication_init();
+  Serial.println("ComRobot communication initialized");
 }
 
 void loop(){
+  uint32_t loop_start = micros();  // Track loop start for ComRobot
+  // Process communication (ADD THIS)
+  communication_update();
+  processPi4Communication();
 
   //checks how many bytes we have in serial buffer
   if(Serial.available())
@@ -189,6 +169,13 @@ void loop(){
     robot.odometry();//calculate v and w
     
     robot.motors.PIDController_Update();//takes v&w req and computes the PID
+
+    // Send ComRobot debug data (ADD THIS)
+    sendComRobotDebug(loop_start);
   }
-  
+  // Maintain loop timing
+  while (micros() - loop_start < LOOPMICROS)
+  {
+    delayMicroseconds(100);
+  }
 }
