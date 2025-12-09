@@ -7,7 +7,7 @@
 MotorController:: MotorController()
 {
     kp1 = 1, kp2 = 1;
-    ki1 = 1, ki2 = 1;//porque é q em IO n t inhamos estes 2 parametros?
+    ki1 = 1, ki2 = 1;
     integrator1 = 0, prevError1 = 0;
     integrator2 = 0, prevError2 = 0;
     MotorVoltages v;
@@ -26,14 +26,16 @@ void MotorController:: PIDController_Update()
     float w1r = v1r / robot.wheel_radius;
     float w2r = v2r / robot.wheel_radius;
     
-    float erro1 = w1r - robot.w1e;
-    float erro2 = w2r - robot.w2e;
+    float erro1 = w1r + robot.w1e;
+    float erro2 = w2r + robot.w2e;
     
+    MotorVoltages v = CalcPID(erro1,erro2);
     
-    MotorVoltages v = CalcPID(erro1,erro2);//returns u1&u2
     driveMotor(v.u1,v.u2);
+
+    /*
     static unsigned long last_print = 0;
-    if (millis() - last_print >= 100) {           // print only 10 times per second
+    if (millis() - last_print >= 200) {           // print only 10 times per second
         last_print = millis();
         Serial.println("\n=== PID DEBUG ===");
         Serial.printf("v_req: %.3f m/s    w_req: %.3f rad/s\n", robot.v_req, robot.w_req);
@@ -42,50 +44,59 @@ void MotorController:: PIDController_Update()
         Serial.printf("erro1: %.3f    erro2: %.3f\n", erro1, erro2);
         Serial.printf("u1: %.3f V    u2: %.3f V\n", v.u1, v.u2);
         Serial.printf("integrator1: %.3f    integrator2: %.3f\n", integrator1, integrator2);
+        //Serial.printf("Proportional1: %.3f    Proportional2: %.3f\n", p1, p2);
         Serial.println("==================\n");
     }
+    */
 }
 
 //PID calculation -> U(s) = P(S) + I(S)
 MotorVoltages MotorController:: CalcPID(float erro1,float erro2)
 {
     //Motor1   
-    float p1 = kp1*erro1; 
+    float p1 = kp1*erro1;  
     integrator1 = integrator1 + ki1*robot.dt*0.5 *(erro1 + prevError1);
-
-    float limMinInt1,limMaxInt1;
-    if(5.5 > p1) limMaxInt1 = 5.5f - p1;
-    else limMaxInt1 = 0.0f;
-    if(-5.5 < p1) limMinInt1 = -5.5 - p1;
-    else limMinInt1 = 0.0f;
-    
-    if(integrator1 > limMaxInt1) integrator1 = limMaxInt1;
-    if( integrator1 < limMinInt1) integrator1 = limMinInt1;
     float u1 = p1 + integrator1;
     
-    //Motor2
-    float p2 = kp2*erro2; 
-    integrator2 = integrator2 + ki2*robot.dt*0.5* (erro2 + prevError2);
+    if(abs(u1)>5.5)
+    {
+        if(isNegative(u1) && isNegative(erro1))
+        {
+            integrator1 += ki1*robot.dt*0.5 *(erro1 + prevError1);
+        }
+        else if(!isNegative(u1) && !isNegative(erro1))
+        {
+            integrator1 -= ki1*robot.dt*0.5 *(erro1 + prevError1);
+        }
+        u1 = p1 + integrator1;
+    }
+    prevError1 = erro1;
 
-    float limMinInt2,limMaxInt2;
-    if(5.5> p2) limMaxInt2 = 5.5f - p2;
-    else limMaxInt2 = 0.0f;
-    if(-5.5 < p2) limMinInt2 = -5.5 - p2;
-    else limMinInt2 = 0.0f;
-    
-    if(integrator2 > limMaxInt2) integrator2 = limMaxInt2;
-    if( integrator2 < limMinInt2) integrator2 = limMinInt2;
+    //Motor2   
+    float p2 = kp2*erro2;  
+    integrator2 = integrator2 + ki2*robot.dt*0.5 *(erro2 + prevError2);
     float u2 = p2 + integrator2;
     
-    //update errors
-    prevError1 = erro1;
-    prevError2 = erro2; 
-
+    if(abs(u2)>5.5)
+    {
+        if(isNegative(u2) && isNegative(erro2))
+        {
+            integrator2 += ki1*robot.dt*0.5 *(erro2 + prevError2);
+        }
+        else if(!isNegative(u2) && !isNegative(erro2))
+        {
+            integrator2 -= ki1*robot.dt*0.5*(erro2 + prevError2);
+        }
+        u2 = p2 + integrator2;
+    }
+    prevError2 = erro2;
+    
+    //Serial.printf("Proportional1: %.3f    Proportional2: %.3f\n", p1, p2);
+    
     MotorVoltages v;
     v.u1 = u1;
     v.u2 = u2;
     return v;
-
 }
 
 

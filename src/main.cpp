@@ -163,17 +163,13 @@ void loop(){
   if(cycle_duration >= (robot.dt*1000))
   {
     last_cycle = curr_time;
-
+    robot.state.setState(STATE_FORWARD);
     
+    /*
     if (command == 's')
     {
       //robot.motors.driveMotor(0,0);
       robot.state.setState(STATE_STOP);
-      Serial.println("-----------------------Robot Variables------------------------");
-      Serial.print("V_req: ");
-      Serial.println(robot.v_req);
-      Serial.print("W_req:");
-      Serial.println(robot.w_req);
     }
     else if(command == 'm')
     {
@@ -183,8 +179,8 @@ void loop(){
     else if (command == 'o'){
       robot.state.setState(STATE_OUTPUT);
     }
-
-    //definition of robot variables...
+    */
+    //updating robot variables...
     read_PIO_encoders();//enc values
     robot.odometry();//calculate v and w
     
