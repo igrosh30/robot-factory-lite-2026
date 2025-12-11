@@ -165,7 +165,7 @@ void loop(){
     last_cycle = curr_time;
     robot.state.setState(STATE_FORWARD);
     
-    /*
+    
     if (command == 's')
     {
       //robot.motors.driveMotor(0,0);
@@ -179,7 +179,7 @@ void loop(){
     else if (command == 'o'){
       robot.state.setState(STATE_OUTPUT);
     }
-    */
+    
     //updating robot variables...
     read_PIO_encoders();//enc values
     robot.odometry();//calculate v and w
