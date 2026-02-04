@@ -5,7 +5,9 @@
 #include <Arduino.h>
 #include <math.h>
 #include "MotorController.h"
-#include "States.h"
+#include "StateFM.h"
+#include "Sensors.h"
+#include "Actuators.h"
 #include "config.h"
 
 #ifndef NUM_WHEELS
@@ -23,9 +25,12 @@ class robot_t
 {
 public:
   MotorController motors;
+  Sensor frontSensor;
+  Sensor backSensor;
+  Actuator actuators;
+  Node targetNode;
   //MotorController motor1;
   //MotorController motor2;
-  States state;
   
   int enc1, enc2;
   int Senc1, Senc2;
@@ -70,7 +75,7 @@ public:
   int LastTouchSwitch, TouchSwitch;
   
 
-  robot_t();
+  robot_t(pico4drive_t& driver);
 
   void odometry(void);
   void setRobotVW(float Vnom, float Wnom);
@@ -83,6 +88,10 @@ public:
 
   void send_command(const char *command, float par);
   void send_command(const char *command, const char *par);
+
+  void grabBox();
+  void dropBox();
+  bool hasBox();
 };
 
 extern robot_t robot;

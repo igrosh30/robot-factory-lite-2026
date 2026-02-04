@@ -30,6 +30,7 @@
 #define PICO4DRIVE_H
 
 #include "Arduino.h"
+#include "config.h"
 
 #define ADC_IN_PIN	28
 
@@ -39,18 +40,11 @@
 
 #define TINY_CTRL_PIN	21
 
-#define DRIVER_1A_PIN 11
-#define DRIVER_1B_PIN 10
+//#define DRIVER_1A_PIN 11
+//#define DRIVER_1B_PIN 10
 
-#define DRIVER_2A_PIN 13
-#define DRIVER_2B_PIN 12
-
-
-typedef enum { 
-  p4d_drv1 = 0,
-  p4d_drv2,
-} driver_num_t;
-
+//#define DRIVER_2A_PIN 13
+//#define DRIVER_2B_PIN 12
 
 
 class pico4drive_t

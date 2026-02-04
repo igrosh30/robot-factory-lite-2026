@@ -28,11 +28,13 @@
 
 #include "Arduino.h"
 #include "pico4drive.h"
+#include "config.h"
 
-#define MAX_VOLTAGE_USAGE 5.5
+//#define MAX_VOLTAGE_USAGE 5.5
 
-int p4d_pwm_pins[2][2] = {{DRIVER_1A_PIN, DRIVER_1B_PIN},
-                          {DRIVER_2A_PIN, DRIVER_2B_PIN},};
+int p4d_pwm_pins[3][2] = {{MOTOR1A_PIN, MOTOR1B_PIN},
+                          {MOTOR2A_PIN, MOTOR2B_PIN},
+                          {SOLENOID_PIN_A,SOLENOID_PIN_B}};
 
 SerialPIO SerialTiny(NOPIN, 21);
 
@@ -50,7 +52,7 @@ pico4drive_t::pico4drive_t()
 
 void pico4drive_t::init(uint32_t PWM_freq)
 {
-// ADC mux pins
+  // ADC mux pins
   pinMode(MUXA_PIN, OUTPUT);
   pinMode(MUXB_PIN, OUTPUT);
   pinMode(MUXC_PIN, OUTPUT);
@@ -61,10 +63,14 @@ void pico4drive_t::init(uint32_t PWM_freq)
   analogWriteResolution(analogWriteBits);
   analogWriteFreq(PWM_freq); //16000 
 
-  for (int i = 0; i < 2; i++) {
+  //motor driver pins setup
+  for (int i = 0; i < 3; i++) {
     pinMode(p4d_pwm_pins[i][0], OUTPUT);
     pinMode(p4d_pwm_pins[i][1], OUTPUT);
   }
+  //solenoid pins setup
+  //pinMode(SOLENOID_PIN_A,OUTPUT);
+  //pinMode(SOLENOID_PIN_B,OUTPUT);
 }
 
 void pico4drive_t::update(void)

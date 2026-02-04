@@ -1,8 +1,15 @@
 #ifndef CONFIG_H              
 #define CONFIG_H
+#include <vector>
+#include <Arduino.h>
+
+
 // ================================================================
 //                          PINOS
 // ================================================================
+
+#define SWITCH_PIN 3
+
 #define ENC1_PIN_A 8 
 #define ENC1_PIN_B 9
 
@@ -17,9 +24,24 @@
 #define MOTOR2B_PIN 12
 #define MOTOR2A_PIN 13
 
-//#define SOLENOID_PIN_A 12
-//#define SOLENOID_PIN_B 13
 
+//DR3 referente na pico(solenoide)
+#define SOLENOID_PIN_A 17
+#define SOLENOID_PIN_B 16
+
+// ================================================================
+//                          Constantes
+// ================================================================
+#define MAX_VOLTAGE_USAGE 5.5
+#define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
+#define SENSOR_TARGET     500.0
+#define CALIBRATION_MODE true
+
+// (Paste your 'savedMin' array here)
+const uint16_t HARDCODED_MIN[] = { 1023, 1023, 1023, 1023, 1023 }; 
+
+// (Paste your 'savedMax' array here)
+const uint16_t HARDCODED_MAX[] = { 0, 0, 0, 0, 0 };
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -30,20 +52,85 @@ typedef struct
     float u2;
 }MotorVoltages;
 
+struct Node {
+    int id;
+    float x;
+    float y;
+    int tipo; 
+    // 0 = intersecao, 1 = pick, 2 = drop, 3 = line, 5 = init, 404 = lixo
+};
+
 // ================================================================
 // 2. Estados da máquina de estados
 // ================================================================
-typedef enum {
-    STATE_STOP          = 0,
-    STATE_FORWARD       = 101,
-    STATE_STARTING      = 100,
-    STATE_FOLLOW_LINE   = 201,
-    STATE_TURN_90_LEFT  = 202,
-    STATE_TURN_90_RIGHT = 203,
-    STATE_PICKUP_BOX    = 301,
-    STATE_DROP_BOX      = 302,
-    STATE_FINISHED      = 999,
-    STATE_OUTPUT        = 1
-} RobotState;
+
+//this indexes should match in p4d.cpp aray declaration!
+typedef enum { 
+  p4d_drv1 = 0,
+  p4d_drv2 = 1,
+  p4d_drvSolenoid = 2,
+} driver_num_t;
+
+typedef enum{
+  Start    =0,
+  GoToXY     ,
+  FollowLine ,
+  GrabBox    ,
+  DropBox    ,
+  Return     ,
+  Finish     ,
+}currentState;
+
+
+// ================================================================
+// 3. Nós do plano 
+// ================================================================
+
+const std::vector<Node> mappingNodes = {
+   // ID |   X    |   Y    | Type, 0-intersection / 1-pick / 2- drop
+    {  0,  0.000,  0.000,  5 },
+    {  1, -0.555,  0.480,  1 },
+    {  2, -0.405,  0.480,  2 },
+};
+
+
+const std::vector<Node> mappingNodes1 = {
+    // ID |   X    |   Y    | Type, 0-intersection / 1-pick / 2- drop
+    {  0, -0.705,  0.480,  1 },
+    {  1, -0.555,  0.480,  1 },
+    {  2, -0.405,  0.480,  1 },
+    {  3, -0.255,  0.480,  1 },
+    {  4, -0.705,  0.360,  0 },
+    {  5, -0.555,  0.360,  0 },
+    {  6, -0.405,  0.360,  0 },
+    {  7, -0.255,  0.360,  0 },
+    {  8,  0.000,  0.360,  0 },
+    {  9,  0.700,  0.360,  5 },
+    { 10,  0.000,  0.150,  0 },
+    { 11,  0.226,  0.150,  2 },
+    { 12,  0.470,  0.150,  1 },
+    { 13,  0.700,  0.150,  0 },
+    { 14, -0.705,  0.000,  0 },
+    { 15, -0.475,  0.000,  2 },
+    { 16, -0.232,  0.000,  1 },
+    { 17,  0.000,  0.000,  0 },
+    { 18,  0.226,  0.000,  2 },
+    { 19,  0.470,  0.000,  1 },
+    { 20,  0.700,  0.000,  0 },
+    { 21, -0.705, -0.150,  0 },
+    { 22, -0.475, -0.150,  2 },
+    { 23, -0.232, -0.150,  1 },
+    { 24,  0.000, -0.150,  0 },
+    { 25, -0.705, -0.360,  5 },
+    { 26,  0.000, -0.360,  0 },
+    { 27,  0.245, -0.360,  0 },
+    { 28,  0.395, -0.360,  0 },
+    { 29,  0.000,  0.000,  0 },
+    { 30,  0.700, -0.360,  0 },
+    { 31,  0.245, -0.480,  3 },
+    { 32,  0.395, -0.480,  2 },
+    { 33,  0.550, -0.480,  2 },
+    { 34,  0.700, -0.480,  2 }
+};
 
 #endif

@@ -58,7 +58,7 @@ MotorVoltages MotorController:: CalcPID(float erro1,float erro2)
     integrator1 = integrator1 + ki1*robot.dt*0.5 *(erro1 + prevError1);
     float u1 = p1 + integrator1;
     
-    if(abs(u1)>5.5)
+    if(abs(u1)> MAX_VOLTAGE_USAGE)
     {
         if(isNegative(u1) && isNegative(erro1))
         {
@@ -77,7 +77,7 @@ MotorVoltages MotorController:: CalcPID(float erro1,float erro2)
     integrator2 = integrator2 + ki2*robot.dt*0.5 *(erro2 + prevError2);
     float u2 = p2 + integrator2;
     
-    if(abs(u2)>5.5)
+    if(abs(u2)> MAX_VOLTAGE_USAGE )//remeber to change for MAX
     {
         if(isNegative(u2) && isNegative(erro2))
         {

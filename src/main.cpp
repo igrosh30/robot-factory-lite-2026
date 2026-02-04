@@ -5,6 +5,7 @@
 #include "pico4drive.h"
 #include "PicoEncoder.h"
 #include "config.h"
+#include "StateFM.h"
 
 #define NUM_ENCODERS 2
 PicoEncoder encoders[NUM_ENCODERS];
@@ -15,9 +16,12 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 /*------------------------------------------------------------------------------------------------------------ 
                                            VARIABLES DECLARATIONS    
 ------------------------------------------------------------------------------------------------------------*/
+//void init_control(robot_t &robot);
+//void control(robot_t &robot);
+
 pico4drive_t pico4drive;
-void init_control(robot_t &robot);
-void control(robot_t &robot);
+robot_t robot(pico4drive);
+States stateMachine;
 
 int count = 0;
 unsigned long last_cycle;
@@ -108,6 +112,47 @@ void processSerialCommands()
     }
 }
 
+void runCalibrationProcess() {
+    Serial.println(">>> CALIBRATION MODE ACTIVE <<<");
+    Serial.println("Spinning in 2 seconds...");
+    delay(2000);
+
+    // 1. Spin
+    robot.setRobotVW(0, 0.8); 
+    unsigned long startTime = millis();
+    
+    // 2. Measure
+    while (millis() - startTime < 2000) {
+        robot.calcMotorsVoltage();
+        robot.motors.PIDController_Update();
+        robot.frontSensor.calibrate(); 
+        delay(10);
+    }
+
+    // 3. Stop
+    robot.setRobotVW(0, 0);
+    robot.calcMotorsVoltage();
+    robot.motors.PIDController_Update();
+
+    // 4. Output for Copy-Paste
+    Serial.println("\n// COPY THESE LINES TO config.h:");
+    
+    Serial.print("const uint16_t HARDCODED_MIN[] = { ");
+    for(int i=0; i<NUM_SENSORS; i++) {
+        Serial.print(robot.frontSensor.minValues[i]);
+        if(i < NUM_SENSORS-1) Serial.print(", ");
+    }
+    Serial.println(" };");
+
+    Serial.print("const uint16_t HARDCODED_MAX[] = { ");
+    for(int i=0; i<NUM_SENSORS; i++) {
+        Serial.print(robot.frontSensor.maxValues[i]);
+        if(i < NUM_SENSORS-1) Serial.print(", ");
+    }
+    Serial.println(" };");
+    
+    while(true);//stop 
+}
 
 /*------------------------------------------------------------------------------------------------------------
                                               Setup e loop
@@ -138,15 +183,27 @@ void setup()
 
   //pinMode(SOLENOID_PIN_A, OUTPUT);
   //pinMode(SOLENOID_PIN_B, OUTPUT);
+  last_cycle = millis();
+  pico4drive.init();
+  robot.frontSensor.init();//inicialize sensor 
+  stateMachine.robotState = Start;
 
   encoders[0].begin(encoder_pins[0]);
   encoders[1].begin(encoder_pins[1]);
-
-  last_cycle = millis();
-  pico4drive.init();
-
+  
+  //Hybrid code for sensors calibration:
+  if(CALIBRATION_MODE == true)
+  {
+    runCalibrationProcess();
+  }
+  else{
+    robot.frontSensor.setCalibration(HARDCODED_MIN, HARDCODED_MAX);
+  }
+  
   analogReadResolution(10);
 }
+
+
 
 void loop(){
 
@@ -159,31 +216,18 @@ void loop(){
   
   uint32_t curr_time = millis();
   uint32_t cycle_duration = curr_time - last_cycle;
+  
 
   if(cycle_duration >= (robot.dt*1000))
   {
     last_cycle = curr_time;
-    robot.state.setState(STATE_FORWARD);
     
-    
-    if (command == 's')
-    {
-      //robot.motors.driveMotor(0,0);
-      robot.state.setState(STATE_STOP);
-    }
-    else if(command == 'm')
-    {
-      //robot.motors.driveMotor(1,1);
-      robot.state.setState(STATE_FORWARD);//v_req & w_req
-    }
-    else if (command == 'o'){
-      robot.state.setState(STATE_OUTPUT);
-    }
-    
-    //updating robot variables...
+    //Read Sensors & State
     read_PIO_encoders();//enc values
     robot.odometry();//calculate v and w
-    
+
+    stateMachine.runStateMachine4Testing(robot);
+
     robot.motors.PIDController_Update();//takes v&w req and computes the PID
   }
   
