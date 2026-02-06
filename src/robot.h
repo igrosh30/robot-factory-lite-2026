@@ -5,10 +5,10 @@
 #include <Arduino.h>
 #include <math.h>
 #include "MotorController.h"
-#include "StateFM.h"
 #include "Sensors.h"
 #include "Actuators.h"
 #include "config.h"
+#include "gchannels.h"
 
 #ifndef NUM_WHEELS
 #define NUM_WHEELS 2
@@ -73,6 +73,8 @@ public:
   float tof_dist, prev_tof_dist;
 
   int LastTouchSwitch, TouchSwitch;
+
+  gchannels_t* pchannels;
   
 
   robot_t(pico4drive_t& driver);

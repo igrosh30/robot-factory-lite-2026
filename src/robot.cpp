@@ -34,6 +34,9 @@ robot_t::robot_t(pico4drive_t& driver)
   i_lambda = 0;
   led = 0;
 
+  pchannels = NULL;
+  //pfsm = NULL;
+
 }
 
 void robot_t::odometry(void)

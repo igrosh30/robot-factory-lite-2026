@@ -30,6 +30,8 @@ class Sensor
         //stores last read values for debug
         uint16_t IR_Values[NUM_SENSORS];
 
+        int kl;
+
         Sensor(pico4drive_t& driver, SensorType t);
         void init();
         void calibrate(); //calibrate the values from ADC before using them, call this in setup

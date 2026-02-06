@@ -1,115 +1,73 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
+#include <LittleFS.h>
+
+// Your robot includes
 #include "robot.h"
 #include "MotorController.h"
 #include "pico4drive.h"
 #include "PicoEncoder.h"
 #include "config.h"
-#include "StateFM.h"
+#include "state_machines.h"
+#include "gchannels.h"
+#include "file_gchannels.h"
 
+// ================================================================
+//                      YOUR ROBOT CONFIGURATION
+// ================================================================
 #define NUM_ENCODERS 2
 PicoEncoder encoders[NUM_ENCODERS];
 pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 
-
-
-/*------------------------------------------------------------------------------------------------------------ 
-                                           VARIABLES DECLARATIONS    
-------------------------------------------------------------------------------------------------------------*/
-//void init_control(robot_t &robot);
-//void control(robot_t &robot);
-
+// Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-States stateMachine;
 
-int count = 0;
-unsigned long last_cycle;
-char command = 's';//default stopped
+// ================================================================
+//                      WIFI/UDP CONFIGURATION
+// ================================================================
+#define max_wifi_str 32
+char ssid[max_wifi_str];
+char password[max_wifi_str];
+const char* fname_wifi = "/wifi.txt";
 
+int udp_on = 0, ip_on = 0;
+WiFiUDP Udp;
+unsigned int localUdpPort = 4224;
 
-/*------------------------------------------------------------------------------------------------------------
-                                              Funcoes Auxiliares
--------------------------------------------------------------------------------------------------------------*/
+#define UDP_MAX_SIZE 512
+uint8_t UdpInPacket[UDP_MAX_SIZE];
+uint8_t UdpOutPacket[UDP_MAX_SIZE];
+int UdpBufferSize = UDP_MAX_SIZE;
 
-void read_PIO_encoders(void)
-{
-  encoders[0].update();
-  encoders[1].update();
-  robot.enc1 = -encoders[0].speed;
-  robot.enc2 = encoders[1].speed;
-}
+// ================================================================
+//                      COMROBOT COMMUNICATION
+// ================================================================
+gchannels_t udp_commands;
+gchannels_t serial_commands;
+commands_list_t pars_list;
 
-void SetWheelsPWM(void)
-{
-  
-}
+const char* pars_fname = "pars.cfg";
+bool load_pars_requested = false;
+static int state_cmd_value; 
 
-const char *encToString(uint8_t enc)
-{
-  switch (enc)
-  {
-  case ENC_TYPE_NONE:
-    return "NONE";
-  case ENC_TYPE_TKIP:
-    return "WPA";
-  case ENC_TYPE_CCMP:
-    return "WPA2";
-  case ENC_TYPE_AUTO:
-    return "AUTO";
-  }
-  return "UNKN";
-}
+// ================================================================
+//                      TIMING & CONTROL
+// ================================================================
+uint32_t interval, last_cycle;
+uint32_t loop_micros;
+uint32_t cycle_count;
+int debug_level = 1;
 
-void wifi_list(void)
-{
-  Serial.printf("Beginning scan at %d\n", millis());
-  int cnt = WiFi.scanNetworks();
-  if (!cnt)
-  {
-    Serial.printf("No networks found\n");
-  }
-  else
-  {
-    Serial.printf("Found %d networks\n\n", cnt);
-    Serial.printf("%32s %5s %2s %4s\n", "SSID", "ENC", "CH", "RSSI");
-    for (int i = 0; i < cnt; i++)
-    {
-      uint8_t bssid[6];
-      WiFi.BSSID(i, bssid);
-      Serial.printf("%32s %5s %2d %4d\n", WiFi.SSID(i), encToString(WiFi.encryptionType(i)), WiFi.channel(i), WiFi.RSSI(i));
-    }
-  }
-}
-
-void processSerialCommands()
-{
-    static String input = "";
-
-    while (Serial.available()) {
-        char c = Serial.read();
-
-        if (c == '\n' || c == '\r') {           // Enter pressed
-            if (input.length() > 0) {
-                float value = input.toFloat();
-
-                switch (input[0]) {
-                    case 'v': case 'V':  robot.setRobotVW(value, 0.0f);
-                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
-                    case 'w': case 'W':  robot.setRobotVW(0.0f, value);
-                                         Serial.printf(">>> ω = %.3f rad/s\n", value); break;
-                    case 's': case 'S':  robot.setRobotVW(0.0f, 0.0f);
-                                         Serial.println(">>> STOP"); break;
-                    default:             robot.setRobotVW(value, 0.0f);
-                                         Serial.printf(">>> v = %.3f m/s\n", value); break;
-                }
-                input = "";
-            }
-        }
-        else {
-            input += c;
-        }
-    }
+// ================================================================
+//                      HELPER FUNCTIONS
+// ================================================================
+void read_PIO_encoders(void) {
+    encoders[0].update();
+    encoders[1].update();
+    robot.enc1 = -encoders[0].speed;
+    robot.enc2 = encoders[1].speed;
 }
 
 void runCalibrationProcess() {
@@ -122,113 +80,372 @@ void runCalibrationProcess() {
     unsigned long startTime = millis();
     
     // 2. Measure
-    while (millis() - startTime < 2000) {
-        robot.calcMotorsVoltage();
-        robot.motors.PIDController_Update();
+    while (millis() - startTime < 4000) {
         robot.frontSensor.calibrate(); 
         delay(10);
     }
 
     // 3. Stop
     robot.setRobotVW(0, 0);
-    robot.calcMotorsVoltage();
-    robot.motors.PIDController_Update();
 
     // 4. Output for Copy-Paste
     Serial.println("\n// COPY THESE LINES TO config.h:");
     
     Serial.print("const uint16_t HARDCODED_MIN[] = { ");
-    for(int i=0; i<NUM_SENSORS; i++) {
+    for(int i = 0; i < NUM_SENSORS; i++) {
         Serial.print(robot.frontSensor.minValues[i]);
-        if(i < NUM_SENSORS-1) Serial.print(", ");
+        if(i < NUM_SENSORS - 1) Serial.print(", ");
     }
     Serial.println(" };");
 
     Serial.print("const uint16_t HARDCODED_MAX[] = { ");
-    for(int i=0; i<NUM_SENSORS; i++) {
+    for(int i = 0; i < NUM_SENSORS; i++) {
         Serial.print(robot.frontSensor.maxValues[i]);
-        if(i < NUM_SENSORS-1) Serial.print(", ");
+        if(i < NUM_SENSORS - 1) Serial.print(", ");
     }
     Serial.println(" };");
     
-    while(true);//stop 
+    while(true); // Stop after calibration
 }
 
-/*------------------------------------------------------------------------------------------------------------
-                                              Setup e loop
-------------------------------------------------------------------------------------------------------------*/
+// ================================================================
+//                      COMROBOT HELPER FUNCTIONS
+// ================================================================
+void serial_write(const char *buffer, size_t size) {
+    Serial.write(buffer, size);
+    if (udp_on) {
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(buffer, size);
+        Udp.endPacket();  
+    }
+}
 
+// ================================================================
+//                      SET INTERVAL FUNCTION
+// ================================================================
+void set_interval(float new_interval) {
+    interval = new_interval * 1000000L;   // In microseconds
+    robot.dt = new_interval;   // In seconds
+}
 
-void setup()
+// ================================================================
+//                      COMMAND PROCESSING - SIMPLIFIED
+// ================================================================
+void process_command(command_frame_t frame)
 {
-  //add Serial Communication:
-  Serial.begin();
-  Serial.print("System ready");
-  
-  // Set the pins as input or output as needed
-  pinMode(LED_BUILTIN, OUTPUT);
+  pars_list.process_read_command(frame);
 
-  pinMode(ENC1_PIN_A, INPUT_PULLUP);
-  pinMode(ENC1_PIN_B, INPUT_PULLUP);
-  pinMode(ENC2_PIN_A, INPUT_PULLUP);
-  pinMode(ENC2_PIN_B, INPUT_PULLUP);
-
-  // Motor driver pins
-  pinMode(MOTOR1A_PIN, OUTPUT);
-  pinMode(MOTOR1B_PIN, OUTPUT);
-
-  pinMode(MOTOR2A_PIN, OUTPUT);
-  pinMode(MOTOR2B_PIN, OUTPUT);
-
-
-  //pinMode(SOLENOID_PIN_A, OUTPUT);
-  //pinMode(SOLENOID_PIN_B, OUTPUT);
-  last_cycle = millis();
-  pico4drive.init();
-  robot.frontSensor.init();//inicialize sensor 
-  stateMachine.robotState = Start;
-
-  encoders[0].begin(encoder_pins[0]);
-  encoders[1].begin(encoder_pins[1]);
-  
-  //Hybrid code for sensors calibration:
-  if(CALIBRATION_MODE == true)
-  {
+  // Now handle specific actions for certain commands
+  if (frame.command_is("cal")) {
+    serial_commands.send_command("msg", "Starting sensor calibration...");
     runCalibrationProcess();
+  } 
+  else if (frame.command_is("stp")) {
+    robot.stoped = true;
+    robot.setRobotVW(0, 0);
+    serial_commands.send_command("msg", "Robot stopped");
   }
-  else{
-    robot.frontSensor.setCalibration(HARDCODED_MIN, HARDCODED_MAX);
+  else if (frame.command_is("strt")) {
+    robot.stoped = false;
+    serial_commands.send_command("msg", "Robot started");
   }
-  
-  analogReadResolution(10);
+  else if (frame.command_is("st")) { // Update your state machine with the value that pars_list already set
+    if (state_cmd_value >= 0 ) {//add && state_cmd_value <= 7 if I want to restrit the states
+      state_machine.robotState = (currentState)state_cmd_value;
+      serial_commands.send_command("msg", "State changed");
+    }
+  }
+  else if (frame.command_is("wifi")) { 
+    if (frame.value == 1) {
+      if (WiFi.connected()) WiFi.end();
+      WiFi.begin(ssid, password); 
+    } else if (frame.value == 0) {
+      WiFi.end();
+      ip_on = 0;
+      udp_on = 0;
+    }
+  } 
+  else if (frame.command_is("scan")) { 
+    int n = WiFi.scanNetworks();
+    serial_commands.send_command("msg", (String("Found ") + n + " networks").c_str());
+    for (int i = 0; i < n; i++) {
+      String ssid_info = String(i+1) + ": " + WiFi.SSID(i) + 
+                       " Ch:" + WiFi.channel(i) + 
+                       " RSSI:" + WiFi.RSSI(i);
+      serial_commands.send_command("msg", ssid_info.c_str());
+    }
+  }
+  else if (frame.command_is("cat")) { 
+    send_file(frame.text, serial_commands, true);
+  } 
+  else if (frame.command_is("udp")) {  
+    if (udp_on) {
+      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+      Udp.write(UdpInPacket, frame.value);
+      Udp.endPacket();  
+      serial_commands.send_command("msg", "UDP echo sent");
+    }
+  } 
+  else if (frame.command_is("dl")) { 
+    debug_level = frame.value;
+    serial_commands.send_command("msg", (String("Debug level: ") + debug_level).c_str());
+  }
+  // Add YOUR specific commands here...
 }
 
+// ================================================================
+//                      SETUP FUNCTION
+// ================================================================
+void setup() {
+    // ========== PIN SETUP ==========
+    pinMode(LED_BUILTIN, OUTPUT);
 
+    // Encoder pins
+    pinMode(ENC1_PIN_A, INPUT_PULLUP);
+    pinMode(ENC1_PIN_B, INPUT_PULLUP);
+    pinMode(ENC2_PIN_A, INPUT_PULLUP);
+    pinMode(ENC2_PIN_B, INPUT_PULLUP);
 
-void loop(){
+    // Motor driver pins
+    pinMode(MOTOR1A_PIN, OUTPUT);
+    pinMode(MOTOR1B_PIN, OUTPUT);
+    pinMode(MOTOR2A_PIN, OUTPUT);
+    pinMode(MOTOR2B_PIN, OUTPUT);
 
-  //checks how many bytes we have in serial buffer
-  if(Serial.available())
-  {
-    command = Serial.read();//either m(move)/s(stop)
-  }
+    // ========== INITIALIZE HARDWARE ==========
+    pico4drive.init();  
+    analogReadResolution(10);
 
-  
-  uint32_t curr_time = millis();
-  uint32_t cycle_duration = curr_time - last_cycle;
-  
+    // Initialize YOUR robot
+    robot.frontSensor.init();
+    robot.actuators.init();
 
-  if(cycle_duration >= (robot.dt*1000))
-  {
-    last_cycle = curr_time;
+    // Initialize state machine
+    state_machine.robotState = Start;  
+    state_cmd_value = (int)Start;    
     
-    //Read Sensors & State
-    read_PIO_encoders();//enc values
-    robot.odometry();//calculate v and w
+    
+    // Initialize encoders
+    encoders[0].begin(encoder_pins[0]);
+    encoders[1].begin(encoder_pins[1]);
 
-    stateMachine.runStateMachine4Testing(robot);
+    // ========== CALIBRATION ==========
+    if (CALIBRATION_MODE == true) {
+        runCalibrationProcess();
+    } else {
+        robot.frontSensor.setCalibration(HARDCODED_MIN, HARDCODED_MAX);
+    }
 
-    robot.motors.PIDController_Update();//takes v&w req and computes the PID
-  }
-  
+    // ========== COMROBOT COMMUNICATION SETUP ==========
+    Serial.begin(115200);
+    delay(1000);  // Give time for serial to initialize
+
+    // ========== REGISTER COMMANDS ==========
+    pars_list.max_sparce_send = 4;
+    
+    // Version (important for ComRobot)
+    int version = 1001;  // Your version number
+    pars_list.register_command("ver", &version);
+    
+    // Robot control commands
+    pars_list.register_command("vreq", &robot.v_req);
+    pars_list.register_command("wreq", &robot.w_req);
+    //pars_list.register_command("mode", (int*)&robot.control_mode);
+    
+    // PID parameters
+    pars_list.register_command("kp1", &robot.motors.kp1);
+    pars_list.register_command("ki1", &robot.motors.ki1);
+    pars_list.register_command("kp2", &robot.motors.kp2);
+    pars_list.register_command("ki2", &robot.motors.ki2);
+
+    
+    // Line following parameters
+    pars_list.register_command("kl", &robot.frontSensor.kl);
+    //pars_list.register_command("fv", &robot.follow_v);
+    //pars_list.register_command("fk", &robot.follow_k);
+    
+    // State machine control - use the separate variable
+    pars_list.register_command("st", &state_cmd_value);
+
+    // Actuator control
+    pars_list.register_command("mg", (int*)&robot.actuators.isMagnetOn);
+    
+    // WiFi configuration
+    // CHANGE THESE TO YOUR WIFI!
+    strcpy(ssid, "5DPO-NETWORK");      
+    strcpy(password, "5dpo5dpo");      
+    pars_list.register_command("ssid", ssid, max_wifi_str);
+    pars_list.register_command("pass", password, max_wifi_str)->sparse_send = false;
+
+    // Initialize communication channels
+    udp_commands.init(process_command, serial_write);
+    serial_commands.init(process_command, serial_write);
+    robot.pchannels = &serial_commands;  // Important for robot to send messages
+
+    // ========== FILESYSTEM ==========
+    LittleFS.begin();
+    load_commands(pars_fname, serial_commands);
+
+    // ========== WIFI SETUP ==========
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    
+    Serial.print("Connecting to WiFi");
+    for (int i = 0; i < 200 && WiFi.status() != WL_CONNECTED; i++) {
+        Serial.print(".");
+        delay(500);
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("\nWiFi connected! IP: %s\n", WiFi.localIP().toString().c_str());
+    } else {
+        Serial.println("\nWiFi connection failed. Running offline.");
+    }
+
+    Serial.println();
+
+    // ========== TIMING SETUP ==========
+    float control_interval = 0.04;  // In seconds
+    set_interval(control_interval);
+    
+    Serial.println("Setup complete. Ready for commands.");
+    serial_commands.send_command("msg", "Robot ready");
+    serial_commands.send_command("IP", WiFi.localIP().toString().c_str());
+}
+
+// ================================================================
+//                      LOOP FUNCTION
+// ================================================================
+void loop() { 
+    // ========== WIFI/UDP HANDLING ==========
+    if (WiFi.connected() && !ip_on) {
+        serial_commands.send_command("msg", 
+            (String("Connected to WiFi: ") + WiFi.SSID()).c_str());
+        serial_commands.send_command("msg", 
+            (String("IP: ") + WiFi.localIP().toString()).c_str());
+        
+        ip_on = Udp.begin(localUdpPort);
+        if (ip_on) {
+            serial_commands.send_command("msg", 
+                (String("UDP port: ") + localUdpPort).c_str());
+        }
+    }
+
+    // Handle incoming UDP packets
+    if (ip_on) {
+        int packetSize = Udp.parsePacket();
+        if (packetSize) {
+            udp_on = 1;
+            int len = Udp.read(UdpInPacket, UDP_MAX_SIZE - 1);
+            if (len > 0) {
+                UdpInPacket[len] = 0;
+                // Process each character
+                for (int i = 0; i < len; i++) {
+                    udp_commands.process_char(UdpInPacket[i]);
+                }
+            }
+        }      
+    }
+
+    // ========== SERIAL COMMANDS ==========
+    while (Serial.available()) {  
+        uint8_t b = Serial.read();    
+        serial_commands.process_char(b);
+    }
+
+    // ========== LOAD PARAMETERS IF REQUESTED ==========
+    if (load_pars_requested) {
+        load_commands(pars_fname, serial_commands);
+        load_pars_requested = false;
+        serial_commands.send_command("msg", "Parameters loaded");
+    }
+
+    // ========== YOUR MAIN CONTROL LOOP ==========
+    uint32_t now = micros();
+    uint32_t delta = now - last_cycle; 
+    
+    if (delta >= interval ) {//&& !robot.stoped need to add?
+        last_cycle = now;
+        loop_micros = micros();
+        cycle_count++;
+
+        // Read Data
+        read_PIO_encoders();
+        robot.odometry();
+        robot.actuators.update();//update magnet and read switch 
+        //float ir_error = robot.frontSensor.getLineError();
+
+        
+        // Run YOUR state machine
+        state_machine.runStateMachine4Testing(robot);
+
+        // Update motors
+        robot.motors.PIDController_Update();
+
+        // ========== SEND data TO COMROBOT ==========
+        if (debug_level > 0) {
+            // Timing
+            serial_commands.send_command("dte", delta / 1000.0f);  // in ms
+            
+            // Robot state
+            serial_commands.send_command("xe", robot.xe);
+            serial_commands.send_command("ye", robot.ye);
+            serial_commands.send_command("te", robot.thetae);
+            serial_commands.send_command("ve", robot.ve);
+            serial_commands.send_command("we", robot.we);
+            serial_commands.send_command("vreq", robot.v_req);
+            serial_commands.send_command("wreq", robot.w_req);
+            
+            // Motor voltages
+            serial_commands.send_command("u1", robot.u1);
+            serial_commands.send_command("u2", robot.u2);
+            
+            // Sensor data
+            serial_commands.send_command("ir0", robot.frontSensor.IR_Values[0]);
+            serial_commands.send_command("ir1", robot.frontSensor.IR_Values[1]);
+            serial_commands.send_command("ir2", robot.frontSensor.IR_Values[2]);
+            serial_commands.send_command("ir3", robot.frontSensor.IR_Values[3]);
+            serial_commands.send_command("ir4", robot.frontSensor.IR_Values[4]);
+            
+            // Encoder data
+            serial_commands.send_command("e1", robot.enc1);
+            serial_commands.send_command("e2", robot.enc2);
+            //serial_commands.send_command("w1", robot.w1e);
+            //serial_commands.send_command("w2", robot.w2e);
+            
+            // State machine - sync the variable
+            state_cmd_value = (int)state_machine.robotState;
+            serial_commands.send_command("st", (float)state_cmd_value);
+            
+            // Actuators
+            serial_commands.send_command("mg", robot.actuators.isMagnetOn ? 1 : 0);
+            serial_commands.send_command("sw", digitalRead(SWITCH_PIN));
+            serial_commands.send_command("fl", state_machine.flag);
+
+            
+            // WiFi status (like teacher's code)
+            if (cycle_count % 5 == 0) {  // Send periodically
+                if (WiFi.connected()) {
+                    serial_commands.send_command("IP", WiFi.localIP().toString().c_str());
+                    serial_commands.send_command("rssi", (float)WiFi.RSSI());
+                }
+                if (udp_on) {
+                    serial_commands.send_command("IPR", Udp.remoteIP().toString().c_str());
+                }
+            }            
+
+            // Send sparse parameters
+            pars_list.send_sparse_commands(serial_commands);
+
+            // Debug info
+            serial_commands.send_command("loop", micros() - loop_micros);
+            serial_commands.flush();
+        }
+    }
+    
+    // Heartbeat LED
+    static unsigned long last_blink = 0;
+    if (millis() - last_blink > 500) {
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        last_blink = millis();
+    }
 }

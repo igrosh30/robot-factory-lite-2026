@@ -35,13 +35,22 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE true
+#define CALIBRATION_MODE false
+
+//Communications with ComRobot
+#define GCHANNELS_BUF_IN_SIZE 500U
+#define GCHANNELS_BUF_OUT_SIZE 500U
+//#define COMMAND_LIST_SIZE 32
+
+// Communication modes
+#define DEBUG_LEVEL 1  // 0=minimal, 1=normal, 2=verbose
+
 
 // (Paste your 'savedMin' array here)
-const uint16_t HARDCODED_MIN[] = { 1023, 1023, 1023, 1023, 1023 }; 
+const uint16_t HARDCODED_MIN[] = { 550, 510, 410, 435, 390 }; 
 
 // (Paste your 'savedMax' array here)
-const uint16_t HARDCODED_MAX[] = { 0, 0, 0, 0, 0 };
+const uint16_t HARDCODED_MAX[] = { 50, 50, 50, 35, 40 };
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -72,13 +81,14 @@ typedef enum {
 } driver_num_t;
 
 typedef enum{
-  Start    =0,
-  GoToXY     ,
-  FollowLine ,
-  GrabBox    ,
-  DropBox    ,
-  Return     ,
-  Finish     ,
+  Start      = 0,
+  SetVW      = 1,
+  GoToXY     = 2,
+  FollowLine = 3,
+  GrabBox    = 4,
+  DropBox    = 5,
+  Return     = 6,
+  Finish     = 7,
 }currentState;
 
 

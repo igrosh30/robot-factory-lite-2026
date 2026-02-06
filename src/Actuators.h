@@ -12,13 +12,16 @@ class Actuator
         pico4drive_t& p4d;
 
         bool isMagnetOn;
-        bool switchOn;
+        bool isSwitchOn;
+        bool lastTouch;
+        
 
         Actuator(pico4drive_t& driver);
         void init();
         void magnetOn();
         void magnetOff();
-        bool isSwitchOn();
+        void update();
+        //bool isSwitchOn();
 
 };
 

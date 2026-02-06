@@ -8,6 +8,7 @@
 
 // --- Phase 1: Construction ---//
 Sensor::Sensor(pico4drive_t& driver, SensorType t) : p4d(driver), type(t) {
+    kl = 0.8;
 }
 
 // --- Phase 2: Set boundaries && newPins ---//

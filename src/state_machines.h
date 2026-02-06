@@ -1,12 +1,13 @@
-#ifndef STATEFM_H
-#define STATEFM_H
+#ifndef STATE_MACHINES_H
+#define STATE_MACHINES_H
 
 #include "config.h"
 #include "robot.h"
 
-class States {
+class state_machines_t {
 public:
     bool enterDefault = false;
+    int flag = 0;
     currentState robotState;
 
     void runStateMachine4Testing(robot_t& r);
@@ -15,5 +16,7 @@ public:
     Node setTarget (Node node,bool hasBox);
 
 };
+
+extern state_machines_t state_machine; // "There exists somewhere..."
 
 #endif
