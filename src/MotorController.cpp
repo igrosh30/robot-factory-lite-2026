@@ -7,7 +7,7 @@
 MotorController:: MotorController()
 {
     kp1 = 1, kp2 = 1;
-    ki1 = 1, ki2 = 1;
+    ki1 = 6, ki2 = 6;
     integrator1 = 0, prevError1 = 0;
     integrator2 = 0, prevError2 = 0;
     MotorVoltages v;

@@ -8,7 +8,8 @@
 
 // --- Phase 1: Construction ---//
 Sensor::Sensor(pico4drive_t& driver, SensorType t) : p4d(driver), type(t) {
-    kl = 0.8;
+    kl = 0.7;
+    erro = 0;
 }
 
 // --- Phase 2: Set boundaries && newPins ---//
@@ -80,35 +81,48 @@ float Sensor :: getLineError() //Compute how much do I need to rotate my robot!
     uint16_t tempValues[NUM_SENSORS];
     readRaw(tempValues);
 
-    long weightedSum = 0;
-    long totalActivity = 0;
+    flagFound = false;
     //1- need to normalize the values- each sensor can have different high/low values
     for (int i = 0; i < NUM_SENSORS; i++)
     {
         int min = minValues[i];int max = maxValues[i];
 
         if(min == max ) return 0;
-        int val = constrain(tempValues[i],min,max);
-       
-        val = map(val,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
+        int tempVal = constrain(tempValues[i],min,max);
+        IR_norm1[i] = tempVal;
+        tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
 
-        if(val<50) val =0; //if less than 5%
+        if(tempVal<50) IR_norm[i] =0; //if less than 5%
+        IR_norm[i] = tempVal;
 
-        weightedSum += val * weights[i];
-        totalActivity += val;
+        if(!flagFound)
+        {
+            if(i==0){
+                if(activated(IR_norm[0]))
+                {
+                    erro = sensorDist[0];
+                    flagFound = true;
+                } 
+            }
+            else{
+                if(activated(IR_norm[i]) && (!activated(IR_norm[i-1])))//IR[i] is black, IR[i-1] needs to be white
+                {
+                    erro = sensorDist[i];
+                    flagFound = true;
+                }
+            }
+        }
     }
-    static float lastError = 0;
-    if (totalActivity == 0)//all sensors saw white,e.g.:maybe lost....
-    {
-        return lastError;
-    }
-
-    float turn = float(weightedSum) / totalActivity; // goes -8 to 8, like this we don't depend on the intensity of the IR sensors! 
-    float finalError = turn / 8.0; //-1 to 1
-
-    lastError = finalError;
-    return finalError;
+    return erro;
 }
+
+bool Sensor:: activated(float normVal)
+{
+    //0 - is white (deactivated) / 1000 - is black (activated) 
+    if(normVal <= 500) return false;
+    else return true;
+}
+
 
 float Sensor:: getLineErrorTarget(){
     readValues();

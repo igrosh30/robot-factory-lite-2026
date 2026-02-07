@@ -35,7 +35,7 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE false
+#define CALIBRATION_MODE true
 
 //Communications with ComRobot
 #define GCHANNELS_BUF_IN_SIZE 500U
@@ -47,10 +47,10 @@
 
 
 // (Paste your 'savedMin' array here)
-const uint16_t HARDCODED_MIN[] = { 550, 510, 410, 435, 390 }; 
+const uint16_t HARDCODED_MIN[] = { 470, 460, 360, 400, 310 }; 
 
 // (Paste your 'savedMax' array here)
-const uint16_t HARDCODED_MAX[] = { 50, 50, 50, 35, 40 };
+const uint16_t HARDCODED_MAX[] = { 47, 40, 45, 27, 33 };
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -88,7 +88,7 @@ typedef enum{
   GrabBox    = 4,
   DropBox    = 5,
   Return     = 6,
-  Finish     = 7,
+  Calibration= 7,
 }currentState;
 
 

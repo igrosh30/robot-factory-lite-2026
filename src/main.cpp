@@ -70,43 +70,6 @@ void read_PIO_encoders(void) {
     robot.enc2 = encoders[1].speed;
 }
 
-void runCalibrationProcess() {
-    Serial.println(">>> CALIBRATION MODE ACTIVE <<<");
-    Serial.println("Spinning in 2 seconds...");
-    delay(2000);
-
-    // 1. Spin
-    robot.setRobotVW(0, 0.8); 
-    unsigned long startTime = millis();
-    
-    // 2. Measure
-    while (millis() - startTime < 4000) {
-        robot.frontSensor.calibrate(); 
-        delay(10);
-    }
-
-    // 3. Stop
-    robot.setRobotVW(0, 0);
-
-    // 4. Output for Copy-Paste
-    Serial.println("\n// COPY THESE LINES TO config.h:");
-    
-    Serial.print("const uint16_t HARDCODED_MIN[] = { ");
-    for(int i = 0; i < NUM_SENSORS; i++) {
-        Serial.print(robot.frontSensor.minValues[i]);
-        if(i < NUM_SENSORS - 1) Serial.print(", ");
-    }
-    Serial.println(" };");
-
-    Serial.print("const uint16_t HARDCODED_MAX[] = { ");
-    for(int i = 0; i < NUM_SENSORS; i++) {
-        Serial.print(robot.frontSensor.maxValues[i]);
-        if(i < NUM_SENSORS - 1) Serial.print(", ");
-    }
-    Serial.println(" };");
-    
-    while(true); // Stop after calibration
-}
 
 // ================================================================
 //                      COMROBOT HELPER FUNCTIONS
@@ -135,12 +98,7 @@ void process_command(command_frame_t frame)
 {
   pars_list.process_read_command(frame);
 
-  // Now handle specific actions for certain commands
-  if (frame.command_is("cal")) {
-    serial_commands.send_command("msg", "Starting sensor calibration...");
-    runCalibrationProcess();
-  } 
-  else if (frame.command_is("stp")) {
+  if (frame.command_is("stp")) {
     robot.stoped = true;
     robot.setRobotVW(0, 0);
     serial_commands.send_command("msg", "Robot stopped");
@@ -229,13 +187,6 @@ void setup() {
     encoders[0].begin(encoder_pins[0]);
     encoders[1].begin(encoder_pins[1]);
 
-    // ========== CALIBRATION ==========
-    if (CALIBRATION_MODE == true) {
-        runCalibrationProcess();
-    } else {
-        robot.frontSensor.setCalibration(HARDCODED_MIN, HARDCODED_MAX);
-    }
-
     // ========== COMROBOT COMMUNICATION SETUP ==========
     Serial.begin(115200);
     delay(1000);  // Give time for serial to initialize
@@ -245,7 +196,7 @@ void setup() {
     
     // Version (important for ComRobot)
     int version = 1001;  // Your version number
-    pars_list.register_command("ver", &version);
+    //pars_list.register_command("ver", &version);
     
     // Robot control commands
     pars_list.register_command("vreq", &robot.v_req);
@@ -253,10 +204,10 @@ void setup() {
     //pars_list.register_command("mode", (int*)&robot.control_mode);
     
     // PID parameters
-    pars_list.register_command("kp1", &robot.motors.kp1);
-    pars_list.register_command("ki1", &robot.motors.ki1);
-    pars_list.register_command("kp2", &robot.motors.kp2);
-    pars_list.register_command("ki2", &robot.motors.ki2);
+    //pars_list.register_command("kp1", &robot.motors.kp1);
+    //pars_list.register_command("ki1", &robot.motors.ki1);
+    //pars_list.register_command("kp2", &robot.motors.kp2);
+    //pars_list.register_command("ki2", &robot.motors.ki2);
 
     
     // Line following parameters
@@ -268,7 +219,7 @@ void setup() {
     pars_list.register_command("st", &state_cmd_value);
 
     // Actuator control
-    pars_list.register_command("mg", (int*)&robot.actuators.isMagnetOn);
+    //pars_list.register_command("mg", (int*)&robot.actuators.isMagnetOn);
     
     // WiFi configuration
     // CHANGE THESE TO YOUR WIFI!
@@ -290,7 +241,6 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    Serial.print("Connecting to WiFi");
     for (int i = 0; i < 200 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
@@ -363,7 +313,7 @@ void loop() {
     uint32_t now = micros();
     uint32_t delta = now - last_cycle; 
     
-    if (delta >= interval ) {//&& !robot.stoped need to add?
+    if (delta >= interval ){//&& !robot.stoped need to add?
         last_cycle = now;
         loop_micros = micros();
         cycle_count++;
@@ -373,7 +323,7 @@ void loop() {
         robot.odometry();
         robot.actuators.update();//update magnet and read switch 
         //float ir_error = robot.frontSensor.getLineError();
-
+        
         
         // Run YOUR state machine
         state_machine.runStateMachine4Testing(robot);
@@ -384,20 +334,20 @@ void loop() {
         // ========== SEND data TO COMROBOT ==========
         if (debug_level > 0) {
             // Timing
-            serial_commands.send_command("dte", delta / 1000.0f);  // in ms
+            //serial_commands.send_command("dte", delta / 1000.0f);  // in ms
             
             // Robot state
-            serial_commands.send_command("xe", robot.xe);
-            serial_commands.send_command("ye", robot.ye);
-            serial_commands.send_command("te", robot.thetae);
+            //serial_commands.send_command("xe", robot.xe);
+            //serial_commands.send_command("ye", robot.ye);
+            //serial_commands.send_command("te", robot.thetae);
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             serial_commands.send_command("vreq", robot.v_req);
             serial_commands.send_command("wreq", robot.w_req);
             
             // Motor voltages
-            serial_commands.send_command("u1", robot.u1);
-            serial_commands.send_command("u2", robot.u2);
+            //serial_commands.send_command("u1", robot.u1);
+            //serial_commands.send_command("u2", robot.u2);
             
             // Sensor data
             serial_commands.send_command("ir0", robot.frontSensor.IR_Values[0]);
@@ -405,10 +355,37 @@ void loop() {
             serial_commands.send_command("ir2", robot.frontSensor.IR_Values[2]);
             serial_commands.send_command("ir3", robot.frontSensor.IR_Values[3]);
             serial_commands.send_command("ir4", robot.frontSensor.IR_Values[4]);
+
+            serial_commands.send_command("irn0", robot.frontSensor.IR_norm[0]);
+            serial_commands.send_command("irn1", robot.frontSensor.IR_norm[1]);
+            serial_commands.send_command("irn2", robot.frontSensor.IR_norm[2]);
+            serial_commands.send_command("irn3", robot.frontSensor.IR_norm[3]);
+            serial_commands.send_command("irn4", robot.frontSensor.IR_norm[4]);
+
+            //serial_commands.send_command("irn01", robot.frontSensor.IR_norm1[0]);
+            //serial_commands.send_command("irn11", robot.frontSensor.IR_norm1[1]);
+            //serial_commands.send_command("irn21", robot.frontSensor.IR_norm1[2]);
+            //serial_commands.send_command("irn31", robot.frontSensor.IR_norm1[3]);
+            //serial_commands.send_command("irn41", robot.frontSensor.IR_norm1[4]);
+
+            serial_commands.send_command("irma0", robot.frontSensor.maxValues[0]);
+            serial_commands.send_command("irma1", robot.frontSensor.maxValues[1]);
+            serial_commands.send_command("irma2", robot.frontSensor.maxValues[2]);
+            serial_commands.send_command("irma3", robot.frontSensor.maxValues[3]);
+            serial_commands.send_command("irma4", robot.frontSensor.maxValues[4]);
+
+            serial_commands.send_command("irmi0", robot.frontSensor.minValues[0]);
+            serial_commands.send_command("irmi1", robot.frontSensor.minValues[1]);
+            serial_commands.send_command("irmi2", robot.frontSensor.minValues[2]);
+            serial_commands.send_command("irmi3", robot.frontSensor.minValues[3]);
+            serial_commands.send_command("irmi4", robot.frontSensor.minValues[4]);
+            
+            serial_commands.send_command("erl", robot.frontSensor.erro);
+            serial_commands.send_command("fl_ir", robot.frontSensor.flagFound);
             
             // Encoder data
-            serial_commands.send_command("e1", robot.enc1);
-            serial_commands.send_command("e2", robot.enc2);
+            //serial_commands.send_command("e1", robot.enc1);
+            //serial_commands.send_command("e2", robot.enc2);
             //serial_commands.send_command("w1", robot.w1e);
             //serial_commands.send_command("w2", robot.w2e);
             
@@ -417,9 +394,9 @@ void loop() {
             serial_commands.send_command("st", (float)state_cmd_value);
             
             // Actuators
-            serial_commands.send_command("mg", robot.actuators.isMagnetOn ? 1 : 0);
-            serial_commands.send_command("sw", digitalRead(SWITCH_PIN));
-            serial_commands.send_command("fl", state_machine.flag);
+            //serial_commands.send_command("mg", robot.actuators.isMagnetOn ? 1 : 0);
+            //serial_commands.send_command("sw", digitalRead(SWITCH_PIN));
+            //serial_commands.send_command("fl", state_machine.flag);
 
             
             // WiFi status (like teacher's code)

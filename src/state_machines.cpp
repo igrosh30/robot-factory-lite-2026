@@ -1,8 +1,8 @@
 #include "state_machines.h"
 #include "robot.h"
+#include "config.h"
 
 state_machines_t state_machine;
-//state_machine.flag = 0;
 
 void state_machines_t:: runStateMachine4Testing(robot_t& r)
 {
@@ -15,6 +15,31 @@ void state_machines_t:: runStateMachine4Testing(robot_t& r)
 
     switch (state_machine.robotState)
     {
+    case Calibration:
+        static int count = 0;
+        if(CALIBRATION_MODE)
+        {
+            if(count < 150){
+                r.setRobotVW(0, 0.8);
+                r.frontSensor.calibrate(); 
+                count++;
+            }
+            else{
+                //add some error to max and min! 5
+                for(int i =0; i<5; i++)
+                {
+                    r.frontSensor.minValues[i] = r.frontSensor.minValues[i] - 5;
+                    r.frontSensor.maxValues[i] = r.frontSensor.maxValues[i] + 10;
+                }
+                state_machine.robotState = Start;
+            }
+        }
+        else{
+            r.frontSensor.setCalibration(HARDCODED_MIN,HARDCODED_MAX);//hardcode vallues
+            //state_machine.robotState = Start;
+        }
+        break;
+
     case Start:
         r.xe= 0;
         r.ye= 0;
@@ -40,13 +65,17 @@ void state_machines_t:: runStateMachine4Testing(robot_t& r)
         break;
 
     case FollowLine:
+        //calculate always the line error!
+        r.frontSensor.erro = r.frontSensor.getLineError();
+        r.setRobotVW(-0.04,r.frontSensor.erro*r.frontSensor.kl);
         if(state_machine.flag > 4 ){
             if(r.actuators.isSwitchOn)
             {
                 state_machine.robotState = GrabBox;
             }
             else{
-                r.followLineLeft(r.v_req,r.frontSensor.kl);
+                
+                //r.followLineLeft(r.v_req,r.frontSensor.kl);
             }
         }
         else state_machine.flag++;

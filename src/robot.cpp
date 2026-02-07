@@ -17,7 +17,6 @@ robot_t::robot_t(pico4drive_t& driver)
     backSensor(driver,BACK_SENSOR),
     actuators(driver)
 {
-  actuators.init();//initialize switch 
   stoped = false;
   wheel_dist = 0.125;
   wheel_radius = 0.0689 / 2;
@@ -91,17 +90,8 @@ bool robot_t::hasBox(){
 
 void robot_t::followLineLeft(float Vnom, float k ){
 
-  float error = 0.0f;
-  bool useSingleSensor = false;//our flag
-  
-  if(useSingleSensor)
-  {
-    error = robot.frontSensor.getLineErrorTarget();
-  }
-  else{
-    error = robot.frontSensor.getLineError();
-  }
-  robot.setRobotVW(Vnom,error*k);
+  float er = robot.frontSensor.getLineError();
+  robot.setRobotVW(Vnom,er*k);
 }
 
 void robot_t::accelerationLimit(void)
