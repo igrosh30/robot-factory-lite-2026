@@ -13,7 +13,7 @@ void Actuator::init()
 }
 
 void Actuator:: magnetOn(){
-    p4d.set_driver_voltage(3.5,p4d_drvSolenoid);
+    p4d.set_driver_voltage(4,p4d_drvSolenoid);
     isMagnetOn = true;
 }
 

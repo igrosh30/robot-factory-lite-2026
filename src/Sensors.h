@@ -25,6 +25,10 @@ class Sensor
         SensorType type;
         float erro;
         bool flagFound;
+        bool flagInters;
+        bool flagType; //0- Front working , 1- back working
+        int countIntersections;
+
 
         //we need to store the max&min values for each sensor to then calibrate:
         uint16_t minValues[NUM_SENSORS]; //pico returns a value from 0 and 1023

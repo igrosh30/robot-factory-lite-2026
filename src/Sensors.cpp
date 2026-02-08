@@ -8,8 +8,9 @@
 
 // --- Phase 1: Construction ---//
 Sensor::Sensor(pico4drive_t& driver, SensorType t) : p4d(driver), type(t) {
-    kl = 0.7;
+    kl = 1;
     erro = 0;
+    countIntersections= 0;
 }
 
 // --- Phase 2: Set boundaries && newPins ---//
@@ -82,37 +83,95 @@ float Sensor :: getLineError() //Compute how much do I need to rotate my robot!
     readRaw(tempValues);
 
     flagFound = false;
-    //1- need to normalize the values- each sensor can have different high/low values
-    for (int i = 0; i < NUM_SENSORS; i++)
+    flagInters = false;   
+
+    if(type == FRONT_SENSOR)
     {
-        int min = minValues[i];int max = maxValues[i];
-
-        if(min == max ) return 0;
-        int tempVal = constrain(tempValues[i],min,max);
-        IR_norm1[i] = tempVal;
-        tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
-
-        if(tempVal<50) IR_norm[i] =0; //if less than 5%
-        IR_norm[i] = tempVal;
-
-        if(!flagFound)
+        flagType= 0;
+        //1- need to normalize the values- each sensor can have different high/low values
+        for (int i = 0; i < NUM_SENSORS; i++)
         {
-            if(i==0){
-                if(activated(IR_norm[0]))
+            int min = minValues[i];int max = maxValues[i];
+
+            if(min == max ) return 0;
+            int tempVal = constrain(tempValues[i],min,max);
+            IR_norm1[i] = tempVal;
+            tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
+
+            if(tempVal<50) IR_norm[i] =0; //if less than 5%
+            IR_norm[i] = tempVal;
+
+            if(!flagFound)
+            {
+                if(i==0)
                 {
-                    erro = sensorDist[0];
+                    if(activated(IR_norm[0]))
+                    {
+                        erro = sensorDist[0];
+                        flagFound = true;
+                    } 
+                }
+                else if(activated(IR_norm[i]) && (!activated(IR_norm[i-1])))//IR[i] is black, IR[i-1] needs to be white
+                {
+                    erro = sensorDist[i];
                     flagFound = true;
-                } 
+                }  
             }
-            else{
-                if(activated(IR_norm[i]) && (!activated(IR_norm[i-1])))//IR[i] is black, IR[i-1] needs to be white
+        }
+            static bool wasIntersection = false;
+            bool inIntersectionNow = (activated(IR_norm[3]) && activated(IR_norm[4])) ;
+
+            if(inIntersectionNow && !wasIntersection){
+                countIntersections++;
+                flagInters = true;
+            }
+            wasIntersection = inIntersectionNow;
+    }
+    else if(type == BACK_SENSOR)
+    {
+        flagType= 1;
+        //1- need to normalize the values- each sensor can have different high/low values
+        for (int i = 0; i < NUM_SENSORS; i++)
+        {
+            int min = minValues[i];int max = maxValues[i];
+
+            if(min == max ) return 0;
+            int tempVal = constrain(tempValues[i],min,max);
+            IR_norm1[i] = tempVal;
+            tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
+
+            if(tempVal<50) IR_norm[i] =0; //if less than 5%
+            IR_norm[i] = tempVal;
+        }
+        for(int i= NUM_SENSORS-2; i > 0 ;i--)
+        {
+            if(!flagFound)
+            {
+                if(activated(IR_norm[4]))
+                {
+                    erro = sensorDist[4];
+                    flagFound = true;
+                }
+                else if(activated(IR_norm[i]) && (!activated(IR_norm[i+1])))
                 {
                     erro = sensorDist[i];
                     flagFound = true;
                 }
             }
         }
-    }
+        if(!flagFound && (activated(IR_norm[0]) && !activated(IR_norm[1])))
+        {
+            
+        }
+        static bool wasIntersection = false;
+            bool inIntersectionNow = (activated(IR_norm[1]) && activated(IR_norm[0])) ;
+
+            if(inIntersectionNow && !wasIntersection){
+                countIntersections++;
+                flagInters = true;
+            }
+            wasIntersection = inIntersectionNow;   
+    }  
     return erro;
 }
 

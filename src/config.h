@@ -81,14 +81,18 @@ typedef enum {
 } driver_num_t;
 
 typedef enum{
-  Start      = 0,
-  SetVW      = 1,
-  GoToXY     = 2,
-  FollowLine = 3,
-  GrabBox    = 4,
-  DropBox    = 5,
-  Return     = 6,
-  Calibration= 7,
+  Start         = 0,
+  Temp          = 1,
+  Temp1         = 2,
+  FollowLine    = 3,
+  FollowLineBack= -3,
+  GrabBox       = 4,
+  Turn180       = 18,
+  DropBox       = 5,
+  Return        = 6,
+  Calibration   = 7,
+  SetVW         = 20,
+  GoToXY        = 10,
 }currentState;
 
 
