@@ -13,9 +13,8 @@ int sign(T val)
 }
 
 robot_t::robot_t(pico4drive_t& driver)
-  : frontSensor(driver,FRONT_SENSOR),
-    backSensor(driver,BACK_SENSOR),
-    actuators(driver)
+  : front(driver,Side::FRONT),
+    back (driver,Side::BACK)    
 {
   stoped = false;
   wheel_dist = 0.125;
@@ -34,7 +33,7 @@ robot_t::robot_t(pico4drive_t& driver)
   led = 0;
 
   pchannels = NULL;
-  //pfsm = NULL;
+  //fsm = NULL;
 
 }
 
@@ -76,6 +75,7 @@ void robot_t::setRobotVW(float Vnom, float Wnom)
 }
 
 //functions to handle robot actions on the box
+/*
 void robot_t::grabBox(){
   robot.motors.driveMotor(0,0);
   actuators.magnetOn();
@@ -84,14 +84,33 @@ void robot_t::grabBox(){
 void robot_t::dropBox(){
   actuators.magnetOff();
 }
-bool robot_t::hasBox(){
+bool robot_t::has2Boxes(){
   return actuators.isMagnetOn;
 }
 
-void robot_t::followLineLeft(float Vnom, float k ){
 
-  float er = robot.frontSensor.getLineError();
-  robot.setRobotVW(Vnom,er*k);
+bool robot_t::hasDroped2Boxes(){
+  return actuators.isMagnetOn;
+}
+*/
+
+bool robot_t:: atPikZone()
+{
+  //how do I know that I'm here? odometry? intersections?
+  if(robot.currentNode.id == 0) return true;
+  else return false;
+}
+
+bool robot_t:: atDropZone()
+{
+  //how do I know that I'm here? odometry? intersections?
+  if(robot.currentNode.id == 26) return true;
+  else return false;
+}
+
+void robot_t::followLineLeft(float Vnom, float k ){
+  //float er = robot.frontSensor.getLineError();
+  //robot.setRobotVW(Vnom,er*k);
 }
 
 void robot_t::accelerationLimit(void)
@@ -142,3 +161,4 @@ void robot_t::calcMotorsVoltage(void)
   // PWM_2 = u2 / battery_voltage * 255;
   // PWM_1 = u1 / battery_voltage * 255;
 }
+

@@ -32,9 +32,10 @@
 
 //#define MAX_VOLTAGE_USAGE 5.5
 
-int p4d_pwm_pins[3][2] = {{MOTOR1A_PIN, MOTOR1B_PIN},
+int p4d_pwm_pins[4][2] = {{MOTOR1A_PIN, MOTOR1B_PIN},
                           {MOTOR2A_PIN, MOTOR2B_PIN},
-                          {SOLENOID_PIN_A,SOLENOID_PIN_B}};
+                          {FRONT_SOLENOID_PIN_A,FRONT_SOLENOID_PIN_B},
+                          {BACK_SOLENOID_PIN_A,BACK_SOLENOID_PIN_B}};
 
 SerialPIO SerialTiny(NOPIN, 21);
 
@@ -64,7 +65,7 @@ void pico4drive_t::init(uint32_t PWM_freq)
   analogWriteFreq(PWM_freq); //16000 
 
   //motor driver pins setup
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     pinMode(p4d_pwm_pins[i][0], OUTPUT);
     pinMode(p4d_pwm_pins[i][1], OUTPUT);
   }

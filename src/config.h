@@ -8,7 +8,8 @@
 //                          PINOS
 // ================================================================
 
-#define SWITCH_PIN 3
+#define FRONT_SWITCH_PIN 3
+#define BACK_SWITCH_PIN 4
 
 #define ENC1_PIN_A 8 
 #define ENC1_PIN_B 9
@@ -26,8 +27,11 @@
 
 
 //DR3 referente na pico(solenoide)
-#define SOLENOID_PIN_A 17
-#define SOLENOID_PIN_B 16
+#define FRONT_SOLENOID_PIN_A 17
+#define FRONT_SOLENOID_PIN_B 16
+
+#define BACK_SOLENOID_PIN_A 17
+#define BACK_SOLENOID_PIN_B 16
 
 // ================================================================
 //                          Constantes
@@ -47,10 +51,12 @@
 
 
 // (Paste your 'savedMin' array here)
-const uint16_t HARDCODED_MIN[] = { 470, 460, 360, 400, 310 }; 
+const uint16_t HARDCODED_FRONT_MIN[] = { 470, 460, 360, 400, 310 }; 
+const uint16_t HARDCODED_BACK_MIN[] = { 470, 460, 360, 400, 310 }; 
 
 // (Paste your 'savedMax' array here)
-const uint16_t HARDCODED_MAX[] = { 47, 40, 45, 27, 33 };
+const uint16_t HARDCODED_FRONT_MAX[] = { 47, 40, 45, 27, 33 };
+const uint16_t HARDCODED_BACK_MAX[] = { 47, 40, 45, 27, 33 };
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -69,31 +75,36 @@ struct Node {
     // 0 = intersecao, 1 = pick, 2 = drop, 3 = line, 5 = init, 404 = lixo
 };
 
+enum class Side {
+    FRONT,
+    BACK
+};
+
 // ================================================================
 // 2. Estados da máquina de estados
 // ================================================================
+
+typedef enum{
+    Idle,           //0
+    Start,          //1
+    Calibration,    //2
+    FollowLineFront,//3
+    FollowLineBack, //4
+    PickFrontBox,
+    PickBackBox,
+    FollowLine2ExitPickZone,
+    
+
+
+} fsm_state;
 
 //this indexes should match in p4d.cpp aray declaration!
 typedef enum { 
   p4d_drv1 = 0,
   p4d_drv2 = 1,
-  p4d_drvSolenoid = 2,
+  p4d_drvSolenoid_front = 2,
+  p4d_drvSolenoid_back =3,
 } driver_num_t;
-
-typedef enum{
-  Start         = 0,
-  Temp          = 1,
-  Temp1         = 2,
-  FollowLine    = 3,
-  FollowLineBack= -3,
-  GrabBox       = 4,
-  Turn180       = 18,
-  DropBox       = 5,
-  Return        = 6,
-  Calibration   = 7,
-  SetVW         = 20,
-  GoToXY        = 10,
-}currentState;
 
 
 // ================================================================

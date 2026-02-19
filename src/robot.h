@@ -25,10 +25,13 @@ class robot_t
 {
 public:
   MotorController motors;
-  Sensor frontSensor;
-  Sensor backSensor;
-  Actuator actuators;
+  //Sensor frontSensor;
+  //Sensor backSensor;
+  RobotSide front;
+  RobotSide back;
+
   Node targetNode;
+  Node currentNode;
   //MotorController motor1;
   //MotorController motor2;
   
@@ -75,6 +78,7 @@ public:
   int LastTouchSwitch, TouchSwitch;
 
   gchannels_t* pchannels;
+  //state_machine_t* fsm;
   
 
   robot_t(pico4drive_t& driver);
@@ -93,7 +97,12 @@ public:
 
   void grabBox();
   void dropBox();
-  bool hasBox();
+  bool has2Boxes();
+  bool hasDroped2Boxes();
+
+  //LOCALISATION METHODS:
+  bool atPikZone();
+  bool atDropZone();
 };
 
 extern robot_t robot;

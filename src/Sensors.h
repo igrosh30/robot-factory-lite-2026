@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "pico4drive.h"
+#include "config.h"
 
 #define NUM_SENSORS 5
 
@@ -12,17 +13,20 @@ const int weights[NUM_SENSORS]     = {-8,-4,0,4,8};
 const int weightsTarg[NUM_SENSORS] = {-8,-4,1,0,8};
 const float sensorDist[NUM_SENSORS] = {3.4,1.7,0,-1.7,-3.4};
 
+/*
 typedef enum
 {
     FRONT_SENSOR,
     BACK_SENSOR   
 } SensorType;
+*/
+
 
 class Sensor
 {
     public:    
         pico4drive_t& p4d;
-        SensorType type;
+        Side typeSide;
         float erro;
         bool flagFound;
         bool flagInters;
@@ -42,7 +46,7 @@ class Sensor
 
         float kl ;
 
-        Sensor(pico4drive_t& driver, SensorType t);
+        Sensor(pico4drive_t& driver, Side t);
         void init();
         void calibrate(); //calibrate the values from ADC before using them, call this in setup
         void setCalibration(const uint16_t* min, const uint16_t* max);
@@ -50,8 +54,7 @@ class Sensor
         
         void readValues();
 
-        float getLineError();
-        float getLineErrorTarget();
+        void getLineError();
 
         bool activated(float normVal);
 

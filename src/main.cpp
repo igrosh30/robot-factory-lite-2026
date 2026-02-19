@@ -12,6 +12,7 @@
 #include "state_machines.h"
 #include "gchannels.h"
 #include "file_gchannels.h"
+#include "fsm_main.h"
 
 // ================================================================
 //                      YOUR ROBOT CONFIGURATION
@@ -23,6 +24,7 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
+fsm_main fsm(robot);
 
 // ================================================================
 //                      WIFI/UDP CONFIGURATION
@@ -109,7 +111,7 @@ void process_command(command_frame_t frame)
   }
   else if (frame.command_is("st")) { // Update your state machine with the value that pars_list already set
     if (state_cmd_value >= 0 ) {//add && state_cmd_value <= 7 if I want to restrit the states
-      state_machine.robotState = (currentState)state_cmd_value;
+      fsm.force_state((fsm_state)state_cmd_value);
       serial_commands.send_command("msg", "State changed");
     }
   }
@@ -175,13 +177,16 @@ void setup() {
     analogReadResolution(10);
 
     // Initialize YOUR robot
-    robot.frontSensor.init();
-    robot.backSensor.init();
-    robot.actuators.init();
+    robot.front.sensor.init();
+    robot.back.sensor.init();
+    robot.front.actuators.init();
+    robot.back.actuators.init();
+    
 
     // Initialize state machine
-    state_machine.robotState = Start;  
-    state_cmd_value = (int)Start;    
+    //state_machine.currentState = Start;  
+    fsm.force_state(Idle);
+    state_cmd_value = (int)fsm_state::Idle;    
     
     
     // Initialize encoders
@@ -212,7 +217,7 @@ void setup() {
 
     
     // Line following parameters
-    pars_list.register_command("kl", &robot.frontSensor.kl);
+    pars_list.register_command("kl", &robot.front.sensor.kl);
     //pars_list.register_command("fv", &robot.follow_v);
     //pars_list.register_command("fk", &robot.follow_k);
     
@@ -319,17 +324,21 @@ void loop() {
         loop_micros = micros();
         cycle_count++;
 
-        // Read Data
+        //robot pose update
         read_PIO_encoders();
         robot.odometry();
-        robot.actuators.update();//update magnet and read switch 
-        //float ir_error = robot.frontSensor.getLineError();
         
+        //Actuators Update, Switches&Magnets
+        robot.front.actuators.update();
+        robot.back.actuators.update();
         
-        // Run YOUR state machine
-        state_machine.runStateMachine4Testing(robot);
+        //IR update error
+        robot.front.sensor.getLineError();
+        robot.back.sensor.getLineError();
 
-        // Update motors
+        fsm.step();
+
+        //Update motors PID -> I can pass this to some states!
         robot.motors.PIDController_Update();
 
         // ========== SEND data TO COMROBOT ==========
@@ -352,17 +361,17 @@ void loop() {
             //serial_commands.send_command("u2", robot.u2);
             
             //Back Sensor data
-            serial_commands.send_command("ir0", robot.backSensor.IR_Values[0]);
-            serial_commands.send_command("ir1", robot.backSensor.IR_Values[1]);
-            serial_commands.send_command("ir2", robot.backSensor.IR_Values[2]);
-            serial_commands.send_command("ir3", robot.backSensor.IR_Values[3]);
-            serial_commands.send_command("ir4", robot.backSensor.IR_Values[4]);
+            serial_commands.send_command("ir0", robot.back.sensor.IR_Values[0]);
+            serial_commands.send_command("ir1", robot.back.sensor.IR_Values[1]);
+            serial_commands.send_command("ir2", robot.back.sensor.IR_Values[2]);
+            serial_commands.send_command("ir3", robot.back.sensor.IR_Values[3]);
+            serial_commands.send_command("ir4", robot.back.sensor.IR_Values[4]);
 
-            serial_commands.send_command("irn0", robot.backSensor.IR_norm[0]);
-            serial_commands.send_command("irn1", robot.backSensor.IR_norm[1]);
-            serial_commands.send_command("irn2", robot.backSensor.IR_norm[2]);
-            serial_commands.send_command("irn3", robot.backSensor.IR_norm[3]);
-            serial_commands.send_command("irn4", robot.backSensor.IR_norm[4]);
+            serial_commands.send_command("irn0", robot.back.sensor.IR_norm[0]);
+            serial_commands.send_command("irn1", robot.back.sensor.IR_norm[1]);
+            serial_commands.send_command("irn2", robot.back.sensor.IR_norm[2]);
+            serial_commands.send_command("irn3", robot.back.sensor.IR_norm[3]);
+            serial_commands.send_command("irn4", robot.back.sensor.IR_norm[4]);
 
             //serial_commands.send_command("irn01", robot.frontSensor.IR_norm1[0]);
             //serial_commands.send_command("irn11", robot.frontSensor.IR_norm1[1]);
@@ -370,24 +379,20 @@ void loop() {
             //serial_commands.send_command("irn31", robot.frontSensor.IR_norm1[3]);
             //serial_commands.send_command("irn41", robot.frontSensor.IR_norm1[4]);
 
-            serial_commands.send_command("irma0", robot.backSensor.maxValues[0]);
-            serial_commands.send_command("irma1", robot.backSensor.maxValues[1]);
-            serial_commands.send_command("irma2", robot.backSensor.maxValues[2]);
-            serial_commands.send_command("irma3", robot.backSensor.maxValues[3]);
-            serial_commands.send_command("irma4", robot.backSensor.maxValues[4]);
+            serial_commands.send_command("irma0", robot.back.sensor.maxValues[0]);
+            serial_commands.send_command("irma1", robot.back.sensor.maxValues[1]);
+            serial_commands.send_command("irma2", robot.back.sensor.maxValues[2]);
+            serial_commands.send_command("irma3", robot.back.sensor.maxValues[3]);
+            serial_commands.send_command("irma4", robot.back.sensor.maxValues[4]);
 
-            serial_commands.send_command("irmi0", robot.backSensor.minValues[0]);
-            serial_commands.send_command("irmi1", robot.backSensor.minValues[1]);
-            serial_commands.send_command("irmi2", robot.backSensor.minValues[2]);
-            serial_commands.send_command("irmi3", robot.backSensor.minValues[3]);
-            serial_commands.send_command("irmi4", robot.backSensor.minValues[4]);
+            serial_commands.send_command("irmi0", robot.back.sensor.minValues[0]);
+            serial_commands.send_command("irmi1", robot.back.sensor.minValues[1]);
+            serial_commands.send_command("irmi2", robot.back.sensor.minValues[2]);
+            serial_commands.send_command("irmi3", robot.back.sensor.minValues[3]);
+            serial_commands.send_command("irmi4", robot.back.sensor.minValues[4]);
 
-            serial_commands.send_command("erl", robot.backSensor.erro);
-            serial_commands.send_command("fl_ir", robot.backSensor.flagFound);
-            serial_commands.send_command("cnt", robot.backSensor.countIntersections);
-            serial_commands.send_command("flgin", robot.backSensor.flagInters);
-            serial_commands.send_command("flty", robot.frontSensor.flagType);
-            serial_commands.send_command("flty1", robot.backSensor.flagType);
+            serial_commands.send_command("erl", robot.back.sensor.erro);
+            serial_commands.send_command("cnt", robot.back.sensor.countIntersections);
             
             //Front Sensor data
             /*
@@ -437,13 +442,12 @@ void loop() {
             //serial_commands.send_command("w2", robot.w2e);
             
             // State machine - sync the variable
-            state_cmd_value = (int)state_machine.robotState;
-            serial_commands.send_command("st", (float)state_cmd_value);
+            serial_commands.send_command("st", (float)fsm.state);
             
             // Actuators
-            serial_commands.send_command("mg", robot.actuators.isMagnetOn ? 1 : 0);
-            serial_commands.send_command("sw", digitalRead(SWITCH_PIN));
-            serial_commands.send_command("fl", state_machine.flag);
+            serial_commands.send_command("mg", robot.front.actuators.isMagnetOn ? 1 : 0);
+            serial_commands.send_command("sw", digitalRead(FRONT_SWITCH_PIN));
+            //serial_commands.send_command("fl", state_machine.flag);
 
             
             // WiFi status (like teacher's code)

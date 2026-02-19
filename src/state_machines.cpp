@@ -1,167 +1,156 @@
+/* Copyright (c) 2023  Paulo Costa
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+   * Neither the name of the copyright holders nor the names of
+     contributors may be used to endorse or promote products derived
+     from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE. */
+
 #include "state_machines.h"
-#include "robot.h"
-#include "config.h"
+#include <Arduino.h>
 
-state_machines_t state_machine;
-float vel = 0.0f;
-float x,y = 0.0f;
-
-void state_machines_t:: runStateMachine4Testing(robot_t& r)
+state_machine_t::state_machine_t()
 {
-    
-    
-    Node currentNode = r.targetNode;//Get current Node
-    
-    // 1. Create a static variable to remember time between loop calls
-    static unsigned long stateTimer = 0;
-
-    switch (state_machine.robotState)
-    {
-    case Calibration:
-        static int count = 0;
-        if(CALIBRATION_MODE)
-        {
-            if(count < 250){
-                r.setRobotVW(0, 0.6);
-                r.frontSensor.calibrate();
-                r.backSensor.calibrate();
-                count++;
-            }
-            else{
-                //add some error to max and min! 5
-                for(int i =0; i<5; i++)
-                {
-                    r.frontSensor.minValues[i] = r.frontSensor.minValues[i] - 5;
-                    r.frontSensor.maxValues[i] = r.frontSensor.maxValues[i] + 10;
-
-                    r.backSensor.minValues[i] = r.backSensor.minValues[i] - 5;
-                    r.backSensor.maxValues[i] = r.backSensor.maxValues[i] + 10;
-                }
-                state_machine.robotState = Start;
-            }
-        }
-        else{
-            r.frontSensor.setCalibration(HARDCODED_MIN,HARDCODED_MAX);//hardcode vallues
-            r.backSensor.setCalibration(HARDCODED_MIN,HARDCODED_MAX);
-            state_machine.robotState = Start;
-        }
-        break;
-
-    case Start:
-        r.backSensor.countIntersections = 0;
-        r.xe= 0;
-        r.ye= 0;
-        r.thetae = 0;
-        r.dropBox();
-        r.setRobotVW(0,0);
-        //
-        if(r.actuators.isSwitchOn)
-        {
-            state_machine.flag++;
-            state_machine.robotState = Temp;
-        }
-        break;
-    
-    case Temp:
-        vel = -0.06;
-        state_machine.robotState = FollowLine;
-        break;
-
-    case Temp1:
-        vel = -0.02;
-        static int count1 = 0;
-        if(count1 < 35){
-            r.setRobotVW(vel,0);
-            count1++;
-        }
-        else{
-            state_machine.robotState = FollowLine;
-        }
-
-        break;
-        
-
-    case FollowLine:
-        vel = -0.07;
-        //calculate always the line error!
-        static bool hasBox = false;
-        static int countTheta = 0;
-        if(r.thetae <= -6.5){
-            if(countTheta <= 75)
-            {
-                countTheta++;
-            }
-            else{
-                state_machine.robotState = Return;
-            }
-        }
-        
-        r.frontSensor.erro = r.frontSensor.getLineError();
-        r.setRobotVW(vel,r.frontSensor.erro*r.frontSensor.kl);
-        
-        if(state_machine.flag > 4 && r.actuators.isSwitchOn && !hasBox ){
-            state_machine.robotState = GrabBox;
-            hasBox= true;
-        }
-        else state_machine.flag++;
-        
-        break;
-    
-    case FollowLineBack:
-        vel = 0.07;
-        //calculate always the line error!
-        if(r.backSensor.countIntersections == 3){
-            state_machine.robotState = Turn180;
-        }
-        r.backSensor.erro = r.backSensor.getLineError();
-        r.setRobotVW(vel,r.backSensor.erro*r.backSensor.kl);
-        
-        break;
-    
-    case GrabBox:
-        static int countGrab = 0;
-        r.grabBox();
-        //r.setRobotVW(0,0);
-        if(countGrab <= 15)
-        {
-            r.setRobotVW(0.06,0);
-            countGrab++;
-        }
-        else{
-            state_machine.robotState = FollowLineBack;
-        }
- 
-        break;
-    
-    case Turn180:
-        
-        if(r.thetae >= -3.1416){
-            r.setRobotVW(0, 0.6);
-        }
-        else {
-            stateTimer = millis();
-            state_machine.robotState = Temp1;
-        }
-        
-        break;
-    
-    case Return:
-        static int countRet = 0;
-        r.dropBox();
-        if(countRet <= 20 ){
-            r.setRobotVW(0.05,0);
-            countRet++;
-        }
-        else r.setRobotVW(0,0);
-            
-        
-            
-        //state_machine.robotState = Start;
-        break;
-
-    default:
-        state_machine.robotState= Start;
-        enterDefault = true;
-        break;
-    }
+  
 }
+
+// Set new state
+void state_machine_t::set_next_state(int astate)
+{
+  next_state = astate;
+}
+
+void state_machine_t::force_state(int astate)
+{
+  next_state = astate;
+  
+  update_state();
+  do_state_actions();
+}
+
+void state_machine_t::update_state(void)
+{
+  if (state != next_state) {  
+    prev_state = state;
+    state = next_state;
+    
+    // if the state changed 'tis' must be reset
+    tes_ms = millis(); 
+    tis_ms = 0;
+    tis = 0;
+    actions_count = 0;
+    
+    // deal with entering state actions
+    do_enter_state_actions();
+  }
+}
+
+void state_machine_t::calc_next_state(void)
+{
+  tis_ms = millis() - tes_ms;
+  tis = 1e-3 * tis_ms;
+  next_state_rules();
+}
+
+
+float state_machine_t::time_since(uint32_t when)
+{
+  int delta = millis() - when;
+  return 1e-3 * delta;
+}
+
+
+void state_machine_t::do_enter_state_actions(void)
+{
+  enter_state_actions_rules();
+}
+
+void state_machine_t::do_state_actions(void)
+{
+  state_actions_rules();
+  actions_count++;
+}
+
+
+// state_machines_t: TODO: test
+
+int state_machines_t::register_state_machine(pstate_machine_t new_psm)
+{
+  if (count >= MAX_STATE_MACHINES) return -1;
+  psm[count] = new_psm;
+  count++;
+  return count - 1;
+}  
+  
+void state_machines_t::calc_next_states(void)
+{
+  int i;
+  uint32_t cur_time = millis();
+  for (i = 0; i < count; i++) {
+    psm[i]->tis_ms = cur_time - psm[i]->tes_ms;
+    psm[i]->tis = 1e-3 * psm[i]->tis_ms;
+    psm[i]->next_state_rules();
+  }   
+}
+
+void state_machines_t::update_states(void)
+{
+  int i;
+  for (i = 0; i < count; i++) {
+    psm[i]->update_state();
+  }   
+}
+
+void state_machines_t::do_enter_states_actions(void)
+{
+  int i;
+  for (i = 0; i < count; i++) {
+    psm[i]->do_enter_state_actions();
+  }
+}
+
+void state_machines_t::do_states_actions(void)
+{
+  int i;
+  for (i = 0; i < count; i++) {
+    psm[i]->state_actions_rules();
+    psm[i]->actions_count++;
+  }
+}
+  
+void state_machine_t::step(void)
+{
+    calc_next_state();
+    update_state();
+    do_state_actions();
+}
+
+void state_machines_t::step(void)
+{
+  calc_next_states();
+  update_states();
+  do_states_actions();
+}
+
+
+state_machines_t state_machines;
