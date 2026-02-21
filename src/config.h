@@ -8,8 +8,12 @@
 //                          PINOS
 // ================================================================
 
-#define FRONT_SWITCH_PIN 3
-#define BACK_SWITCH_PIN 4
+//left&right looking to front of the robot
+#define FRONT_L_SWITCH_PIN 2
+#define FRONT_R_SWITCH_PIN 3
+//left&right looking to the back of the robot
+#define BACK_L_SWITCH_PIN 4
+#define BACK_R_SWITCH_PIN 5
 
 #define ENC1_PIN_A 8 
 #define ENC1_PIN_B 9
@@ -79,6 +83,10 @@ enum class Side {
     FRONT,
     BACK
 };
+enum class Side2Follow{
+    LEFT,
+    RIGHT
+};
 
 // ================================================================
 // 2. Estados da máquina de estados
@@ -88,8 +96,10 @@ typedef enum{
     Idle,           //0
     Start,          //1
     Calibration,    //2
-    FollowLineFront,//3
-    FollowLineBack, //4
+    FollowLineFrontL,//3
+    FollowLineFrontR,
+    FollowLineBackL, //4
+    FollowLineBackR,
     PickFrontBox,
     PickBackBox,
     FollowLine2ExitPickZone,

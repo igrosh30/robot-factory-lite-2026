@@ -1,4 +1,4 @@
-#ifndef STATE_MACHINES_IG_H
+/*#ifndef STATE_MACHINES_IG_H
 #define STATE_MACHINES_IG_H
 
 #include "config.h"
@@ -60,7 +60,6 @@ private:
     State currentState;
     unsigned long stateEntryTime;//millisenconds when current state was entered
 
-/*
     1.⁠ ⁠update de variaveis input
     2.⁠ ⁠update do tis (time in state)
     3.⁠ ⁠transições
@@ -75,9 +74,10 @@ private:
     //void runStateMachineV2(robot_t& r);
 
     Node setTarget (Node node,bool hasBox);
-*/
+
 };
 
 extern state_machinesIg_t state_machineIg; // "There exists somewhere..."
 
 #endif
+*/

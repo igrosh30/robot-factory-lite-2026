@@ -1,4 +1,4 @@
-#include "state_machines_Ig.h"
+/*#include "state_machines_Ig.h"
 #include "robot.h"
 #include "config.h"
 
@@ -40,8 +40,8 @@ void state_machinesIg_t::updadeInputs(robot_t& r){
     r.front.actuators.update();
     r.back.actuators.update();
     r.odometry();//update x,y and theta
-    r.front.sensor.getLineError();
-    r.back.sensor.getLineError();
+    //r.front.sensor.getLineError();
+    //r.back.sensor.getLineError();
     
     //UPDATE_NODE!
 
@@ -96,7 +96,7 @@ void state_machinesIg_t:: onExit(robot_t& r, State state)
         break;
 
     case State::DropBox:
-        r.dropBox();
+        //r.dropBox();
         break;
 
     default:
@@ -106,7 +106,7 @@ void state_machinesIg_t:: onExit(robot_t& r, State state)
 
 void state_machinesIg_t:: onDo(robot_t& r, State state)
 {
-    /*
+    
     switch (state)
     {
 
@@ -117,7 +117,7 @@ void state_machinesIg_t:: onDo(robot_t& r, State state)
     default:
         break;
     }
-        */
+    
 }
 
 void state_machinesIg_t::onEntry(robot_t& r, State state)
@@ -126,7 +126,7 @@ void state_machinesIg_t::onEntry(robot_t& r, State state)
     {
     case State::Idle:
         r.setRobotVW(0,0);
-        r.dropBox();
+        //r.dropBox();
         break;
     case State::Start:
         r.currentNode = mappingNodes1[21];
@@ -142,7 +142,7 @@ void state_machinesIg_t:: setDebugState(State newState)
     stateEntryTime = millis();
 }
 
-/*
+
 void state_machines_t:: runStateMachine4Testing(robot_t& r)
 { 
     Node currentNode = r.targetNode;//Get current Node

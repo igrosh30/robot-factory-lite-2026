@@ -1,4 +1,5 @@
 #include "Sensors.h"
+#include "config.h"
 
 // The Pico has specific pins for Analog Inputs. 
 // Based on standard wiring for this competition board:
@@ -75,7 +76,7 @@ void Sensor :: readValues(){
     readRaw(IR_Values);
 }
 
-void Sensor :: getLineError() //Compute how much do I need to rotate my robot! 
+void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I need to rotate my robot! 
 {
     readValues(); // refresh the debug data- Only to check the last readed values! 
 
@@ -85,7 +86,7 @@ void Sensor :: getLineError() //Compute how much do I need to rotate my robot!
     flagFound = false;
     flagInters = false;   
 
-    if(typeSide == Side::FRONT)
+    if(side2follow == Side2Follow::LEFT)
     {
         flagType= 0;
         //1- need to normalize the values- each sensor can have different high/low values
@@ -127,7 +128,7 @@ void Sensor :: getLineError() //Compute how much do I need to rotate my robot!
             }
             wasIntersection = inIntersectionNow;
     }
-    else if(typeSide == Side::BACK)
+    else if(side2follow == Side2Follow::RIGHT)
     {
         flagType= 1;
         //1- need to normalize the values- each sensor can have different high/low values

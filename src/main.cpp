@@ -333,8 +333,8 @@ void loop() {
         robot.back.actuators.update();
         
         //IR update error
-        robot.front.sensor.getLineError();
-        robot.back.sensor.getLineError();
+        //robot.front.sensor.getLineError();
+        //robot.back.sensor.getLineError();
 
         fsm.step();
 
@@ -446,7 +446,8 @@ void loop() {
             
             // Actuators
             serial_commands.send_command("mg", robot.front.actuators.isMagnetOn ? 1 : 0);
-            serial_commands.send_command("sw", digitalRead(FRONT_SWITCH_PIN));
+            serial_commands.send_command("sw", digitalRead(FRONT_L_SWITCH_PIN));
+            serial_commands.send_command("swB", digitalRead(BACK_L_SWITCH_PIN));
             //serial_commands.send_command("fl", state_machine.flag);
 
             

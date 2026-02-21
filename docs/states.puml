@@ -1,0 +1,86 @@
+@startuml "states"
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName monospace
+
+' Define initial state
+[*] --> Idle
+
+' State: Idle
+  state Idle <<Idle>> : Wait for switch
+  note right of Idle
+    entry: wait for switch
+  end note
+
+
+  Idle --> Calibration : SwitchBackON
+  state Calibration : Get Max,min Values for Sensors 
+  Calibration --> Start : robot spun 2π
+
+' State: Start (initialization)
+  state Start : Initialization
+  note right of Start
+    entry: CountIntersection = 0
+    entry: Interactions = 2
+  end note
+
+
+' Transition: Start -> FollowLineFront
+  Start --> FollowLineFrontL : [SwitchFront == ON]
+
+' State: FollowLineFront
+  state FollowLineFrontL : Follow line forward \n V>0
+  note right of FollowLineFrontL
+    do: follow line, increment CountIntersection at each junction
+  end note
+
+' Transition: ReachedPickZone -> PickFrontBox
+  FollowLineFrontL --> PickFrontBox : [SwitchFront == ON]
+
+' State: PickFrontBox
+  state PickFrontBox : Pick front box
+
+' Transition: PickFrontBox -> FollowLineBack
+  PickFrontBox --> FollowLineBackL
+
+' State: FollowLineBack
+  state FollowLineBackL : Follow line backward\n V<0
+  note right of FollowLineBackL
+    do: follow line
+  end note
+
+' Transition: FollowLineBack -> PickBackBox
+  FollowLineBackL --> PickBackBox : [SwitchBack == ON]
+
+' State: PickBackBox
+  state PickBackBox : Pick back box
+
+' Transition: PickBackBox -> FollowLineFront2DropZone
+  PickBackBox --> FolLine2ExitPickZone
+
+' State: FollowLineFront2DropZone
+  state FolLine2ExitPickZone : FollowLineFront until exit pickZone
+  note right of FollowLineFront2DropZone
+    do: follow line until I Exit the PickZone
+    do: if robot.theta != 0, keep turning (self‑loop)
+  end note
+
+' Self‑loop while robot is still turning
+  FolLine2ExitPickZone --> FolLine2ExitPickZone
+
+' Transition to backward mode after one intersection
+  FolLine2ExitPickZone --> FollowLineBack2DropZone : [Intersections == 1 && robot.theta <= 0.2]
+
+' State: FollowLineBack2DropZone
+  state FollowLineBack2DropZone : Navigate to drop zone backward
+  note right of FollowLineBack2DropZone
+    do: follow line backward, count intersections
+  end note
+
+' Transition back to forward mode after two intersections
+  FollowLineBack2DropZone --> FollowLineFront2DropZone : [Intersections == 2]
+
+' Optional: final transition when task is complete
+  FollowLineBack2DropZone --> [*] : [Interactions == 0]
+
+@enduml

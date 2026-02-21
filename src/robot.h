@@ -89,14 +89,16 @@ public:
   void accelerationLimit(void);
   void calcMotorsVoltage(void);
 
-  void followLineRight(float Vnom, float K);
-  void followLineLeft(float Vnom, float K);
+  void followLineRight(float Vnom,Side side);
+  void followLineLeft(float Vnom,Side side);
+
+  void followLine(float Vnom, RobotSide& sideRef, Side2Follow direction);
 
   void send_command(const char *command, float par);
   void send_command(const char *command, const char *par);
 
-  void grabBox();
-  void dropBox();
+  void grabBox(RobotSide& sideRef);
+  void dropBox(RobotSide& sideREf);
   bool has2Boxes();
   bool hasDroped2Boxes();
 

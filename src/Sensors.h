@@ -26,6 +26,7 @@ class Sensor
 {
     public:    
         pico4drive_t& p4d;
+        Side2Follow side2follow;
         Side typeSide;
         float erro;
         bool flagFound;
@@ -54,7 +55,7 @@ class Sensor
         
         void readValues();
 
-        void getLineError();
+        void getLineError(Side2Follow side2follow);
 
         bool activated(float normVal);
 

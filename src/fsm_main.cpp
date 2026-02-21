@@ -27,18 +27,18 @@ void fsm_main::next_state_rules()
     }
     else if(state == Start && robot.front.actuators.isSwitchOn)
     {
-        set_next_state(FollowLineFront);
+        set_next_state(FollowLineFrontL);
     }
-    else if(state == FollowLineFront && robot.front.actuators.isSwitchOn && robot.front.sensor.countIntersections == 3)
+    else if(state == FollowLineFrontL && robot.front.actuators.isSwitchOn && robot.front.sensor.countIntersections == 3)
     {
         robot.front.sensor.countIntersections = 0;//reset intersections counting
         set_next_state(PickFrontBox);
     }
     else if(state == PickFrontBox && tis >= 0.2)//still need to see this
     {
-        set_next_state(FollowLineBack);
+        set_next_state(FollowLineBackL);
     }
-    else if(state == FollowLineBack && robot.back.actuators.isSwitchOn)
+    else if(state == FollowLineBackL && robot.back.actuators.isSwitchOn)
     {
         set_next_state(PickBackBox);
     }
@@ -99,20 +99,19 @@ void fsm_main::state_actions_rules()
             robot.back.sensor.setCalibration(HARDCODED_BACK_MIN,HARDCODED_BACK_MAX);
         }
     }
-    else if(state == FollowLineFront)
+    else if(state == FollowLineFrontL)
     {
         v_nom = 0.07;
-        w_nom = robot.front.sensor.erro * robot.front.sensor.kl;
-        robot.setRobotVW(v_nom,w_nom);
+        robot.followLine(v_nom,robot.front,Side2Follow::LEFT);
     }
     else if(state == PickFrontBox)
     {
-        robot.setRobotVW(0.05, 0);//make sure we pick the box!
+        robot.setRobotVW(0.04, 0);//make sure we pick the box!
     }
-    else if(state == FollowLineBack)
+    else if(state == FollowLineBackL)
     {
         v_nom = -0.07;
-        w_nom = robot.back.sensor.erro * robot.back.sensor.kl;
+        robot.followLine(v_nom,robot.back,Side2Follow::LEFT);
         robot.setRobotVW(v_nom,w_nom);
     }
     else if(state == PickBackBox)

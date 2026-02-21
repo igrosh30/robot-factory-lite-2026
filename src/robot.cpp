@@ -75,42 +75,49 @@ void robot_t::setRobotVW(float Vnom, float Wnom)
 }
 
 //functions to handle robot actions on the box
-/*
-void robot_t::grabBox(){
-  robot.motors.driveMotor(0,0);
-  actuators.magnetOn();
 
+void robot_t::grabBox(RobotSide& sideRef){
+  sideRef.actuators.magnetOn();
 }
-void robot_t::dropBox(){
-  actuators.magnetOff();
+void robot_t::dropBox(RobotSide& sideRef){
+  sideRef.actuators.magnetOff();
 }
+
 bool robot_t::has2Boxes(){
-  return actuators.isMagnetOn;
+  return front.actuators.isMagnetOn && back.actuators.isMagnetOn;
 }
 
 
 bool robot_t::hasDroped2Boxes(){
-  return actuators.isMagnetOn;
+  return (!front.actuators.isMagnetOn && !back.actuators.isMagnetOn);
 }
-*/
+
 
 bool robot_t:: atPikZone()
 {
   //how do I know that I'm here? odometry? intersections?
-  if(robot.currentNode.id == 0) return true;
+  if(currentNode.id == 0) return true;
   else return false;
 }
 
 bool robot_t:: atDropZone()
 {
   //how do I know that I'm here? odometry? intersections?
-  if(robot.currentNode.id == 26) return true;
+  if(currentNode.id == 26) return true;
   else return false;
 }
 
-void robot_t::followLineLeft(float Vnom, float k ){
-  //float er = robot.frontSensor.getLineError();
-  //robot.setRobotVW(Vnom,er*k);
+void robot_t::followLineLeft(float Vnom, Side side ){
+}
+
+
+void robot_t::followLine(float Vnom, RobotSide& sideRef, Side2Follow direction)
+{
+  sideRef.sensor.getLineError(direction);
+
+  float w = sideRef.sensor.erro * sideRef.sensor.kl;
+
+  this->setRobotVW(Vnom,w);
 }
 
 void robot_t::accelerationLimit(void)
