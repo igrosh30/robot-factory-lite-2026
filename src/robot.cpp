@@ -17,7 +17,7 @@ robot_t::robot_t(pico4drive_t& driver)
     back (driver,Side::BACK)    
 {
   stoped = false;
-  wheel_dist = 0.125;
+  wheel_dist = 0.075;
   wheel_radius = 0.0689 / 2;
   dv_max = 5;
   dw_max = 10;

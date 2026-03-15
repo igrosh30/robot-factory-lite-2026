@@ -68,7 +68,7 @@ int debug_level = 1;
 void read_PIO_encoders(void) {
     encoders[0].update();
     encoders[1].update();
-    robot.enc1 = -encoders[0].speed;
+    robot.enc1 = -encoders[0].speed;// why menos?
     robot.enc2 = encoders[1].speed;
 }
 
@@ -111,7 +111,7 @@ void process_command(command_frame_t frame)
   }
   else if (frame.command_is("st")) { // Update your state machine with the value that pars_list already set
     if (state_cmd_value >= 0 ) {//add && state_cmd_value <= 7 if I want to restrit the states
-      fsm.force_state((fsm_state)state_cmd_value);
+      fsm.force_state((fsm_state)(int)frame.value);
       serial_commands.send_command("msg", "State changed");
     }
   }
@@ -156,6 +156,7 @@ void process_command(command_frame_t frame)
 // ================================================================
 //                      SETUP FUNCTION
 // ================================================================
+
 void setup() {
     // ========== PIN SETUP ==========
     pinMode(LED_BUILTIN, OUTPUT);
@@ -178,24 +179,17 @@ void setup() {
 
     // Initialize YOUR robot
     robot.front.sensor.init();
-    robot.back.sensor.init();
+    //robot.back.sensor.init();
     robot.front.actuators.init();
-    robot.back.actuators.init();
-    
+    //robot.back.actuators.init();
 
-    // Initialize state machine
-    //state_machine.currentState = Start;  
-    fsm.force_state(Idle);
-    state_cmd_value = (int)fsm_state::Idle;    
-    
-    
     // Initialize encoders
     encoders[0].begin(encoder_pins[0]);
     encoders[1].begin(encoder_pins[1]);
 
     // ========== COMROBOT COMMUNICATION SETUP ==========
     Serial.begin(115200);
-    delay(1000);  // Give time for serial to initialize
+    delay(1000);// Give time for serial to initialize
 
     // ========== REGISTER COMMANDS ==========
     pars_list.max_sparce_send = 4;
@@ -209,27 +203,35 @@ void setup() {
     pars_list.register_command("wreq", &robot.w_req);
     //pars_list.register_command("mode", (int*)&robot.control_mode);
     
+    
+
     // PID parameters
-    //pars_list.register_command("kp1", &robot.motors.kp1);
-    //pars_list.register_command("ki1", &robot.motors.ki1);
-    //pars_list.register_command("kp2", &robot.motors.kp2);
-    //pars_list.register_command("ki2", &robot.motors.ki2);
+    /*
+    pars_list.register_command("xe", &robot.xe);
+    pars_list.register_command("ye", &robot.ye);
+    pars_list.register_command("te", &robot.thetae);
+    pars_list.register_command("kp1", &robot.motors.kp1);
+    pars_list.register_command("ki1", &robot.motors.ki1);
+    pars_list.register_command("kp2", &robot.motors.kp2);
+    pars_list.register_command("ki2", &robot.motors.ki2);
 
     
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);
+    */
     //pars_list.register_command("fv", &robot.follow_v);
     //pars_list.register_command("fk", &robot.follow_k);
     
     // State machine control - use the separate variable
-    pars_list.register_command("st", &state_cmd_value);
+    //pars_list.register_command("st", &fsm.state);
 
     // Actuator control
-    //pars_list.register_command("mg", (int*)&robot.actuators.isMagnetOn);
+    pars_list.register_command("mgf", (int*)&robot.front.actuators.isMagnetOn);
+    pars_list.register_command("mgb", (int*)&robot.back.actuators.isMagnetOn);
     
     // WiFi configuration
     // CHANGE THESE TO YOUR WIFI!
-    strcpy(ssid, "5DPO-NETWORK");      
+    strcpy(ssid, "FEUP-I-108");      
     strcpy(password, "5dpo5dpo");      
     pars_list.register_command("ssid", ssid, max_wifi_str);
     pars_list.register_command("pass", password, max_wifi_str)->sparse_send = false;
@@ -330,11 +332,10 @@ void loop() {
         
         //Actuators Update, Switches&Magnets
         robot.front.actuators.update();
-        robot.back.actuators.update();
+        //robot.back.actuators.update();
+        robot.front.sensor.readValues();
+        //robot.back.sensor.readValues();
         
-        //IR update error
-        //robot.front.sensor.getLineError();
-        //robot.back.sensor.getLineError();
 
         fsm.step();
 
@@ -347,107 +348,119 @@ void loop() {
             //serial_commands.send_command("dte", delta / 1000.0f);  // in ms
             
             // Robot state
-            //serial_commands.send_command("xe", robot.xe);
-            //serial_commands.send_command("ye", robot.ye);
-            //serial_commands.send_command("te", robot.thetae);
-            serial_commands.send_command("ve", robot.ve);
-            serial_commands.send_command("we", robot.we);
+            serial_commands.send_command("xe", robot.xe);
+            serial_commands.send_command("ye", robot.ye);
+            serial_commands.send_command("te", robot.thetae);
+            
             serial_commands.send_command("vreq", robot.v_req);
             serial_commands.send_command("wreq", robot.w_req);
             serial_commands.send_command("theta", robot.thetae);
+
+            // Encoder data
             
-            // Motor voltages
-            //serial_commands.send_command("u1", robot.u1);
-            //serial_commands.send_command("u2", robot.u2);
-            
+            serial_commands.send_command("ve", robot.ve);
+            serial_commands.send_command("we", robot.we);
+
+            //Send the u1 and u2 to drive the motors:
+             
+            /*
+            serial_commands.send_command("e1", robot.enc1);
+            serial_commands.send_command("e2", robot.enc2);
+
+            serial_commands.send_command("w1e",robot.w1e);
+            serial_commands.send_command("w2e",robot.w2e);
+
+            serial_commands.send_command("v1e",robot.v1e);
+            serial_commands.send_command("v2e",robot.v2e);
+
+            serial_commands.send_command("u1", robot.motors.u_send.u1);
+            serial_commands.send_command("u2", robot.motors.u_send.u1);
+            serial_commands.send_command("kp1", robot.motors.kp1);
+            serial_commands.send_command("ki1", robot.motors.ki1);
+            serial_commands.send_command("kp2", robot.motors.kp2);
+            serial_commands.send_command("ki2", robot.motors.ki2);
+
+            serial_commands.send_command("er1", robot.motors.e1);
+            serial_commands.send_command("er2", robot.motors.e2);*/
+
+
+
+
             //Back Sensor data
-            serial_commands.send_command("ir0", robot.back.sensor.IR_Values[0]);
-            serial_commands.send_command("ir1", robot.back.sensor.IR_Values[1]);
-            serial_commands.send_command("ir2", robot.back.sensor.IR_Values[2]);
-            serial_commands.send_command("ir3", robot.back.sensor.IR_Values[3]);
-            serial_commands.send_command("ir4", robot.back.sensor.IR_Values[4]);
+            /*
+            serial_commands.send_command("irb0", robot.back.sensor.IR_Values[0]);
+            serial_commands.send_command("irb1", robot.back.sensor.IR_Values[1]);
+            serial_commands.send_command("irb2", robot.back.sensor.IR_Values[2]);
+            serial_commands.send_command("irb3", robot.back.sensor.IR_Values[3]);
+            serial_commands.send_command("irb4", robot.back.sensor.IR_Values[4]);
 
-            serial_commands.send_command("irn0", robot.back.sensor.IR_norm[0]);
-            serial_commands.send_command("irn1", robot.back.sensor.IR_norm[1]);
-            serial_commands.send_command("irn2", robot.back.sensor.IR_norm[2]);
-            serial_commands.send_command("irn3", robot.back.sensor.IR_norm[3]);
-            serial_commands.send_command("irn4", robot.back.sensor.IR_norm[4]);
+            serial_commands.send_command("irnb0", robot.back.sensor.IR_norm[0]);
+            serial_commands.send_command("irnb1", robot.back.sensor.IR_norm[1]);
+            serial_commands.send_command("irnb2", robot.back.sensor.IR_norm[2]);
+            serial_commands.send_command("irnb3", robot.back.sensor.IR_norm[3]);
+            serial_commands.send_command("irnb4", robot.back.sensor.IR_norm[4]);
 
-            //serial_commands.send_command("irn01", robot.frontSensor.IR_norm1[0]);
-            //serial_commands.send_command("irn11", robot.frontSensor.IR_norm1[1]);
-            //serial_commands.send_command("irn21", robot.frontSensor.IR_norm1[2]);
-            //serial_commands.send_command("irn31", robot.frontSensor.IR_norm1[3]);
-            //serial_commands.send_command("irn41", robot.frontSensor.IR_norm1[4]);
+            serial_commands.send_command("ibrma0", robot.back.sensor.maxValues[0]);
+            serial_commands.send_command("irbma1", robot.back.sensor.maxValues[1]);
+            serial_commands.send_command("irbma2", robot.back.sensor.maxValues[2]);
+            serial_commands.send_command("irbma3", robot.back.sensor.maxValues[3]);
+            serial_commands.send_command("irbma4", robot.back.sensor.maxValues[4]);
 
-            serial_commands.send_command("irma0", robot.back.sensor.maxValues[0]);
-            serial_commands.send_command("irma1", robot.back.sensor.maxValues[1]);
-            serial_commands.send_command("irma2", robot.back.sensor.maxValues[2]);
-            serial_commands.send_command("irma3", robot.back.sensor.maxValues[3]);
-            serial_commands.send_command("irma4", robot.back.sensor.maxValues[4]);
-
-            serial_commands.send_command("irmi0", robot.back.sensor.minValues[0]);
-            serial_commands.send_command("irmi1", robot.back.sensor.minValues[1]);
-            serial_commands.send_command("irmi2", robot.back.sensor.minValues[2]);
-            serial_commands.send_command("irmi3", robot.back.sensor.minValues[3]);
-            serial_commands.send_command("irmi4", robot.back.sensor.minValues[4]);
-
-            serial_commands.send_command("erl", robot.back.sensor.erro);
-            serial_commands.send_command("cnt", robot.back.sensor.countIntersections);
+            serial_commands.send_command("irbmi0", robot.back.sensor.minValues[0]);
+            serial_commands.send_command("irbmi1", robot.back.sensor.minValues[1]);
+            serial_commands.send_command("irbmi2", robot.back.sensor.minValues[2]);
+            serial_commands.send_command("irbmi3", robot.back.sensor.minValues[3]);
+            serial_commands.send_command("irbmi4", robot.back.sensor.minValues[4]);
+            serial_commands.send_command("erb", robot.back.sensor.erro);
+            serial_commands.send_command("cntb", robot.back.sensor.countIntersections);
+*/
+            
             
             //Front Sensor data
-            /*
-            serial_commands.send_command("ir0", robot.frontSensor.IR_Values[0]);
-            serial_commands.send_command("ir1", robot.frontSensor.IR_Values[1]);
-            serial_commands.send_command("ir2", robot.frontSensor.IR_Values[2]);
-            serial_commands.send_command("ir3", robot.frontSensor.IR_Values[3]);
-            serial_commands.send_command("ir4", robot.frontSensor.IR_Values[4]);
+             /*
+            serial_commands.send_command("erf", robot.front.sensor.erro);
+            serial_commands.send_command("cntf", robot.front.sensor.countIntersections);
+            serial_commands.send_command("fl_irf", robot.front.sensor.flagFound);
+            serial_commands.send_command("ir0", robot.front.sensor.IR_Values[0]);
+            serial_commands.send_command("ir1", robot.front.sensor.IR_Values[1]);
+            serial_commands.send_command("ir2", robot.front.sensor.IR_Values[2]);
+            serial_commands.send_command("ir3", robot.front.sensor.IR_Values[3]);
+            serial_commands.send_command("ir4", robot.front.sensor.IR_Values[4]);
 
-            serial_commands.send_command("irn0", robot.frontSensor.IR_norm[0]);
-            serial_commands.send_command("irn1", robot.frontSensor.IR_norm[1]);
-            serial_commands.send_command("irn2", robot.frontSensor.IR_norm[2]);
-            serial_commands.send_command("irn3", robot.frontSensor.IR_norm[3]);
-            serial_commands.send_command("irn4", robot.frontSensor.IR_norm[4]);
+           
+            serial_commands.send_command("irn0", robot.front.sensor.IR_norm[0]);
+            serial_commands.send_command("irn1", robot.front.sensor.IR_norm[1]);
+            serial_commands.send_command("irn2", robot.front.sensor.IR_norm[2]);
+            serial_commands.send_command("irn3", robot.front.sensor.IR_norm[3]);
+            serial_commands.send_command("irn4", robot.front.sensor.IR_norm[4]);
 
-            //serial_commands.send_command("irn01", robot.frontSensor.IR_norm1[0]);
-            //serial_commands.send_command("irn11", robot.frontSensor.IR_norm1[1]);
-            //serial_commands.send_command("irn21", robot.frontSensor.IR_norm1[2]);
-            //serial_commands.send_command("irn31", robot.frontSensor.IR_norm1[3]);
-            //serial_commands.send_command("irn41", robot.frontSensor.IR_norm1[4]);
+            serial_commands.send_command("irma0", robot.front.sensor.maxValues[0]);
+            serial_commands.send_command("irma1", robot.front.sensor.maxValues[1]);
+            serial_commands.send_command("irma2", robot.front.sensor.maxValues[2]);
+            serial_commands.send_command("irma3", robot.front.sensor.maxValues[3]);
+            serial_commands.send_command("irma4", robot.front.sensor.maxValues[4]);
 
-            serial_commands.send_command("irma0", robot.frontSensor.maxValues[0]);
-            serial_commands.send_command("irma1", robot.frontSensor.maxValues[1]);
-            serial_commands.send_command("irma2", robot.frontSensor.maxValues[2]);
-            serial_commands.send_command("irma3", robot.frontSensor.maxValues[3]);
-            serial_commands.send_command("irma4", robot.frontSensor.maxValues[4]);
-
-            serial_commands.send_command("irmi0", robot.frontSensor.minValues[0]);
-            serial_commands.send_command("irmi1", robot.frontSensor.minValues[1]);
-            serial_commands.send_command("irmi2", robot.frontSensor.minValues[2]);
-            serial_commands.send_command("irmi3", robot.frontSensor.minValues[3]);
-            serial_commands.send_command("irmi4", robot.frontSensor.minValues[4]);
-            
-            serial_commands.send_command("erl", robot.frontSensor.erro);
-            serial_commands.send_command("fl_ir", robot.frontSensor.flagFound);
-            serial_commands.send_command("cnt", robot.frontSensor.countIntersections);
-            serial_commands.send_command("flgin", robot.frontSensor.flagInters);
-
-            serial_commands.send_command("flty", robot.frontSensor.flagType);
-            serial_commands.send_command("flty1", robot.backSensor.flagType);
-
+            serial_commands.send_command("irmi0", robot.front.sensor.minValues[0]);
+            serial_commands.send_command("irmi1", robot.front.sensor.minValues[1]);
+            serial_commands.send_command("irmi2", robot.front.sensor.minValues[2]);
+            serial_commands.send_command("irmi3", robot.front.sensor.minValues[3]);
+            serial_commands.send_command("irmi4", robot.front.sensor.minValues[4]);
             */
-            // Encoder data
-            //serial_commands.send_command("e1", robot.enc1);
-            //serial_commands.send_command("e2", robot.enc2);
-            //serial_commands.send_command("w1", robot.w1e);
-            //serial_commands.send_command("w2", robot.w2e);
+            serial_commands.send_command("cnt",robot.front.sensor.countIntersections);
+
+            //serial_commands.send_command("erl", robot.frontSensor.erro);
+            //serial_commands.send_command("fl_ir", robot.frontSensor.flagFound);
             
+            //serial_commands.send_command("flgin", robot.frontSensor.flagInters);
+
             // State machine - sync the variable
+            
             serial_commands.send_command("st", (float)fsm.state);
             
             // Actuators
-            serial_commands.send_command("mg", robot.front.actuators.isMagnetOn ? 1 : 0);
-            serial_commands.send_command("sw", digitalRead(FRONT_L_SWITCH_PIN));
-            serial_commands.send_command("swB", digitalRead(BACK_L_SWITCH_PIN));
+            //serial_commands.send_command("mgb", robot.front.actuators.isMagnetOn ? 1 : 0);
+            serial_commands.send_command("swl", digitalRead(SWITCHL_PIN));
+            serial_commands.send_command("swr", digitalRead(SWITCHR_PIN));
             //serial_commands.send_command("fl", state_machine.flag);
 
             
@@ -478,3 +491,7 @@ void loop() {
         last_blink = millis();
     }
 }
+
+
+/*
+*/

@@ -12,13 +12,15 @@ Actuator::Actuator(pico4drive_t& driver, Side t) : p4d(driver),typeSide(t){
 void Actuator::init()
 {
     if(typeSide == Side::FRONT){
-        pinMode(FRONT_R_SWITCH_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
-        pinMode(FRONT_L_SWITCH_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
+        pinMode(SWITCHL_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
+        pinMode(SWITCHR_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
+       
     }
+    /*
     else if(typeSide == Side::BACK){
         pinMode(BACK_R_SWITCH_PIN,INPUT_PULLUP);
         pinMode(BACK_L_SWITCH_PIN,INPUT_PULLUP);
-    }
+    }*/
 }
 
 void Actuator:: magnetOn(){
@@ -47,25 +49,34 @@ void Actuator:: magnetOff(){
 
 void Actuator::update()
 {
+    if(digitalRead(SWITCHL_PIN) == LOW){
+        isSwitch_left_On = true;
+    } 
+    else{
+        isSwitch_left_On = false;
+    } 
+    if(digitalRead(SWITCHR_PIN) == LOW){
+        isSwitch_right_On = true;
+    } 
+    else{
+        isSwitch_right_On = false;
+    } 
+    if(isMagnetOn) magnetOn();
+    else magnetOff();
+    
+    /*  
     switch (typeSide)
     {
     case Side::FRONT:
-        if(digitalRead(FRONT_L_SWITCH_PIN) == LOW){
-            isSwitchOn = true;
-        } 
-        else{
-            isSwitchOn = false;
-        } 
-        if(isMagnetOn) magnetOn();
-        else magnetOff();
+        
         break;
     
     case Side::BACK:
         if(digitalRead(BACK_L_SWITCH_PIN) == LOW){
-            isSwitchOn = true;
+            isSwitch_left_On = true;
         } 
         else{
-            isSwitchOn = false;
+            isSwitch_left_On = false;
         } 
         if(isMagnetOn) magnetOn();
         else magnetOff();
@@ -74,7 +85,7 @@ void Actuator::update()
     default:
         break;
     }
-    
+    */  
 }
 
 

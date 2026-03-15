@@ -32,6 +32,7 @@ class Sensor
         bool flagFound;
         bool flagInters;
         bool flagType; //0- Front working , 1- back working
+        bool wasIntersection;
         int countIntersections;
 
 

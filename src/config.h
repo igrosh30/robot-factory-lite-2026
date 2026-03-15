@@ -9,8 +9,8 @@
 // ================================================================
 
 //left&right looking to front of the robot
-#define FRONT_L_SWITCH_PIN 2
-#define FRONT_R_SWITCH_PIN 3
+#define SWITCHL_PIN 27 
+#define SWITCHR_PIN 2
 //left&right looking to the back of the robot
 #define BACK_L_SWITCH_PIN 4
 #define BACK_R_SWITCH_PIN 5
@@ -31,8 +31,8 @@
 
 
 //DR3 referente na pico(solenoide)
-#define FRONT_SOLENOID_PIN_A 17
-#define FRONT_SOLENOID_PIN_B 16
+#define FRONT_SOLENOID_PIN_A 15
+#define FRONT_SOLENOID_PIN_B 14
 
 #define BACK_SOLENOID_PIN_A 17
 #define BACK_SOLENOID_PIN_B 16
@@ -92,19 +92,30 @@ enum class Side2Follow{
 // 2. Estados da máquina de estados
 // ================================================================
 
-typedef enum{
-    Idle,           //0
-    Start,          //1
-    Calibration,    //2
-    FollowLineFrontL,//3
-    FollowLineFrontR,
-    FollowLineBackL, //4
-    FollowLineBackR,
-    PickFrontBox,
-    PickBackBox,
-    FollowLine2ExitPickZone,
+typedef enum {
+    Idle                    ,   // 0
+    Start                   ,   // 1
+    Set_Calibration         ,   // 2
+    Calibration             ,   // 3
+    Move_F                  ,   // 4
+    PickBox                 ,   // 5
+    PickBox_Back            ,   // 6   
     
+    Box1GO2DropZone             ,   // 7
+    Box1GO2DropZone1            ,   // 8
+    Box1GO2DropZone2            ,   // 9
+    Box1GO2DropZone3            ,   // 10
+    Box1GO2DropZone4            ,   // 11
 
+    Box1GO2PickZone             ,   // 12
+    Box1GO2PickZone1            ,   // 13
+    Box1GO2PickZone2            ,   // 14
+    Box1GO2PickZone3            ,   // 15
+    Box1GO2PickZone4            ,   // 16
+    Box1GO2PickZone5            ,   // 17
+    DropBox_Back                ,   // 18 
+
+    FL_frontL               
 
 } fsm_state;
 
@@ -120,15 +131,6 @@ typedef enum {
 // ================================================================
 // 3. Nós do plano 
 // ================================================================
-
-const std::vector<Node> mappingNodes = {
-   // ID |   X    |   Y    | Type, 0-intersection / 1-pick / 2- drop
-    {  0,  0.000,  0.000,  5 },
-    {  1, -0.555,  0.480,  1 },
-    {  2, -0.405,  0.480,  2 },
-};
-
-
 const std::vector<Node> mappingNodes1 = {
     // ID |   X    |   Y    | Type, 0-intersection / 1-pick / 2- drop
     {  0, -0.705,  0.480,  1 },

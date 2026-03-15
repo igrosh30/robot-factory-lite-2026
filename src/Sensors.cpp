@@ -9,9 +9,10 @@
 
 // --- Phase 1: Construction ---//
 Sensor::Sensor(pico4drive_t& driver, Side t) : p4d(driver), typeSide(t) {
-    kl = 1;
+    kl = 0.7;
     erro = 0;
     countIntersections= 0;
+    wasIntersection = false; // Initialize it here
 }
 
 // --- Phase 2: Set boundaries && newPins ---//
@@ -24,10 +25,10 @@ void Sensor :: init()
         maxValues[i] = 0;
         IR_Values[i] = 0;
     }
-    if(typeSide == Side::BACK)
+    if(typeSide == Side::FRONT)
     {
-        pinMode(BACK_SENSOR_PIN_3, INPUT);
-        pinMode(BACK_SENSOR_PIN_4, INPUT);
+        pinMode(SWITCHR_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
+        pinMode(SWITCHL_PIN,INPUT_PULLUP);//inverse the logic to ensure stability
     }
 }
 
@@ -119,12 +120,14 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
                 }  
             }
         }
-            static bool wasIntersection = false;
             bool inIntersectionNow = (activated(IR_norm[3]) && activated(IR_norm[4])) ;
 
-            if(inIntersectionNow && !wasIntersection){
+            if(!inIntersectionNow && wasIntersection){
                 countIntersections++;
                 flagInters = true;
+            }
+            else{
+                flagInters = false;
             }
             wasIntersection = inIntersectionNow;
     }
@@ -164,10 +167,9 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
         {
             
         }
-        static bool wasIntersection = false;
             bool inIntersectionNow = (activated(IR_norm[1]) && activated(IR_norm[0])) ;
 
-            if(inIntersectionNow && !wasIntersection){
+            if(!inIntersectionNow && wasIntersection){
                 countIntersections++;
                 flagInters = true;
             }

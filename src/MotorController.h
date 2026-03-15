@@ -17,6 +17,8 @@ class MotorController
     float kp2,ki2;
     float integrator1,integrator2; //same as i[n-1]!
     float prevError1,prevError2; //same as e[n-1]!
+    MotorVoltages u_send;
+    float e1,e2;
     
     private:
     pico4drive_t pico4drive;

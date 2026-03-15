@@ -16,7 +16,8 @@ class Actuator
         Side typeSide;
 
         bool isMagnetOn;
-        bool isSwitchOn;
+        bool isSwitch_left_On;
+        bool isSwitch_right_On;
         bool lastTouch;
         
         Actuator(pico4drive_t& driver, Side t);
