@@ -6,8 +6,8 @@
 
 MotorController:: MotorController()
 {
-    kp1 = 2, kp2 = 2;
-    ki1 = 1.5, ki2 = 1.5;
+    kp1 = 0.5, kp2 = 0.5;
+    ki1 = 6, ki2 = 6;
     integrator1 = 0, prevError1 = 0;
     integrator2 = 0, prevError2 = 0;
     e1 =0,e2=0;

@@ -206,7 +206,7 @@ void setup() {
     
 
     // PID parameters
-    /*
+    /**/
     pars_list.register_command("xe", &robot.xe);
     pars_list.register_command("ye", &robot.ye);
     pars_list.register_command("te", &robot.thetae);
@@ -218,7 +218,7 @@ void setup() {
     
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);
-    */
+    
     //pars_list.register_command("fv", &robot.follow_v);
     //pars_list.register_command("fk", &robot.follow_k);
     
@@ -227,7 +227,6 @@ void setup() {
 
     // Actuator control
     pars_list.register_command("mgf", (int*)&robot.front.actuators.isMagnetOn);
-    pars_list.register_command("mgb", (int*)&robot.back.actuators.isMagnetOn);
     
     // WiFi configuration
     // CHANGE THESE TO YOUR WIFI!
@@ -249,7 +248,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 200 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 150 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -325,7 +324,7 @@ void loop() {
         last_cycle = now;
         loop_micros = micros();
         cycle_count++;
-
+        
         //robot pose update
         read_PIO_encoders();
         robot.odometry();
@@ -335,7 +334,6 @@ void loop() {
         //robot.back.actuators.update();
         robot.front.sensor.readValues();
         //robot.back.sensor.readValues();
-        
 
         fsm.step();
 

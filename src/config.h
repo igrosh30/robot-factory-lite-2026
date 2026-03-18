@@ -104,16 +104,16 @@ typedef enum {
     Box1GO2DropZone             ,   // 7
     Box1GO2DropZone1            ,   // 8
     Box1GO2DropZone2            ,   // 9
-    Box1GO2DropZone3            ,   // 10
-    Box1GO2DropZone4            ,   // 11
 
-    Box1GO2PickZone             ,   // 12
-    Box1GO2PickZone1            ,   // 13
-    Box1GO2PickZone2            ,   // 14
-    Box1GO2PickZone3            ,   // 15
-    Box1GO2PickZone4            ,   // 16
-    Box1GO2PickZone5            ,   // 17
+    B1_LDZ                      , // 10
+    LAP_2                       , //11
     DropBox_Back                ,   // 18 
+
+    PickBox2                    ,   // 19
+    PickBox_Back1               ,   // 20
+    B2_DZ2                      ,   // 21
+    B2_DZ2_1                    ,   // 22
+    B3_PZ2                      ,   // 23 
 
     FL_frontL               
 

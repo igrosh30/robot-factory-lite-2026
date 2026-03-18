@@ -24,15 +24,15 @@ void Actuator::init()
 }
 
 void Actuator:: magnetOn(){
-
+    
     if(typeSide == Side:: FRONT)
     {
-        p4d.set_driver_voltage(4,p4d_drvSolenoid_front);
+        p4d.set_driver_voltage(5,p4d_drvSolenoid_front);
         isMagnetOn = true;
     }
     else if(typeSide == Side::BACK)
     {
-        p4d.set_driver_voltage(4,p4d_drvSolenoid_back);
+        p4d.set_driver_voltage(5,p4d_drvSolenoid_back);
         isMagnetOn = true;   
     }
 }
@@ -44,7 +44,6 @@ void Actuator:: magnetOff(){
         p4d.set_driver_voltage(0,p4d_drvSolenoid_front);
         isMagnetOn = false;
     }
-    
 }
 
 void Actuator::update()
