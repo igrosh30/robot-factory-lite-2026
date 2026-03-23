@@ -33,7 +33,7 @@ class Sensor
         bool flagInters;
         bool flagType; //0- Front working , 1- back working
         bool wasIntersection;
-        int countIntersections;
+        int intersections;
 
 
         //we need to store the max&min values for each sensor to then calibrate:

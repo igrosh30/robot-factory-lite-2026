@@ -98,22 +98,28 @@ typedef enum {
     Set_Calibration         ,   // 2
     Calibration             ,   // 3
     Move_F                  ,   // 4
-    PickBox                 ,   // 5
-    PickBox_Back            ,   // 6   
+    PickBox1                 ,   // 5
+    PickBox_Back1           ,   // 6   
     
     Box1GO2DropZone             ,   // 7
     Box1GO2DropZone1            ,   // 8
     Box1GO2DropZone2            ,   // 9
-
-    B1_LDZ                      , // 10
-    LAP_2                       , //11
+    B1_LDZ                      ,   // 10
+    
+    LAP_2                       ,   //11
     DropBox_Back                ,   // 18 
-
     PickBox2                    ,   // 19
-    PickBox_Back1               ,   // 20
+    PickBox_Back2               ,   // 20
     B2_DZ2                      ,   // 21
     B2_DZ2_1                    ,   // 22
-    B3_PZ2                      ,   // 23 
+    B2_DROP                     ,
+    B2_LDZ                      ,
+    
+    LAP_3                       ,
+    PickBox3                    ,
+    PickBox_Back3               ,
+    GO_DZ3                      ,
+
 
     FL_frontL               
 

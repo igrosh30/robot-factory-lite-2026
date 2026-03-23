@@ -11,7 +11,7 @@
 Sensor::Sensor(pico4drive_t& driver, Side t) : p4d(driver), typeSide(t) {
     kl = 0.7;
     erro = 0;
-    countIntersections= 0;
+    intersections= 0;
     wasIntersection = false; // Initialize it here
 }
 
@@ -123,7 +123,7 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
             bool inIntersectionNow = (activated(IR_norm[3]) && activated(IR_norm[4])) ;
 
             if(!inIntersectionNow && wasIntersection){
-                countIntersections++;
+                intersections++;
                 flagInters = true;
             }
             else{
@@ -170,7 +170,7 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
             bool inIntersectionNow = (activated(IR_norm[1]) && activated(IR_norm[0])) ;
 
             if(!inIntersectionNow && wasIntersection){
-                countIntersections++;
+                intersections++;
                 flagInters = true;
             }
             wasIntersection = inIntersectionNow;   

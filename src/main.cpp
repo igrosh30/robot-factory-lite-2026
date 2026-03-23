@@ -444,7 +444,7 @@ void loop() {
             serial_commands.send_command("irmi3", robot.front.sensor.minValues[3]);
             serial_commands.send_command("irmi4", robot.front.sensor.minValues[4]);
             */
-            serial_commands.send_command("cnt",robot.front.sensor.countIntersections);
+            serial_commands.send_command("cnt",robot.front.sensor.intersections);
 
             //serial_commands.send_command("erl", robot.frontSensor.erro);
             //serial_commands.send_command("fl_ir", robot.frontSensor.flagFound);

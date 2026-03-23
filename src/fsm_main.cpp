@@ -31,28 +31,28 @@ void fsm_main::next_state_rules()
         set_next_state(FL_frontL);
         //set_next_state(FollowLineFrontL);
     }
-    else if(state==FL_frontL && robot.front.sensor.countIntersections == 3)
+    else if(state==FL_frontL && robot.front.sensor.intersections == 3)
     {
         set_next_state(Move_F);
     }
     else if(state== Move_F && (robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On) )
     {
-        set_next_state(PickBox);
+        set_next_state(PickBox1);
     }
-    else if(state == PickBox && tis > 1.5) 
+    else if(state == PickBox1 && tis > 1) 
     {
-        set_next_state(PickBox_Back);
+        set_next_state(PickBox_Back1);
     }
     //LOGIC TO GET BACK
-    else if(state == PickBox_Back && robot.front.sensor.countIntersections == 1)
+    else if(state == PickBox_Back1 && (robot.front.sensor.intersections == 1 || tis>4.5))
     {
         set_next_state(Box1GO2DropZone);
     }
-    else if(state == Box1GO2DropZone && robot.thetae < -1.4)//
+    else if(state == Box1GO2DropZone && robot.thetae < -1.4)//think of better approach!
     {
         set_next_state(Box1GO2DropZone1);//foll Left
     }
-    else if (state == Box1GO2DropZone1 && robot.front.sensor.countIntersections == 3 )
+    else if (state == Box1GO2DropZone1 && robot.front.sensor.intersections == 3 )
     {
         set_next_state(Box1GO2DropZone2);
     }
@@ -60,11 +60,11 @@ void fsm_main::next_state_rules()
     {
         set_next_state(DropBox_Back);
     }
-    else if(state == DropBox_Back && robot.front.sensor.countIntersections==1)
+    else if(state == DropBox_Back && (robot.front.sensor.intersections==1 || tis > 4.5))//DROP&GO back
     {
-        set_next_state(B1_LDZ);
+        set_next_state(B1_LDZ);//Go to START point!
     }
-    else if(B1_LDZ && robot.thetae < -4.7)
+    else if(B1_LDZ && robot.thetae < -4.4)
     {
         set_next_state(LAP_2); 
     }
@@ -72,22 +72,39 @@ void fsm_main::next_state_rules()
     {
         set_next_state(PickBox2);
     }
-    else if(state == PickBox2 && tis > 1.5) 
+    else if(state == PickBox2 && tis > 1) 
     {
-        set_next_state(PickBox_Back1);
+        set_next_state(PickBox_Back2);
     }
-    else if(state == PickBox_Back1 && robot.front.sensor.countIntersections == 1)
+    else if(state == PickBox_Back2 && (robot.front.sensor.intersections == 1 || tis>4.5))
     {
         set_next_state(B2_DZ2);
     }
-    else if(state == B2_DZ2 && robot.thetae < -1.8)
+    else if(state == B2_DZ2 && robot.thetae < -1.4)
     {
         set_next_state(B2_DZ2_1);
     }
-    else if(state == B2_DZ2_1 && tis < 2)
+    else if(state == B2_DZ2_1 && tis < 2.5)
     {
-        set_next_state(B3_PZ2);
+        set_next_state(B2_DROP);
     }
+    else if(state == B2_DROP && (robot.front.sensor.intersections==1 || tis >4.5) )
+    {
+        set_next_state(B2_LDZ);
+    }
+    else if(B2_LDZ && robot.thetae < -4.4)
+    {
+        set_next_state(LAP_3);
+    }
+    else if(state == LAP_3 && (robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On))
+    {
+        set_next_state(PickBox3);
+    }
+    else if(state == PickBox3 && tis>1 )
+    {
+        set_next_state(PickBox_Back3);
+    }
+
 
 }
 
@@ -108,61 +125,65 @@ void fsm_main::enter_state_actions_rules()
         robot.ye = -35.5;
         robot.dropBox(robot.front);
         //robot.dropBox(robot.back);
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
         //robot.back.sensor.countIntersections = 0;
         //robot.back.sensor.readValues();
         robot.front.sensor.readValues();
     }
     else if(state == FL_frontL)
     {
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
     }
-    else if(state == PickBox)
+    else if(state == PickBox1 || state == PickBox2 || state == PickBox3)
     {
-        robot.front.actuators.magnetOn();//Only need to tell the hardware once to turn on the magnet ON!
-        
+        robot.front.actuators.magnetOn();//Only need to tell the hardware once to turn on the magnet ON!        
     }
-    else if(state == PickBox_Back)
+    else if(state == PickBox_Back1 || state == PickBox_Back2 || state == PickBox_Back3)
     {
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
     }
-    else if(state == Box1GO2DropZone  || state == Box1GO2DropZone1 || 
-            state == Box1GO2DropZone2  )
+    else if(state == Box1GO2DropZone  || state == Box1GO2DropZone1 || state == Box1GO2DropZone2  )
     {
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
     }
     else if(state == DropBox_Back)
     {
         robot.front.actuators.magnetOff();
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
     }
-    else if(state == PickBox2)
-    {
-        robot.front.actuators.magnetOn();
-    } 
     else if(state == B1_LDZ)
     {
-        robot.front.sensor.countIntersections = 0;
-    }
-    else if(state == PickBox_Back1 || state == B2_DZ2 || state == B2_DZ2_1)
-    {
-        robot.front.sensor.countIntersections = 0;
+        robot.front.sensor.intersections = 0;
     }
     else if(state == LAP_2)
     {
-        robot.front.sensor.countIntersections = 0;
-    }
-    else if(state == B3_PZ2)
+        robot.front.sensor.intersections = 0;
+    } 
+    else if(state == B2_DZ2 || state == B2_DZ2_1)
     {
-        robot.setRobotVW(0,0);
+        robot.front.sensor.intersections = 0;
     }
+    else if(state == B2_DROP)
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.actuators.magnetOff();
+    }
+    else if(state == B2_LDZ || state == LAP_3 || state == PickBox3 || GO_DZ3 )
+    {
+        robot.front.sensor.intersections = 0;
+    }
+
+    
     
 }
-
 void fsm_main::state_actions_rules()
 {
+    // High-speed reference alias
+    auto& intersections = robot.front.sensor.intersections;
+    
     // Run every loop while in current state
-    float v_nom,w_nom = 0.0f;
+    float v_nom, w_nom = 0.0f;
+    
     // Run once when entering a new state
     if(state == Calibration)
     {
@@ -180,50 +201,50 @@ void fsm_main::state_actions_rules()
     else if(state == FL_frontL)
     {
         v_nom = 0.08;
-        robot.followLine(v_nom,robot.front,Side2Follow::LEFT);
+        robot.followLine(v_nom, robot.front, Side2Follow::LEFT);
     }
     else if(state == Move_F)
     {
-        robot.setRobotVW(0.05,0);
+        robot.setRobotVW(0.05, 0);
     }
-    else if(state== PickBox)
+    else if(state == PickBox1 || state == PickBox2 || state == PickBox3)
     {
-        //Ensure it picks the box! 
+        // Ensure it picks the box! 
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.03,0.2);
+            robot.setRobotVW(0.03, 0.2);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.03,-0.2);
+            robot.setRobotVW(0.03, -0.2);
         }
         else{
-            robot.setRobotVW(0.03,0);
+            robot.setRobotVW(0.03, 0);
         }
-        
     }
-    else if(state == PickBox_Back)
+    else if(state == PickBox_Back1 || state==PickBox_Back2 || state == PickBox_Back3)
     {
-        robot.setRobotVW(-0.08,0);
-        robot.front.sensor.getLineError(Side2Follow::LEFT);//just to count the intersections!
+        robot.setRobotVW(-0.08, 0);
+        robot.front.sensor.getLineError(Side2Follow::LEFT);
     }
     else if(state == Box1GO2DropZone)
     {
-        if(robot.front.sensor.countIntersections < 4)
+        if(intersections < 4)
         {
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
-        else if(robot.front.sensor.countIntersections == 4)
+        else if(intersections == 4)
         {
-            robot.followLine(0.08,robot.front,Side2Follow::LEFT);
+            robot.followLine(0.08, robot.front, Side2Follow::LEFT);
         }
-        else if(robot.front.sensor.countIntersections == 5){
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
+        else if(intersections == 5)
+        {
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
     }
     else if(state == Box1GO2DropZone1)
     {
-        robot.followLine(0.08, robot.front,Side2Follow::LEFT);
+        robot.followLine(0.08, robot.front, Side2Follow::LEFT);
     }
     else if(state == Box1GO2DropZone2)
     {
@@ -231,76 +252,94 @@ void fsm_main::state_actions_rules()
     }
     else if (state == DropBox_Back)
     {
-        robot.setRobotVW(-0.04,0);
+        robot.setRobotVW(-0.08, 0);
         robot.front.sensor.getLineError(Side2Follow::LEFT);
     }
     else if(state == B1_LDZ)
     {
-        if(robot.front.sensor.countIntersections < 4)
+        if(intersections < 4)
         {
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
-        else if(robot.front.sensor.countIntersections == 4)
+        else if(intersections == 4)
         {
-            robot.followLine(0.08,robot.front,Side2Follow::LEFT);
+            robot.followLine(0.08, robot.front, Side2Follow::LEFT);
         }
-        else if(robot.front.sensor.countIntersections == 5){
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
+        else if(intersections == 5)
+        {
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
     }
     else if(state == LAP_2)
     {
+        if(intersections < 2) robot.followLine(0.08, robot.front, Side2Follow::LEFT);
+        else if(intersections == 2) robot.followLine(0.05, robot.front, Side2Follow::RIGHT);
+        else if(intersections == 3) robot.followLine(0.04, robot.front, Side2Follow::LEFT);
         
-        if(robot.front.sensor.countIntersections < 2) robot.followLine(0.08, robot.front,Side2Follow::LEFT);
-        else if(robot.front.sensor.countIntersections == 2) robot.followLine(0.05, robot.front,Side2Follow::RIGHT);
-        else if(robot.front.sensor.countIntersections==3 )robot.followLine(0.05, robot.front,Side2Follow::LEFT);
-        
-        if(robot.front.sensor.countIntersections == 1){
-            robot.thetae = PI*0.5; // reset the theta! 
+        if(intersections == 1){
+            robot.thetae = M_PI * 0.5; // reset the theta! Use M_PI for standard math library compatibility
         }
     }
-    else if(state == PickBox2)
+    else if(state == B2_DZ2)
     {
-        //Ensure it picks the box! 
-        if(robot.front.actuators.isSwitch_left_On)
+        if(intersections < 3)
         {
-            robot.setRobotVW(0.03,0.2);
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
-        else if(robot.front.actuators.isSwitch_right_On)
+        else if(intersections == 3)
         {
-            robot.setRobotVW(0.03,-0.2);
+            robot.followLine(0.08, robot.front, Side2Follow::LEFT);
         }
-        else{
-            robot.setRobotVW(0.03,0);
-        }
-    }
-    else if(state == PickBox_Back1)
-    {
-        robot.setRobotVW(-0.08,0);
-        robot.front.sensor.getLineError(Side2Follow::LEFT);
-    }
-    else if(state== B2_DZ2)
-    {
-        if(robot.front.sensor.countIntersections < 3)
+        else if(intersections == 4)
         {
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
-
-        }
-        else if(robot.front.sensor.countIntersections == 3)
-        {
-            robot.followLine(0.08,robot.front,Side2Follow::LEFT);
-        }
-        else if(robot.front.sensor.countIntersections >= 4){
-            robot.followLine(0.08,robot.front,Side2Follow::RIGHT);
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
         }
     }
     else if(state == B2_DZ2_1)
     {
-        if(robot.front.sensor.countIntersections < 2) robot.followLine(0.08,robot.front,Side2Follow::LEFT);
-        else if(robot.front.sensor.countIntersections == 2 ) robot.followLine(0.06,robot.front,Side2Follow::RIGHT);
-        else if(robot.front.sensor.countIntersections == 3) robot.followLine(0.08,robot.front,Side2Follow::LEFT);
+        if(intersections < 2) robot.followLine(0.08, robot.front, Side2Follow::LEFT);
+        else if(intersections == 2) robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
+        else if(intersections == 3) robot.followLine(0.04, robot.front, Side2Follow::LEFT);
     }
-
+    else if(state == B2_DROP)
+    {
+        robot.setRobotVW(-0.08, 0);
+        robot.front.sensor.getLineError(Side2Follow::LEFT);
+    }
+    else if(state == B2_LDZ)
+    {
+        if(intersections < 3)
+        {
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
+        }
+        else if(intersections == 3)
+        {
+            robot.followLine(0.08, robot.front, Side2Follow::LEFT);
+        }
+        else if(intersections == 4)
+        {
+            robot.followLine(0.08, robot.front, Side2Follow::RIGHT);
+        }
+    }
+    else if(state == LAP_3) // ENTER reset COUNT!
+    {
+        if(intersections < 2) robot.followLine(0.08, robot.front, Side2Follow::LEFT);
+        else if(intersections >= 2 && intersections < 4) robot.followLine(0.05, robot.front, Side2Follow::RIGHT);
+        else if(intersections == 4) robot.followLine(0.04, robot.front, Side2Follow::LEFT);
+        
+        if(intersections == 1){
+            robot.thetae = M_PI * 0.5; // reset the theta! 
+        }
+    }
+    else if(state == GO_DZ3)
+    {
+        if(intersections == 0) {
+            robot.followLine(-0.08, robot.front, Side2Follow::RIGHT);
+        }
+        else if(intersections == 1) {
+            // TODO: Add your logic for when intersection count hits 1
+        }
+    }
 }
 void control(robot_t& robot)
 {
