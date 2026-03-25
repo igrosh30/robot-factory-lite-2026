@@ -91,39 +91,34 @@ enum class Side2Follow{
 // ================================================================
 // 2. Estados da máquina de estados
 // ================================================================
-
 typedef enum {
-    Idle                    ,   // 0
-    Start                   ,   // 1
-    Set_Calibration         ,   // 2
-    Calibration             ,   // 3
-    Move_F                  ,   // 4
-    PickBox1                 ,   // 5
-    PickBox_Back1           ,   // 6   
-    
-    Box1GO2DropZone             ,   // 7
-    Box1GO2DropZone1            ,   // 8
-    Box1GO2DropZone2            ,   // 9
-    B1_LDZ                      ,   // 10
-    
-    LAP_2                       ,   //11
-    DropBox_Back                ,   // 18 
-    PickBox2                    ,   // 19
-    PickBox_Back2               ,   // 20
-    B2_DZ2                      ,   // 21
-    B2_DZ2_1                    ,   // 22
-    B2_DROP                     ,
-    B2_LDZ                      ,
-    
-    LAP_3                       ,
-    PickBox3                    ,
-    PickBox_Back3               ,
-    GO_DZ3                      ,
-
-
-    FL_frontL               
-
+    Idle,                    // 0
+    Start,                   // 1
+    Set_Calibration,         // 2
+    Calibration,             // 3
+    Move_F,                  // 4
+    PickBox1,                // 5
+    PickBox_Back1,           // 6
+    Box1GO2DropZone,         // 7
+    Box1GO2DropZone1,        // 8
+    Box1GO2DropZone2,        // 9
+    B1_LDZ,                  // 10
+    LAP_2,                   // 11
+    DropBox_Back,            // 12
+    PickBox2,                // 13
+    PickBox_Back2,           // 14
+    B2_DZ2,                  // 15 
+    B2_DZ2_1,                // 16
+    B2_DROP,                 // 17
+    B2_LDZ,                  // 18
+    LAP_3,                   // 19
+    PickBox3,                // 20
+    PickBox_Back3,           // 21
+    GO_DZ3,                  // 22
+    FL_frontL                // 23
 } fsm_state;
+//10- 11 -13 
+//18 - 11...
 
 //this indexes should match in p4d.cpp aray declaration!
 typedef enum { 
