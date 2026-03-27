@@ -74,6 +74,16 @@ void robot_t::setRobotVW(float Vnom, float Wnom)
   w_req = Wnom;
 }
 
+float robot_t::getAngleDiff(float target_angle, float current_angle) {
+    float diff = target_angle - current_angle;
+    
+    // Force the difference into the [-pi, pi] range
+    while (diff > M_PI) diff -= TWO_PI;
+    while (diff < -M_PI) diff += TWO_PI;
+    
+    return diff;
+}
+
 //functions to handle robot actions on the box
 
 void robot_t::grabBox(RobotSide& sideRef){

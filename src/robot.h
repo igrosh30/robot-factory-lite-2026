@@ -67,8 +67,6 @@ public:
   control_mode_t control_mode;
   float follow_v, follow_k;
 
-  
-
   int solenoid_PWM;
   int led;
 
@@ -85,6 +83,7 @@ public:
 
   void odometry(void);
   void setRobotVW(float Vnom, float Wnom);
+  float getAngleDiff(float target_angle, float current_angle);//map to π and -π
 
   void accelerationLimit(void);
   void calcMotorsVoltage(void);
@@ -96,7 +95,7 @@ public:
 
   void send_command(const char *command, float par);
   void send_command(const char *command, const char *par);
-
+  
   void grabBox(RobotSide& sideRef);
   void dropBox(RobotSide& sideREf);
   bool has2Boxes();

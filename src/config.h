@@ -107,15 +107,17 @@ typedef enum {
     DropBox_Back,            // 12
     PickBox2,                // 13
     PickBox_Back2,           // 14
-    B2_DZ2,                  // 15 
+    B2_DZ,                  // 15 
     B2_DZ2_1,                // 16
     B2_DROP,                 // 17
     B2_LDZ,                  // 18
     LAP_3,                   // 19
     PickBox3,                // 20
     PickBox_Back3,           // 21
-    GO_DZ3,                  // 22
-    FL_frontL                // 23
+    PickBox_Back4,
+    B3_DZ,                  // 22
+    FL_frontL,                // 23
+    TURN_90
 } fsm_state;
 //10- 11 -13 
 //18 - 11...
