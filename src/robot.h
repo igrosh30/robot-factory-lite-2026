@@ -91,7 +91,7 @@ public:
   void followLineRight(float Vnom,Side side);
   void followLineLeft(float Vnom,Side side);
 
-  void followLine(float Vnom, RobotSide& sideRef, Side2Follow direction);
+  void followLine(float Vnom, RobotSide& sideRef, Side2Follow direction, EdgeDetection edge);
 
   void send_command(const char *command, float par);
   void send_command(const char *command, const char *par);

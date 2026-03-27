@@ -77,7 +77,7 @@ void Sensor :: readValues(){
     readRaw(IR_Values);
 }
 
-void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I need to rotate my robot! 
+void Sensor :: getLineError(Side2Follow side2follow,EdgeDetection edgeSide) //Compute how much do I need to rotate my robot! 
 {
     readValues(); // refresh the debug data- Only to check the last readed values! 
 
@@ -121,13 +121,14 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
             }
         }
             bool inIntersectionNow = (activated(IR_norm[3]) && activated(IR_norm[4])) ;
-
-            if(!inIntersectionNow && wasIntersection){
+            if (edgeSide == EdgeDetection::UP && inIntersectionNow && !wasIntersection) {
                 intersections++;
                 flagInters = true;
             }
-            else{
-                flagInters = false;
+        // FlancoSide::DOWN (Black to White - Falling Edge)
+            else if (edgeSide == EdgeDetection::DOWN && !inIntersectionNow && wasIntersection) {
+                intersections++;
+                flagInters = true;
             }
             wasIntersection = inIntersectionNow;
     }
@@ -168,12 +169,15 @@ void Sensor :: getLineError(Side2Follow side2follow) //Compute how much do I nee
             
         }
             bool inIntersectionNow = (activated(IR_norm[1]) && activated(IR_norm[0])) ;
-
-            if(!inIntersectionNow && wasIntersection){
+            if (edgeSide == EdgeDetection::UP && inIntersectionNow && !wasIntersection) {
                 intersections++;
                 flagInters = true;
             }
-            wasIntersection = inIntersectionNow;   
+            else if (edgeSide == EdgeDetection::DOWN && !inIntersectionNow && wasIntersection) {
+                intersections++;
+                flagInters = true;
+            }  
+            wasIntersection = inIntersectionNow;  
     }  
 }
 

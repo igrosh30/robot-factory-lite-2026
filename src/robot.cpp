@@ -121,9 +121,9 @@ void robot_t::followLineLeft(float Vnom, Side side ){
 }
 
 
-void robot_t::followLine(float Vnom, RobotSide& sideRef, Side2Follow direction)
+void robot_t::followLine(float Vnom, RobotSide& sideRef, Side2Follow direction, EdgeDetection edge)
 {
-  sideRef.sensor.getLineError(direction);
+  sideRef.sensor.getLineError(direction,edge);
 
   float w = sideRef.sensor.erro * sideRef.sensor.kl;
 

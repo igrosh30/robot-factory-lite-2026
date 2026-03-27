@@ -3,6 +3,8 @@
 #include <vector>
 #include <Arduino.h>
 
+//robot1 - IP: 10.227.21.112
+//robot2 - IP: 10.227.21.116
 
 // ================================================================
 //                          PINOS
@@ -87,40 +89,91 @@ enum class Side2Follow{
     LEFT,
     RIGHT
 };
+enum class EdgeDetection{
+    UP,//when we detect white to back! 
+    DOWN//detect black to white! 
+};
 
 // ================================================================
 // 2. Estados da máquina de estados
 // ================================================================
 typedef enum {
-    Idle,                    // 0
-    Start,                   // 1
-    Set_Calibration,         // 2
-    Calibration,             // 3
-    Move_F,                  // 4
-    PickBox1,                // 5
-    PickBox_Back1,           // 6
-    Box1GO2DropZone,         // 7
-    Box1GO2DropZone1,        // 8
-    Box1GO2DropZone2,        // 9
-    B1_LDZ,                  // 10
-    LAP_2,                   // 11
-    DropBox_Back,            // 12
-    PickBox2,                // 13
-    PickBox_Back2,           // 14
-    B2_DZ,                  // 15 
-    B2_DZ2_1,                // 16
-    B2_DROP,                 // 17
-    B2_LDZ,                  // 18
-    LAP_3,                   // 19
-    PickBox3,                // 20
-    PickBox_Back3,           // 21
-    PickBox_Back4,
-    B3_DZ,                  // 22
-    FL_frontL,                // 23
-    TURN_90
+    // ==========================================
+    // --- SYSTEM & STARTUP (0 - 99) ---
+    // ==========================================
+    SYS_IDLE               = 0, 
+    SYS_SET_CALIBRATION    = 1, 
+    SYS_CALIBRATION        = 2, 
+    SYS_START              = 3, 
+    SYS_LEAVE_START        = 4, 
+    SYS_APPROACH_WAREHOUSE = 5, 
+
+    // ==========================================
+    // --- BOX 1 SEQUENCE (100 - 199) ---
+    // ==========================================
+    B1_PICK                = 100, 
+    B1_PICK_BACKUP         = 101, 
+    B1_NAV_TO_DROP         = 120,
+    B1_TURN_ON_NAV_TO_DROP = 121, 
+    B1_ALIGN_DROP          = 123, 
+    B1_APPROACH_DROP       = 104, 
+    B1_DROP                = 105, 
+    B1_DROP_BACKUP         = 106, 
+    B1_LEAVE_DROPZONE      = 107,
+    B1_LEAVE_DROPZONE_TURN = 117, 
+    B1_NAV_NEXT_LAP        = 108, 
+
+    // ==========================================
+    // --- BOX 2 SEQUENCE (200 - 299) ---
+    // ==========================================
+    B2_NAV_PICK            = 200,
+    B2_ALIGN_PICK          = 210,
+    B2_PICK                = 211, 
+    B2_PICK_BACKUP         = 202, 
+    B2_NAV_TO_DROP         = 203, 
+    B2_ALIGN_DROP          = 204,
+    B2_APPROACH_DROP       = 205, 
+    B2_DROP                = 206, 
+    B2_DROP_BACKUP         = 207, 
+    B2_LEAVE_DROPZONE      = 208, 
+    B2_NAV_NEXT_LAP        = 209, 
+
+    // ==========================================
+    // --- BOX 3 SEQUENCE (300 - 399) ---
+    // ==========================================
+    B3_NAV_PICK            = 300,
+    B3_ALIGN_PICK          = 310,
+    B3_PICK                = 311,
+    B3_PICK_BACKUP         = 302,
+    B3_NAV_TO_DROP         = 303,
+    B3_ALIGN_DROP          = 304,
+    B3_APPROACH_DROP       = 305,
+    B3_DROP                = 306,
+    B3_DROP_BACKUP         = 307,
+    B3_LEAVE_DROPZONE      = 308,
+    B3_NAV_NEXT_LAP        = 309,
+
+    // ==========================================
+    // --- BOX 4 SEQUENCE (400 - 499) ---
+    // ==========================================
+    B4_NAV_PICK            = 400,
+    B4_ALIGN_PICK          = 410,
+    B4_PICK                = 411,
+    B4_PICK_BACKUP         = 402,
+    B4_NAV_TO_DROP         = 403,
+    B4_ALIGN_DROP          = 404,
+    B4_APPROACH_DROP       = 405,
+    B4_DROP                = 406,
+    B4_DROP_BACKUP         = 407,
+    B4_LEAVE_DROPZONE      = 408,
+    B4_NAV_NEXT_LAP        = 409,
+
+    // ==========================================
+    // --- GENERIC MANEUVERS (900+) ---
+    // ==========================================
+    GEN_TURN_90            = 900
+
 } fsm_state;
-//10- 11 -13 
-//18 - 11...
 
 //this indexes should match in p4d.cpp aray declaration!
 typedef enum { 
