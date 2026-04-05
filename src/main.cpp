@@ -215,6 +215,7 @@ void setup() {
     pars_list.register_command("kp2", &robot.motors.kp2);
     pars_list.register_command("ki2", &robot.motors.ki2);
 
+    pars_list.register_command("redpath", &fsm.path_strategy);
     
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);

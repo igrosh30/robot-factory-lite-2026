@@ -33,7 +33,7 @@ void fsm_main::next_state_rules()
     {
         set_next_state(SYS_APPROACH_WAREHOUSE);
     }
-    else if(state== SYS_APPROACH_WAREHOUSE && (robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On) )
+    else if(state== SYS_APPROACH_WAREHOUSE && (robot.front.actuators.isSwitch_left_On || robot.front.actuators.isSwitch_right_On) )
     {
         set_next_state(B1_PICK);
     }
@@ -63,6 +63,15 @@ void fsm_main::next_state_rules()
             set_next_state(GEN_TURN_90);
         }
     } 
+    else if(state == GEN_MOVE_X)
+    {
+        float distance_moved = abs(robot.rel_s - ref_s);
+        if(distance_moved >= target_distance)
+        {
+            set_next_state(GEN_TURN_90);
+            ref_s = 0;
+        }
+    }
     else if(state == GEN_TURN_90)
     {
         float angle_moved = abs(robot.getAngleDiff(ref_theta,robot.rel_theta));
@@ -80,30 +89,39 @@ void fsm_main::next_state_rules()
     {
         set_next_state(B1_PICK_BACKUP);
     }
-    else if(state == B1_NAV_TO_DROP && robot.front.sensor.intersections == 5 )//think of better approach!
+    else if(state == B1_NAV_TO_DROP)
     {
-        state_after_maneuver = B1_ALIGN_DROP;
-        turn_direction = -1;
-        target_turn_angle = PI/3;
-        set_next_state(GEN_TURN_90);
-        //set_next_state(B1_TURN_ON_NAV_TO_DROP);//foll Left
-    }
-    /*WIHT MOVING 4cm forward then, turning! 
-    else if(state == B1_TURN_ON_NAV_TO_DROP)
-    {
-        //DO we really need to go forward?! I can just do the turn! 
-        
-        float distance_moved = abs(ref_s - robot.rel_s);
-        if(distance_moved > 0.04 )
+        if(path_strategy == TURN_AFTER_DETECTION)
         {
-            state_after_maneuver = B1_ALIGN_DROP;
-            turn_direction = -1;
-            target_turn_angle = PI*0.5;
-            set_next_state(GEN_TURN_90);
+            if(robot.front.sensor.intersections == 5)   // detetado com UP
+            {
+                state_after_maneuver = B1_ALIGN_DROP;
+                turn_direction = -1;
+                target_turn_angle = PI/3; //60º
+                set_next_state(GEN_TURN_90);
+            }
         }
+        else if(path_strategy == DISTANCE_TURN)
+        {
+            if(robot.front.sensor.intersections == 5)
+            {//I can do to count the fith intersection in UP direction or not!                  
+                
+                //Move forward 4.0cm!
+                target_distance = 0.040f;     
+                move_direction = 1;
 
-    }*/
-    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 3 )
+                target_turn_angle = PI/2;
+                turn_direction = -1;
+                state_after_maneuver = B1_ALIGN_DROP;//estado final DEPOIS do turn
+                set_next_state(GEN_MOVE_X);//after this we always go GEN_TURN_90! 
+            }
+        }
+        else if(path_strategy == THETA_TURN)
+        {
+            if(robot.thetae < -1.4) set_next_state(B1_ALIGN_DROP);            
+        }
+    }
+    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 3)
     {
         set_next_state(B1_APPROACH_DROP);
     }
@@ -111,54 +129,72 @@ void fsm_main::next_state_rules()
     {
         set_next_state(B1_DROP_BACKUP);
     }
-    else if(state == B1_LEAVE_DROPZONE && robot.front.sensor.intersections == 5 )
+    else if(state == B1_LEAVE_DROPZONE)
     {
-        set_next_state(B1_LEAVE_DROPZONE_TURN); 
-    }
-    else if(state == B1_LEAVE_DROPZONE_TURN)
-    {
-        float distance_moved = abs(ref_s - robot.rel_s);
-        if(distance_moved > 0.04 )
+        if(path_strategy == TURN_AFTER_DETECTION)
         {
-            state_after_maneuver = B1_NAV_NEXT_LAP;
-            turn_direction = -1;
-            target_turn_angle = PI*0.5;
-            set_next_state(GEN_TURN_90);
+            if(robot.front.sensor.intersections == 5)   // detetado com UP
+            {
+                state_after_maneuver = B1_NAV_NEXT_LAP;
+                turn_direction = -1;
+                target_turn_angle = PI/3; //60º
+                set_next_state(GEN_TURN_90);
+            }
+        }
+        else if(path_strategy == DISTANCE_TURN)
+        {
+            if(robot.front.sensor.intersections == 5)
+            {//I can do to count the fith intersection in UP direction or not!                  
+                
+                //Move forward 4.0cm!
+                target_distance = 0.040f;     
+                move_direction = 1;
+
+                target_turn_angle = PI/2;
+                turn_direction = -1;
+                state_after_maneuver = B1_NAV_NEXT_LAP;//estado final DEPOIS do turn
+                set_next_state(GEN_MOVE_X);//after this we always go GEN_TURN_90! 
+            }
+        }
+        else if(path_strategy == THETA_TURN)
+        {
+            if(robot.thetae < -1.4) set_next_state(B1_NAV_NEXT_LAP);            
         }
     }
 
     // ==========================================================
     //                       BOX 2 SEQUENCE
     // ==========================================================
-    else if(state == B1_NAV_NEXT_LAP && robot.front.sensor.intersections == 4)
+    else if(state == B1_NAV_NEXT_LAP && robot.front.sensor.intersections == 3)
     {
-        //WHERE TO UPDATE THE THETA!!!!!!????
-        ref_theta = robot.rel_theta;
+        target_distance = 0.04;
+        move_direction = 1;
+
         turn_direction = -1;
+        target_turn_angle = PI/2;
+
         state_after_maneuver = B2_NAV_PICK;
-        target_turn_angle = PI/3;
-        set_next_state(GEN_TURN_90);
-        target_turn_angle = PI*0.5;
+        set_next_state(GEN_MOVE_X);
+        
     }
-    else if(state == B2_NAV_PICK)
-    {
-        if(robot.front.sensor.intersections == 1)//ONLY follow LEFT !
-        { 
-            //ref_theta = robot.rel_theta; TURN ALREADY DOES THIS!!!! 
-            turn_direction = 1;
-            state_after_maneuver = B2_ALIGN_PICK;
-            set_next_state(GEN_TURN_90);//when I do this turn I should be FACING THE warehouse!
-        }
-    }
-    else if(state == B2_ALIGN_PICK && ((robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On)))
+    else if(state == B2_NAV_PICK && ((robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On)))//why cant I just follow the line and then when the sensor activate I can pick the box
     {
         set_next_state(B2_PICK);
     }
+
+    //else if(state == B2_ALIGN_PICK && ((robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On)))
+    //{
+        //set_next_state(B2_PICK);
+    //}
     else if(state == B2_PICK && tis > 1) 
     {
-        set_next_state(B2_NAV_TO_DROP);
+        set_next_state(B2_PICK_BACKUP);
     }
-    else if(state == B2_DROP && (robot.front.sensor.intersections==1 || tis > 4.5) )
+    else if (state == B2_NAV_TO_DROP)
+    {
+        
+    }
+    else if(state == B2_DROP)
     {
         set_next_state(B2_LEAVE_DROPZONE);
     }
@@ -225,6 +261,10 @@ void fsm_main::enter_state_actions_rules()
         ref_s = robot.rel_s;
         robot.front.actuators.magnetOff();
     }
+    else if(state == GEN_MOVE_X)
+    {
+        ref_s = robot.rel_s;
+    }
     else if(state == GEN_TURN_90)
     {
         ref_theta = robot.rel_theta;
@@ -246,16 +286,19 @@ void fsm_main::enter_state_actions_rules()
     {
         robot.front.sensor.intersections = 0;
     }
-    else if(state == B1_NAV_TO_DROP  || state == B1_ALIGN_DROP || state == B1_APPROACH_DROP  )
+    else if(state == B1_NAV_TO_DROP  || state == B1_ALIGN_DROP || 
+        state == B1_APPROACH_DROP    || state == B1_LEAVE_DROPZONE )
     {
+        robot.front.sensor.wasIntersection = false;
         robot.front.sensor.intersections = 0;
     }
-    else if(state == B1_LEAVE_DROPZONE || state == B2_NAV_TO_DROP ||  state == B2_ALIGN_DROP ) 
+    else if(state == B2_NAV_TO_DROP ||  state == B2_ALIGN_DROP ) 
     {
         robot.front.sensor.intersections = 0;
     }
     else if(state == B1_NAV_NEXT_LAP)
     {
+        robot.front.sensor.wasIntersection = false;
         robot.front.sensor.intersections = 0;
     } 
     else if(state == B2_LEAVE_DROPZONE || state == B2_NAV_NEXT_LAP || state == B3_PICK || state == B3_NAV_TO_DROP )
@@ -329,9 +372,13 @@ void fsm_main::state_actions_rules()
     {
         robot.setRobotVW(-0.08,0);
     }
+    else if(state == GEN_MOVE_X)
+    {
+        robot.setRobotVW(move_direction* 0.08, 0);
+    }
     else if(state == GEN_TURN_90)
     {
-        robot.setRobotVW(0.0, turn_direction);
+        robot.setRobotVW(0.0, turn_direction);//SEE this w velocity! 
     }
 
     else if(state == B1_TURN_ON_NAV_TO_DROP)
@@ -344,14 +391,22 @@ void fsm_main::state_actions_rules()
     // ==========================================================
     else if(state == B1_NAV_TO_DROP)
     {
-        if(intersections < 3) robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
-        else if(intersections == 3) robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);  
-        else if(intersections == 4 )robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: UP);
+        if(path_strategy == TURN_AFTER_DETECTION ||DISTANCE_TURN )
+        {
+            if(intersections < 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+            else robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        }
+        else if(path_strategy == THETA_TURN)
+        {
+            if(intersections < 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+            else if(intersections == 3 ) robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+            else if(intersections > 3) robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+
+        }
     }
     else if(state == B1_ALIGN_DROP)
-    {
-        if(tis < 1) robot.setRobotVW(0.06,0);
-        else if(tis> 1) robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
+    {   
+        robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
     }
     else if(state == B1_APPROACH_DROP)
     {
@@ -381,8 +436,7 @@ void fsm_main::state_actions_rules()
     }
     else if(state == B2_NAV_PICK) 
     {
-        robot.followLine(0.06, robot.front, Side2Follow::RIGHT,EdgeDetection:: DOWN);
-        
+        robot.followLine(0.08, robot.front, Side2Follow::LEFT ,EdgeDetection:: DOWN);
     }
     else if(state == B2_NAV_TO_DROP)
     {
