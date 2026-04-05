@@ -359,6 +359,7 @@ void loop() {
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
+            serial_commands.send_command("redpath", fsm.path_strategy);
 
             //Send the u1 and u2 to drive the motors:
              
@@ -416,9 +417,9 @@ void loop() {
             
             
             //Front Sensor data
-             /*
+            
             serial_commands.send_command("erf", robot.front.sensor.erro);
-            serial_commands.send_command("cntf", robot.front.sensor.countIntersections);
+            //serial_commands.send_command("cntf", robot.front.sensor.countIntersections);
             serial_commands.send_command("fl_irf", robot.front.sensor.flagFound);
             serial_commands.send_command("ir0", robot.front.sensor.IR_Values[0]);
             serial_commands.send_command("ir1", robot.front.sensor.IR_Values[1]);
@@ -444,7 +445,7 @@ void loop() {
             serial_commands.send_command("irmi2", robot.front.sensor.minValues[2]);
             serial_commands.send_command("irmi3", robot.front.sensor.minValues[3]);
             serial_commands.send_command("irmi4", robot.front.sensor.minValues[4]);
-            */
+            
             serial_commands.send_command("cnt",robot.front.sensor.intersections);
 
             //serial_commands.send_command("erl", robot.frontSensor.erro);

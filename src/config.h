@@ -45,7 +45,7 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE true
+#define CALIBRATION_MODE false
 
 //Communications with ComRobot
 #define GCHANNELS_BUF_IN_SIZE 500U
@@ -57,11 +57,11 @@
 
 
 // (Paste your 'savedMin' array here)
-const uint16_t HARDCODED_FRONT_MIN[] = { 470, 460, 360, 400, 310 }; 
+const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
 const uint16_t HARDCODED_BACK_MIN[] = { 470, 460, 360, 400, 310 }; 
 
 // (Paste your 'savedMax' array here)
-const uint16_t HARDCODED_FRONT_MAX[] = { 47, 40, 45, 27, 33 };
+const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
 const uint16_t HARDCODED_BACK_MAX[] = { 47, 40, 45, 27, 33 };
 
 // ================================================================
@@ -131,8 +131,9 @@ typedef enum {
     B2_PICK                = 211, 
     B2_PICK_BACKUP         = 202, 
     B2_NAV_TO_DROP         = 203, 
-    B2_ALIGN_DROP          = 204,
-    B2_APPROACH_DROP       = 205, 
+    B2_ALIGN_DROP          = 210,
+    B2_ALIGN_DROP1         = 211,
+    B2_APPROACH_DROP       = 205,//facing the wearhouse - move forward and drop! 
     B2_DROP                = 206, 
     B2_DROP_BACKUP         = 207, 
     B2_LEAVE_DROPZONE      = 208, 
