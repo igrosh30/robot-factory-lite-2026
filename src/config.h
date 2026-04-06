@@ -170,10 +170,15 @@ typedef enum {
     B4_NAV_NEXT_LAP        = 409,
 
     // ==========================================
-    // --- GENERIC MANEUVERS (900+) ---
+    // --- GENERIC MANEUVERS
     // ==========================================
     GEN_TURN_90            = 900,
-    GEN_MOVE_X             = 800
+    GEN_MOVE_X             = 800,
+    
+    GEN_DROP_BOX           = 500,
+    GEN_DROP_COUNT         = 510,
+    GEN_DROP_ALIGN         = 520,
+    GEN_DROP_TURN_OUT      = 530,
 
 } fsm_state;
 

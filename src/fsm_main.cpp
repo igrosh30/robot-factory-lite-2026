@@ -83,6 +83,52 @@ void fsm_main::next_state_rules()
     }
 
     // ==========================================================
+    //                       GENERIC DROP BOX
+    // ==========================================================
+
+    else if(state == GEN_DROP_BOX)
+    {
+        if(drop_slot == 1)
+        {
+            set_next_state(GEN_DROP_ALIGN);
+        }
+        else
+        {
+            target_distance = drop_advance;
+            move_direction = 1;
+            turn_direction = -1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = GEN_DROP_COUNT;
+            set_next_state(GEN_MOVE_X);
+        }
+    }
+    else if(state == GEN_DROP_COUNT)//inside here I do follow Right!
+    {
+        if(drop_slot - robot.front.sensor.intersections == 1)
+        {
+            target_distance = drop_advance;
+            move_direction = 1;
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = GEN_DROP_ALIGN;
+            set_next_state(GEN_MOVE_X);
+        }
+    }
+    else if(GEN_DROP_ALIGN && tis > 2)
+    {
+        set_next_state(GEN_DROP_TURN_OUT);//when entering Turn Off the Magnet! 
+    }
+    else if(state == GEN_DROP_TURN_OUT)
+    {
+        target_distance = 0.1;
+        move_direction = -1;
+        turn_direction = -1;
+        target_turn_angle = PI/2;
+        state_after_maneuver = SYS_IDLE;
+        set_next_state(GEN_MOVE_X);
+    }
+
+    // ==========================================================
     //                       BOX 1 SEQUENCE
     // ==========================================================
     else if(state == B1_PICK && tis > 1) 
@@ -93,7 +139,7 @@ void fsm_main::next_state_rules()
     {
         if(path_strategy == TURN_AFTER_DETECTION)
         {
-            if(robot.front.sensor.intersections == 5)   // detetado com UP
+            if(robot.front.sensor.intersections == 5)   //detetado com UP
             {
                 state_after_maneuver = B1_ALIGN_DROP;
                 turn_direction = -1;
@@ -121,9 +167,11 @@ void fsm_main::next_state_rules()
             if(robot.thetae < -1.4) set_next_state(B1_ALIGN_DROP);            
         }
     }
-    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 3)
+    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 3)//STATE: 123 to test DropBox!
     {
-        set_next_state(B1_APPROACH_DROP);
+        drop_slot = 2;//Set the droping Slot! 
+        //set_next_state(B1_APPROACH_DROP);
+        set_next_state(GEN_DROP_BOX);
     }
     else if (state == B1_APPROACH_DROP && tis > 2)
     {
@@ -322,13 +370,28 @@ void fsm_main::enter_state_actions_rules()
     }
 
     // ==========================================================
+    //                 GENERIC DROP BOX
+    // ==========================================================
+    else if(state == GEN_DROP_BOX || state == GEN_DROP_COUNT || 
+            state == GEN_DROP_ALIGN)
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.sensor.wasIntersection = false;
+    }
+    else if(state == GEN_DROP_TURN_OUT)
+    {
+        robot.front.actuators.magnetOff();
+    }
+
+    // ==========================================================
     //                 MAKING TURNS
     // ==========================================================
 
+    /*
     else if(state == B1_TURN_ON_NAV_TO_DROP  || state ==  B1_LEAVE_DROPZONE_TURN)
     {
         ref_s = robot.rel_s;
-    }
+    }*/
 
     // ==========================================================
     //                   NAV SEQUENCES
@@ -438,6 +501,17 @@ void fsm_main::state_actions_rules()
         robot.setRobotVW(0.08,0);
     }
     
+    // ==========================================================
+    //                 GENERIC DROP BOX
+    // ==========================================================
+    else if(state == GEN_DROP_COUNT)
+    {
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }
+    else if(state == GEN_DROP_ALIGN)
+    {
+        robot.setRobotVW(0.08, 0);
+    }
     // ==========================================================
     //                       BOX 1 SEQUENCE
     // ==========================================================
