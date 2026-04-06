@@ -216,6 +216,7 @@ void setup() {
     pars_list.register_command("ki2", &robot.motors.ki2);
 
     pars_list.register_command("redpath", &fsm.path_strategy);
+    pars_list.register_command("d_slot", &fsm.drop_slot);
     
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);
@@ -354,13 +355,15 @@ void loop() {
             serial_commands.send_command("vreq", robot.v_req);
             serial_commands.send_command("wreq", robot.w_req);
             serial_commands.send_command("theta", robot.thetae);
+            
 
             // Encoder data
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             serial_commands.send_command("redpath", fsm.path_strategy);
-
+            serial_commands.send_command("d_slot", fsm.drop_slot);
+            
             //Send the u1 and u2 to drive the motors:
              
             /*
