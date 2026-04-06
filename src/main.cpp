@@ -357,12 +357,12 @@ void loop() {
             serial_commands.send_command("theta", robot.thetae);
             
 
-            // Encoder data
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             serial_commands.send_command("redpath", fsm.path_strategy);
             serial_commands.send_command("d_slot", fsm.drop_slot);
+            serial_commands.send_command("p_slot", fsm.pick_slot);
             
             //Send the u1 and u2 to drive the motors:
              

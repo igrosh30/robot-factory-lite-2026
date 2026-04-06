@@ -83,6 +83,63 @@ void fsm_main::next_state_rules()
     }
 
     // ==========================================================
+    //                       GENERIC PICK BOX
+    // ==========================================================
+    else if(state == GEN_PICK_ZONE )
+    {
+        if(pick_slot == 1)
+        {
+            set_next_state(GEN_PICK_ALIGN);
+        }
+        else
+        {
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = -1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = GEN_PICK_COUNT;
+            set_next_state(GEN_MOVE_X);
+        }
+    }
+    else if(state == GEN_PICK_COUNT)
+    {
+        if(pick_slot == robot.front.sensor.intersections)
+        {
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = GEN_PICK_ALIGN;
+            set_next_state(GEN_MOVE_X);
+        }
+    }
+    else if(state == GEN_PICK_ALIGN && ((robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On)))
+    {
+        set_next_state(GEN_PICK_BOX);
+    }
+    else if(state == GEN_PICK_BOX && tis > 1)
+    {
+        set_next_state(GEN_PICK_TURN_OUT);
+    }
+    else if(state == GEN_PICK_TURN_OUT)
+    {
+        target_distance = d_retrive_from_wearhouse;
+        move_direction = -1;
+        turn_direction = -1;
+        target_turn_angle = PI/2;
+        state_after_maneuver = GEN_LEAVE_PICK;
+        set_next_state(GEN_MOVE_X);
+    }
+    else if(state == GEN_LEAVE_PICK)
+    {
+        if( 3 - robot.front.sensor.intersections == pick_slot)
+        {
+            set_next_state(SYS_IDLE);
+        }
+    }
+
+
+    // ==========================================================
     //                       GENERIC DROP BOX
     // ==========================================================
 
@@ -94,7 +151,7 @@ void fsm_main::next_state_rules()
         }
         else
         {
-            target_distance = drop_advance;
+            target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = PI/2;
@@ -104,9 +161,9 @@ void fsm_main::next_state_rules()
     }
     else if(state == GEN_DROP_COUNT)//inside here I do follow Right!
     {
-        if(drop_slot - robot.front.sensor.intersections == 1)
+        if(drop_slot == robot.front.sensor.intersections)
         {
-            target_distance = drop_advance;
+            target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = 1;
             target_turn_angle = PI/2;
@@ -120,12 +177,19 @@ void fsm_main::next_state_rules()
     }
     else if(state == GEN_DROP_TURN_OUT)
     {
-        target_distance = 0.1;
+        target_distance = d_retrive_from_wearhouse;
         move_direction = -1;
         turn_direction = -1;
         target_turn_angle = PI/2;
-        state_after_maneuver = SYS_IDLE;
+        state_after_maneuver = GEN_LEAVE_DROP;
         set_next_state(GEN_MOVE_X);
+    }
+    else if(state == GEN_LEAVE_DROP)
+    {
+        if( 3 - robot.front.sensor.intersections == drop_slot)
+        {
+            set_next_state(SYS_IDLE);
+        }
     }
 
     // ==========================================================
@@ -370,6 +434,20 @@ void fsm_main::enter_state_actions_rules()
     }
 
     // ==========================================================
+    //                 GENERIC PICK BOX
+    // ==========================================================
+    else if(state == GEN_PICK_COUNT || state == GEN_LEAVE_PICK)
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.sensor.wasIntersection = false;
+    }
+    else if(state == GEN_PICK_BOX)
+    {
+        robot.thetae = PI*0.5;
+        robot.front.actuators.magnetOn();//Only need to tell the hardware once to turn on the magnet ON
+    }
+
+    // ==========================================================
     //                 GENERIC DROP BOX
     // ==========================================================
     else if(state == GEN_DROP_BOX || state == GEN_DROP_COUNT || 
@@ -467,17 +545,7 @@ void fsm_main::state_actions_rules()
     else if(state == B1_PICK || state == B2_PICK || state == B3_PICK)
     {
         // Ensure it picks the box! 
-        if(robot.front.actuators.isSwitch_left_On)
-        {
-            robot.setRobotVW(0.05, 0.4);
-        }
-        else if(robot.front.actuators.isSwitch_right_On)
-        {
-            robot.setRobotVW(0.05, -0.4);
-        }
-        else{
-            robot.setRobotVW(0.05, 0);
-        }
+        
     }
     //START leaving the Whearhouse 
     else if(state == B1_PICK_BACKUP || state == B2_PICK_BACKUP||
@@ -496,22 +564,37 @@ void fsm_main::state_actions_rules()
         robot.setRobotVW(0.0, turn_direction);//SEE this w velocity! 
     }
 
-    else if(state == B1_TURN_ON_NAV_TO_DROP)
+    // ==========================================================
+    //                 GENERIC PICK BOX
+    // ==========================================================
+    else if(state == GEN_PICK_COUNT || state == GEN_PICK_ALIGN || state == GEN_LEAVE_PICK)
     {
-        robot.setRobotVW(0.08,0);
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
+    else if(state == GEN_PICK_BOX)
+    {
+        if(robot.front.actuators.isSwitch_left_On)
+        {
+            robot.setRobotVW(0.04, 0.4);
+        }
+        else if(robot.front.actuators.isSwitch_right_On)
+        {
+            robot.setRobotVW(0.04, -0.4);
+        }
+        else{
+            robot.setRobotVW(0.04, 0);
+        }
+    }
+
     
     // ==========================================================
     //                 GENERIC DROP BOX
     // ==========================================================
-    else if(state == GEN_DROP_COUNT)
+    else if(state == GEN_DROP_COUNT || state == GEN_DROP_ALIGN || state == GEN_LEAVE_DROP)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
-    else if(state == GEN_DROP_ALIGN)
-    {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-    }
+
     // ==========================================================
     //                       BOX 1 SEQUENCE
     // ==========================================================

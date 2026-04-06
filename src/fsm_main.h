@@ -17,6 +17,14 @@ public:
     robot_t& robot;                
 
     int path_strategy = TURN_AFTER_DETECTION;
+
+    //PICK LOGIC
+    int pick_slot = 1; // 0 | 1 | 2 | 3
+    float d_retrive_from_wearhouse = 0.1f; 
+    
+    //DROP LOGIC
+    int drop_slot = 1;  // 0 | 1 | 2 | 3
+    float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
     
     //ALWAYS state what's the next state after manuever
     int state_after_maneuver;
@@ -31,8 +39,7 @@ public:
     float target_turn_angle = PI/2;
     int turn_direction = 0;//1 for Left || -1 for Right
 
-    int drop_slot = 1;  //chose the slot to drop!
-    float drop_advance = 0.05f; //distance to moove before turning!
+    
     
     
     fsm_main(robot_t& r);               // constructor

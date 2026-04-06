@@ -175,10 +175,19 @@ typedef enum {
     GEN_TURN_90            = 900,
     GEN_MOVE_X             = 800,
     
-    GEN_DROP_BOX           = 500,
-    GEN_DROP_COUNT         = 510,
-    GEN_DROP_ALIGN         = 520,
-    GEN_DROP_TURN_OUT      = 530,
+    GEN_PICK_ZONE          = 500,
+    GEN_PICK_COUNT         = 510,
+    GEN_PICK_ALIGN         = 520,
+    GEN_PICK_BOX           = 530,
+    GEN_PICK_TURN_OUT      = 540,
+    GEN_LEAVE_PICK         = 550,
+
+    GEN_DROP_BOX           = 600,
+    GEN_DROP_COUNT         = 610,
+    GEN_DROP_ALIGN         = 620,
+    GEN_DROP_TURN_OUT      = 630,
+    GEN_LEAVE_DROP         = 640,
+    
 
 } fsm_state;
 
