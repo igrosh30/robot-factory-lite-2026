@@ -11,6 +11,13 @@ enum PathStrategy {
     THETA_TURN      = 3     
 };
 
+struct Box
+{
+    uint8_t pick_slot;
+    uint8_t drop_slot;
+    char color;
+};
+
 class fsm_main : public state_machine_t
 {
 public:
@@ -19,7 +26,12 @@ public:
     int path_strategy = TURN_AFTER_DETECTION;
 
     //PICK LOGIC
-    int pick_slot = 1; // 0 | 1 | 2 | 3
+    Box sequence[2];
+    uint8_t current_box_index = 0;
+
+    //std::vector<int> pick_sequence;
+    //std::vector<int> drop_sequence;
+    int pick_slot = 1; // 0 | 1 | 2 | 3 
     float d_retrive_from_wearhouse = 0.1f; 
     
     //DROP LOGIC

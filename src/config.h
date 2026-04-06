@@ -6,6 +6,16 @@
 //robot1 - IP: 10.227.21.112
 //robot2 - IP: 10.227.21.116
 
+#define ROBOT_MASTER
+//#define ROBOT_SLAVE
+// Proteção de compilação
+#if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
+    #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
+#endif
+#if defined(ROBOT_MASTER) && defined(ROBOT_SLAVE)
+    #error "ERRO: Não podes definir MASTER e SLAVE ao mesmo tempo!"
+#endif
+
 // ================================================================
 //                          PINOS
 // ================================================================
@@ -169,6 +179,13 @@ typedef enum {
     B4_LEAVE_DROPZONE      = 408,
     B4_NAV_NEXT_LAP        = 409,
 
+    NAV_TO_WEARHOUSE       = 799,
+    NAV_LEAVING_WEARHOUSE  = 798,
+    NAV_TO_WEARHOUSE_PICK  = 700,
+    NAV_TO_WEARHOUSE_DROP  = 701,
+    NAV_LEAVING_WEARHOUSE_P= 710,
+    NAV_LEAVING_WEARHOUSE_D= 711,
+
     // ==========================================
     // --- GENERIC MANEUVERS
     // ==========================================
@@ -180,13 +197,13 @@ typedef enum {
     GEN_PICK_ALIGN         = 520,
     GEN_PICK_BOX           = 530,
     GEN_PICK_TURN_OUT      = 540,
-    GEN_LEAVE_PICK         = 550,
+    EXITING_PICK_ZONE      = 550,
 
     GEN_DROP_BOX           = 600,
     GEN_DROP_COUNT         = 610,
     GEN_DROP_ALIGN         = 620,
     GEN_DROP_TURN_OUT      = 630,
-    GEN_LEAVE_DROP         = 640,
+    EXITING_DROP_ZONE      = 640,
     
 
 } fsm_state;
