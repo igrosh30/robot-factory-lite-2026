@@ -114,7 +114,7 @@ void fsm_main::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(GEN_DROP_ALIGN && tis > 2)
+    else if(state == GEN_DROP_ALIGN && tis > 2)
     {
         set_next_state(GEN_DROP_TURN_OUT);//when entering Turn Off the Magnet! 
     }
@@ -167,9 +167,9 @@ void fsm_main::next_state_rules()
             if(robot.thetae < -1.4) set_next_state(B1_ALIGN_DROP);            
         }
     }
-    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 3)//STATE: 123 to test DropBox!
+    else if (state == B1_ALIGN_DROP && robot.front.sensor.intersections == 4) //STATE: 123 to test DropBox!
     {
-        drop_slot = 2;//Set the droping Slot! 
+        //drop_slot = 1;// Set the droping Slot! 
         //set_next_state(B1_APPROACH_DROP);
         set_next_state(GEN_DROP_BOX);
     }
@@ -510,7 +510,7 @@ void fsm_main::state_actions_rules()
     }
     else if(state == GEN_DROP_ALIGN)
     {
-        robot.setRobotVW(0.08, 0);
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     // ==========================================================
     //                       BOX 1 SEQUENCE

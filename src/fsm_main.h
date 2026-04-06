@@ -32,7 +32,7 @@ public:
     int turn_direction = 0;//1 for Left || -1 for Right
 
     int drop_slot = 1;  //chose the slot to drop!
-    float drop_advance = 0.06f; //distance to moove before turning!
+    float drop_advance = 0.05f; //distance to moove before turning!
     
     
     fsm_main(robot_t& r);               // constructor
