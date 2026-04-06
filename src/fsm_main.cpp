@@ -218,7 +218,7 @@ void fsm_main::next_state_rules()
     // ==========================================================
     //                       GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
-    else if(state == NAV_TO_WEARHOUSE && robot.front.sensor.intersections == 3)//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
+    else if(state == NAV_TO_WEARHOUSE && robot.front.sensor.intersections == 4)//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
     {
         if(!robot.front.actuators.isMagnetOn)
         {
@@ -298,12 +298,12 @@ void fsm_main::next_state_rules()
         {
             if(robot.thetae < -1.4) set_next_state(NAV_TO_WEARHOUSE_DROP);            
         }
-    }*/
+    }
     else if(state == NAV_TO_WEARHOUSE_DROP)
     {
         drop_slot = sequence[current_box_index].drop_slot;
         set_next_state(GEN_DROP_BOX);
-    }
+    }*/
 
     // ==========================================================
     //                       BOX 1 SEQUENCE
@@ -459,6 +459,7 @@ void fsm_main::enter_state_actions_rules()
     // ==========================================================
     else if(state == NAV_TO_WEARHOUSE || state == NAV_LEAVING_WEARHOUSE)
     {
+        robot.setRobotVW(0.0, 0.0);
         robot.front.sensor.wasIntersection = false;
         robot.front.sensor.intersections = 0;
     }
@@ -597,106 +598,9 @@ void fsm_main::state_actions_rules()
     //                       GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
 
-    else if(state == NAV_TO_WEARHOUSE_PICK || state == NAV_LEAVING_WEARHOUSE)
+    else if(state == NAV_TO_WEARHOUSE_PICK || state == NAV_LEAVING_WEARHOUSE || state == NAV_TO_WEARHOUSE)
     {
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-    }
-    
-    // ==========================================================
-    //                       BOX 1 SEQUENCE
-    // ==========================================================
-    else if(state == B1_NAV_TO_DROP)
-    {
-        if(path_strategy == TURN_AFTER_DETECTION ||DISTANCE_TURN )
-        {
-            if(intersections < 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-            else robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-        }
-        else if(path_strategy == THETA_TURN)
-        {
-            if(intersections < 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-            else if(intersections == 3 ) robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-            else if(intersections > 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-
-        }
-    }
-    else if(state == B1_ALIGN_DROP)
-    {   
-        robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
-    }
-    else if(state == B1_APPROACH_DROP)
-    {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT,EdgeDetection:: DOWN);
-    }
-    else if(state == B1_LEAVE_DROPZONE)
-    {
-        if(intersections < 3)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::RIGHT,EdgeDetection:: DOWN);
-        }
-        else if(intersections >= 3)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
-        }
-    }
-
-    // ==========================================================
-    //                       BOX 2 SEQUENCE
-    // ==========================================================
-    else if(state == B1_NAV_NEXT_LAP )
-    {
-        if(intersections == 1){
-            robot.thetae = PI * 0.5; // reset the theta! Use M_PI for standard math library compatibility
-        }
-        if(intersections <= 3) robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);  
-    }
-    else if(state == B2_NAV_PICK) 
-    {
-        robot.followLine(0.08, robot.front, Side2Follow::LEFT ,EdgeDetection:: DOWN);
-    }
-    else if(state == B2_NAV_TO_DROP)
-    {
-        if(path_strategy == TURN_AFTER_DETECTION ||DISTANCE_TURN )
-        {
-            if(intersections < 2) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-            else robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-        }
-        else if(path_strategy == THETA_TURN)
-        {
-            if(intersections < 3) robot.followLine(0.10, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-            else if(intersections == 3 ) robot.followLine(0.10, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-            else if(intersections > 3) robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-
-        }
-    }
-    else if(state == B2_ALIGN_DROP)//16
-    {
-        if(intersections <= 2) robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
-        else if(intersections == 3)//passar 1: Esq -1: direita
-        {
-            
-        } 
-        else if(intersections >= 3) robot.followLine(0.04, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
-    }
-    else if(state == B2_DROP)
-    {
-        robot.setRobotVW(-0.08, 0);
-        
-    }
-    else if(state == B2_LEAVE_DROPZONE)
-    {
-        if(intersections < 3)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::RIGHT,EdgeDetection:: DOWN);
-        }
-        else if(intersections == 3)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
-        }
-        else if(intersections >= 4)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::RIGHT,EdgeDetection:: DOWN);
-        }
     }
 
 
