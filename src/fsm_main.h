@@ -31,11 +31,11 @@ public:
 
     //std::vector<int> pick_sequence;
     //std::vector<int> drop_sequence;
-    int pick_slot = 1; // 0 | 1 | 2 | 3 
+    int pick_slot = -1; // 0 | 1 | 2 | 3 
     float d_retrive_from_wearhouse = 0.1f; 
     
     //DROP LOGIC
-    int drop_slot = 1;  // 0 | 1 | 2 | 3
+    int drop_slot = -1;  // 0 | 1 | 2 | 3
     float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
     
     //ALWAYS state what's the next state after manuever

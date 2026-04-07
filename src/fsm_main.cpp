@@ -265,6 +265,7 @@ void fsm_main::next_state_rules()
             if(robot.thetae < -1.4) set_next_state(NAV_TO_WEARHOUSE);            
         }
     }
+    
     /*
     else if(state == NAV_LEAVING_WEARHOUSE_D && robot.front.sensor.intersections == 2)//I JUST NEED TO SEE PICK/DROP 
     {
