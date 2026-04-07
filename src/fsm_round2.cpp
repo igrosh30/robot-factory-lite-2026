@@ -64,7 +64,7 @@ void fsm_round2::next_state_rules()
         }
         else if(path_strategy == FL_AND_TURNS)
         {
-            if(intersections == 3 ) //Let's do edge:UP! 
+            if(intersections == 2 ) //Let's do edge:UP! 
             {
                 target_distance = d_mv_aft_intersection;
                 move_direction = 1;
@@ -81,25 +81,33 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_GEN_DROP_TURN_OUT)
     {
+        total_greens--;
         target_distance = d_retrive_process_box;
         move_direction = -1;
-        turn_direction = -1;
+        turn_direction = 1;
         target_turn_angle = PI/2;
         state_after_maneuver = M_GEN_EXITING_PROCESS_MACHINE;
         set_next_state(GEN_MOVE_X);
     }
     else if(state == M_GEN_EXITING_PROCESS_MACHINE)
     {
-        if (intersections >= 2 )
+        if (intersections == 1 )
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
-            turn_direction = -1;
+            turn_direction = 1;
             target_turn_angle = PI/2;
-            state_after_maneuver = NAV_LEAVING_WEARHOUSE;
+            state_after_maneuver = NAV_FROM_MACHINE;
             set_next_state(GEN_MOVE_X);
         }
     }
+    else if(state == NAV_FROM_MACHINE && intersections == 1)
+    {
+        isFromMachine = true;
+        build_currentBox(this->currentBox);//get the next slot!
+        set_next_state(GEN_PICK_ZONE);
+    }
+
    
     #endif
 
@@ -189,23 +197,41 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     else if(state == GEN_PICK_ZONE )
     {
-        if(currentBox.pick_slot == 0)
+        if(!isFromMachine)
         {
-            set_next_state(GEN_PICK_ALIGN);
+            if(currentBox.pick_slot == 0) set_next_state(GEN_PICK_ALIGN);
+            else
+            {
+                target_distance = d_mv_aft_intersection;
+                move_direction = 1;
+                turn_direction = -1;
+                target_turn_angle = PI/2;
+                state_after_maneuver = GEN_PICK_COUNT_START;
+                set_next_state(GEN_MOVE_X);
+            }
         }
         else
         {
+            set_next_state(GEN_PICK_COUNT_MACHINE);    
+        }
+        
+            
+    }
+    else if(state == GEN_PICK_COUNT_START)
+    {
+        if(currentBox.pick_slot == robot.front.sensor.intersections)
+        {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
-            turn_direction = -1;
+            turn_direction = 1;
             target_turn_angle = PI/2;
-            state_after_maneuver = GEN_PICK_COUNT;
+            state_after_maneuver = GEN_PICK_ALIGN;
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == GEN_PICK_COUNT)
+    else if(state == GEN_PICK_COUNT_MACHINE)
     {
-        if(currentBox.pick_slot == robot.front.sensor.intersections)
+        if(3 - currentBox.pick_slot == robot.front.sensor.intersections)
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
@@ -271,8 +297,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_DROP_ALIGN && tis > 2)
     {
-        if(currentBox.color == 'g')  total_greens--; //WE DROPED A GREEN BOX! 
-        else if(currentBox.color == 'b') total_blues --;
+        if(currentBox.color == 'b') total_blues --;
         set_next_state(GEN_DROP_TURN_OUT);//when entering Turn Off the Magnet! 
     }
     else if(state == GEN_DROP_TURN_OUT)
@@ -332,6 +357,7 @@ void fsm_round2::enter_state_actions_rules()
     }
     else if(state == M_GEN_DROP_TURN_OUT)
     {
+
         robot.front.actuators.magnetOff();
     }
 
@@ -348,7 +374,7 @@ void fsm_round2::enter_state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_START || state == EXITING_PICK_ZONE || state == GEN_PICK_COUNT_MACHINE)
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -444,13 +470,16 @@ void fsm_round2::state_actions_rules()
     }
     else if(state == M_NAV_PROCESS_BOX || state == M_GEN_DROP_ALIGN)
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: UP);
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }
     else if(state == M_GEN_EXITING_PROCESS_MACHINE)
     {
         if(intersections == 0 ) robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection:: UP);
         else if(intersections >= 1) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: UP);
-
+    }
+    else if(state == NAV_FROM_MACHINE)
+    {
+        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
     }
     
 
@@ -473,9 +502,13 @@ void fsm_round2::state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }
+    else if(state == GEN_PICK_COUNT_MACHINE)
+    {
+        robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == GEN_PICK_BOX)
     {

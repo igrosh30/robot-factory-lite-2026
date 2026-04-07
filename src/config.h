@@ -124,15 +124,17 @@ typedef enum {
 
     NAV_TO_WEARHOUSE       = 799,
     NAV_LEAVING_WEARHOUSE  = 798,
+    NAV_FROM_MACHINE       = 797,
 
     // ==========================================
-    // --- GENERIC MANEUVERS
+    // --- GENERIC MANEUVERS- from Start Point
     // ==========================================
     GEN_TURN_90            = 900,
     GEN_MOVE_X             = 800,
     
     GEN_PICK_ZONE          = 500,
-    GEN_PICK_COUNT         = 510,
+    GEN_PICK_COUNT_START   = 510,
+    GEN_PICK_COUNT_MACHINE = 511,
     GEN_PICK_ALIGN         = 520,
     GEN_PICK_BOX           = 530,
     GEN_PICK_TURN_OUT      = 540,
@@ -149,7 +151,6 @@ typedef enum {
     // --- Second Round Aux. States
     // ==========================================
     
-
     // --- MASTER STATES:
     M_SYS_START             = 100,
     M_SYS_LEAVE_START       = 101,

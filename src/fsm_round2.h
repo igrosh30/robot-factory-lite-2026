@@ -26,6 +26,7 @@ public:
     int path_strategy = FL_AND_TURNS;
     BoxRound2 currentBox;
     int drop_sequence[4];
+    bool isFromMachine = false;
 
     int green_pick_slots[4];
     int total_greens = 0;
