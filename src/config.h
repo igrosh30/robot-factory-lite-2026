@@ -3,11 +3,11 @@
 #include <vector>
 #include <Arduino.h>
 
-//robot1 - IP: 10.227.21.112
-//robot2 - IP: 10.227.21.116
+//Master - IP: 10.227.21.112
+//Slave -  IP: 10.227.21.116
 
-#define ROBOT_MASTER
-//#define ROBOT_SLAVE
+//#define ROBOT_MASTER
+#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
@@ -22,7 +22,7 @@
 
 //left&right looking to front of the robot
 #define SWITCHL_PIN 27 
-#define SWITCHR_PIN 2
+#define SWITCHR_PIN 26
 //left&right looking to the back of the robot
 #define BACK_L_SWITCH_PIN 4
 #define BACK_R_SWITCH_PIN 5
@@ -67,12 +67,16 @@
 
 
 // (Paste your 'savedMin' array here)
-const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
-const uint16_t HARDCODED_BACK_MIN[] = { 470, 460, 360, 400, 310 }; 
+#ifdef ROBOT_MASTER
+    const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
+    const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
+#endif
 
-// (Paste your 'savedMax' array here)
-const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
-const uint16_t HARDCODED_BACK_MAX[] = { 47, 40, 45, 27, 33 };
+#ifdef ROBOT_SLAVE
+    const uint16_t HARDCODED_FRONT_MIN[] = { 181, 186, 186, 112, 126 }; 
+    const uint16_t HARDCODED_FRONT_MAX[] = { 981, 980, 981, 975, 975 };
+#endif
+
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -118,73 +122,8 @@ typedef enum {
     SYS_LEAVE_START        = 4, 
     SYS_APPROACH_WAREHOUSE = 5, 
 
-    // ==========================================
-    // --- BOX 1 SEQUENCE (100 - 199) ---
-    // ==========================================
-    B1_PICK                = 100, 
-    B1_PICK_BACKUP         = 101, 
-    B1_NAV_TO_DROP         = 120,
-    B1_TURN_ON_NAV_TO_DROP = 121, 
-    B1_ALIGN_DROP          = 123, 
-    B1_APPROACH_DROP       = 104, 
-    B1_DROP                = 105, 
-    B1_DROP_BACKUP         = 106, 
-    B1_LEAVE_DROPZONE      = 107,
-    B1_LEAVE_DROPZONE_TURN = 117, 
-    B1_NAV_NEXT_LAP        = 108, 
-
-    // ==========================================
-    // --- BOX 2 SEQUENCE (200 - 299) ---
-    // ==========================================
-    B2_NAV_PICK            = 200,
-    B2_ALIGN_PICK          = 210,
-    B2_PICK                = 211, 
-    B2_PICK_BACKUP         = 202, 
-    B2_NAV_TO_DROP         = 203, 
-    B2_ALIGN_DROP          = 210,
-    B2_ALIGN_DROP1         = 211,
-    B2_APPROACH_DROP       = 205,//facing the wearhouse - move forward and drop! 
-    B2_DROP                = 206, 
-    B2_DROP_BACKUP         = 207, 
-    B2_LEAVE_DROPZONE      = 208, 
-    B2_NAV_NEXT_LAP        = 209, 
-
-    // ==========================================
-    // --- BOX 3 SEQUENCE (300 - 399) ---
-    // ==========================================
-    B3_NAV_PICK            = 300,
-    B3_ALIGN_PICK          = 310,
-    B3_PICK                = 311,
-    B3_PICK_BACKUP         = 302,
-    B3_NAV_TO_DROP         = 303,
-    B3_ALIGN_DROP          = 304,
-    B3_APPROACH_DROP       = 305,
-    B3_DROP                = 306,
-    B3_DROP_BACKUP         = 307,
-    B3_LEAVE_DROPZONE      = 308,
-    B3_NAV_NEXT_LAP        = 309,
-
-    // ==========================================
-    // --- BOX 4 SEQUENCE (400 - 499) ---
-    // ==========================================
-    B4_NAV_PICK            = 400,
-    B4_ALIGN_PICK          = 410,
-    B4_PICK                = 411,
-    B4_PICK_BACKUP         = 402,
-    B4_NAV_TO_DROP         = 403,
-    B4_ALIGN_DROP          = 404,
-    B4_APPROACH_DROP       = 405,
-    B4_DROP                = 406,
-    B4_DROP_BACKUP         = 407,
-    B4_LEAVE_DROPZONE      = 408,
-    B4_NAV_NEXT_LAP        = 409,
-
     NAV_TO_WEARHOUSE       = 799,
     NAV_LEAVING_WEARHOUSE  = 798,
-    NAV_TO_WEARHOUSE_PICK  = 700,
-    NAV_TO_WEARHOUSE_DROP  = 701,
-    NAV_LEAVING_WEARHOUSE_P= 710,
-    NAV_LEAVING_WEARHOUSE_D= 711,
 
     // ==========================================
     // --- GENERIC MANEUVERS
