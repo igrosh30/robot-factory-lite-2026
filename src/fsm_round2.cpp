@@ -3,6 +3,10 @@
 fsm_round2::fsm_round2(robot_t& r) : robot(r)
 {
     force_state(SYS_IDLE);   
+    drop_sequence[0] = 0;
+    drop_sequence[1] = 1;
+    drop_sequence[2] = 2;
+    drop_sequence[3] = 3;
 }
 
 void fsm_round2::next_state_rules()
@@ -41,9 +45,7 @@ void fsm_round2::next_state_rules()
     if(state == M_SYS_START && tis > 2)//change to while received a correct IR! 
     {
         build_sequence_from_IR("Wuoou");
-        //call a function that based on the order of the boxes and color 
-        //creates the sequence witch the robot will need to pick the boxes and perform! 
-        set_next_state(M_SYS_LEAVE_START); // Usa o teu generic navigation
+        set_next_state(M_SYS_LEAVE_START); 
     }
     else if(state == M_SYS_LEAVE_START && robot.front.sensor.intersections == 3)
     {
@@ -73,14 +75,13 @@ void fsm_round2::next_state_rules()
             }
         }
     }
-    else if(state == M_GEN_DROP_ALIGN && tis > 2) 
+    else if(state == M_GEN_DROP_ALIGN && tis > 3) 
     {
-       
         set_next_state(M_GEN_DROP_TURN_OUT);
     }
     else if(state == M_GEN_DROP_TURN_OUT)
     {
-        target_distance = d_retrive_from_wearhouse;
+        target_distance = d_retrive_process_box;
         move_direction = -1;
         turn_direction = -1;
         target_turn_angle = PI/2;
@@ -89,9 +90,14 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_GEN_EXITING_PROCESS_MACHINE)
     {
-        if (intersections >= 3 )
+        if (intersections >= 2 )
         {
-            set_next_state(NAV_TO_WEARHOUSE);
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = -1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = NAV_LEAVING_WEARHOUSE;
+            set_next_state(GEN_MOVE_X);
         }
     }
    
@@ -183,7 +189,7 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     else if(state == GEN_PICK_ZONE )
     {
-        if(pick_slot == 0)
+        if(currentBox.pick_slot == 0)
         {
             set_next_state(GEN_PICK_ALIGN);
         }
@@ -199,7 +205,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_PICK_COUNT)
     {
-        if(pick_slot == robot.front.sensor.intersections)
+        if(currentBox.pick_slot == robot.front.sensor.intersections)
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
@@ -228,7 +234,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == EXITING_PICK_ZONE)
     {
-        if( 3 - robot.front.sensor.intersections == pick_slot)
+        if( 3 - robot.front.sensor.intersections == currentBox.pick_slot)
         {
             if(currentBox.color == 'g') set_next_state(M_NAV_PROCESS_BOX);
             else if(currentBox.color == 'b') set_next_state(NAV_LEAVING_WEARHOUSE);
@@ -253,7 +259,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_DROP_COUNT)//inside here I do follow Right!
     {
-        if(drop_slot == robot.front.sensor.intersections)
+        if(currentBox.drop_slot == robot.front.sensor.intersections)
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
@@ -280,7 +286,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == EXITING_DROP_ZONE)
     {
-        if( 3 - robot.front.sensor.intersections == drop_slot)
+        if( 3 - robot.front.sensor.intersections == currentBox.drop_slot)
         {
         }
     }
@@ -323,6 +329,10 @@ void fsm_round2::enter_state_actions_rules()
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
+    }
+    else if(state == M_GEN_DROP_TURN_OUT)
+    {
+        robot.front.actuators.magnetOff();
     }
 
     
@@ -428,16 +438,21 @@ void fsm_round2::state_actions_rules()
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX
     // ==========================================================
+    else if(state == M_SYS_LEAVE_START)
+    {
+        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+    }
     else if(state == M_NAV_PROCESS_BOX || state == M_GEN_DROP_ALIGN)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: UP);
     }
     else if(state == M_GEN_EXITING_PROCESS_MACHINE)
     {
-        if(intersections == 0 || intersections == 2 ) robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
-        else if(intersections == 1) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+        if(intersections == 0 ) robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection:: UP);
+        else if(intersections >= 1) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: UP);
 
     }
+    
 
 
 
@@ -495,6 +510,9 @@ void fsm_round2::state_actions_rules()
     }
 
 
+    
+
+
 }
 
 void fsm_round2:: build_sequence_from_IR(String ir_data) 
@@ -505,7 +523,8 @@ void fsm_round2:: build_sequence_from_IR(String ir_data)
     int box_index = 0;
     // u o o u
 
-    for(int i = 0; i < ir_data.length(); i++) {
+    for(int i = 0; i < ir_data.length(); i++)
+    {
         if(box_index > 3) return;         
         if(ir_data[i] == 'u') {
             green_pick_slots[total_greens] = box_index;
@@ -518,6 +537,7 @@ void fsm_round2:: build_sequence_from_IR(String ir_data)
             box_index++;
         }
     }
+
 }
 
 

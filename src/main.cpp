@@ -359,6 +359,12 @@ void loop() {
             serial_commands.send_command("theta", robot.thetae);
             
 
+            //second round debug:
+            serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
+            serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
+            serial_commands.send_command("boxColor", fsm.currentBox.color);
+
+           
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
@@ -393,31 +399,6 @@ void loop() {
 
             //Back Sensor data
             /*
-            serial_commands.send_command("irb0", robot.back.sensor.IR_Values[0]);
-            serial_commands.send_command("irb1", robot.back.sensor.IR_Values[1]);
-            serial_commands.send_command("irb2", robot.back.sensor.IR_Values[2]);
-            serial_commands.send_command("irb3", robot.back.sensor.IR_Values[3]);
-            serial_commands.send_command("irb4", robot.back.sensor.IR_Values[4]);
-
-            serial_commands.send_command("irnb0", robot.back.sensor.IR_norm[0]);
-            serial_commands.send_command("irnb1", robot.back.sensor.IR_norm[1]);
-            serial_commands.send_command("irnb2", robot.back.sensor.IR_norm[2]);
-            serial_commands.send_command("irnb3", robot.back.sensor.IR_norm[3]);
-            serial_commands.send_command("irnb4", robot.back.sensor.IR_norm[4]);
-
-            serial_commands.send_command("ibrma0", robot.back.sensor.maxValues[0]);
-            serial_commands.send_command("irbma1", robot.back.sensor.maxValues[1]);
-            serial_commands.send_command("irbma2", robot.back.sensor.maxValues[2]);
-            serial_commands.send_command("irbma3", robot.back.sensor.maxValues[3]);
-            serial_commands.send_command("irbma4", robot.back.sensor.maxValues[4]);
-
-            serial_commands.send_command("irbmi0", robot.back.sensor.minValues[0]);
-            serial_commands.send_command("irbmi1", robot.back.sensor.minValues[1]);
-            serial_commands.send_command("irbmi2", robot.back.sensor.minValues[2]);
-            serial_commands.send_command("irbmi3", robot.back.sensor.minValues[3]);
-            serial_commands.send_command("irbmi4", robot.back.sensor.minValues[4]);
-            serial_commands.send_command("erb", robot.back.sensor.erro);
-            serial_commands.send_command("cntb", robot.back.sensor.countIntersections);
 */
             
             
@@ -453,20 +434,14 @@ void loop() {
             
             serial_commands.send_command("cnt",robot.front.sensor.intersections);
 
-            //serial_commands.send_command("erl", robot.frontSensor.erro);
-            //serial_commands.send_command("fl_ir", robot.frontSensor.flagFound);
-            
-            //serial_commands.send_command("flgin", robot.frontSensor.flagInters);
-
-            // State machine - sync the variable
             
             serial_commands.send_command("st", (float)fsm.state);
             
             // Actuators
-            //serial_commands.send_command("mgb", robot.front.actuators.isMagnetOn ? 1 : 0);
+            
             serial_commands.send_command("swl", digitalRead(SWITCHL_PIN));
             serial_commands.send_command("swr", digitalRead(SWITCHR_PIN));
-            //serial_commands.send_command("fl", state_machine.flag);
+            
 
             
             // WiFi status (like teacher's code)

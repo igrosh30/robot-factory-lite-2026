@@ -25,6 +25,7 @@ public:
     robot_t& robot;                
     int path_strategy = FL_AND_TURNS;
     BoxRound2 currentBox;
+    int drop_sequence[4];
 
     int green_pick_slots[4];
     int total_greens = 0;
@@ -40,7 +41,7 @@ public:
     
     
     int state_after_maneuver;
-
+    float d_retrive_process_box = 0.19f;
     float d_retrive_from_wearhouse = 0.1f; 
     float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
     float ref_s;
