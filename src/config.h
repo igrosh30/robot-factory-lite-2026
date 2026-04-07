@@ -6,8 +6,8 @@
 //Master - IP: 10.227.21.112
 //Slave -  IP: 10.227.21.116
 
-//#define ROBOT_MASTER
-#define ROBOT_SLAVE
+#define ROBOT_MASTER
+//#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
@@ -145,7 +145,31 @@ typedef enum {
     EXITING_DROP_ZONE      = 640,
     
 
+    // ==========================================
+    // --- Second Round Aux. States
+    // ==========================================
+    
+
+    // --- MASTER STATES:
+    M_SYS_START             = 100,
+    M_SYS_LEAVE_START       = 101,
+
+
+    M_NAV_PROCESS_BOX               = 200,
+    M_GEN_DROP_ALIGN                = 210,
+    M_GEN_DROP_TURN_OUT             = 211,
+    M_GEN_EXITING_PROCESS_MACHINE   = 212,
+    
+    // --- SLAVE STATES:
+    S_SYS_START             = 400,
+    
+
+    
+    
+
 } fsm_state;
+
+
 
 //this indexes should match in p4d.cpp aray declaration!
 typedef enum { 

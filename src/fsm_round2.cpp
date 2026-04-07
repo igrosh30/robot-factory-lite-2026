@@ -1,54 +1,164 @@
-#include "fsm_main.h"
-#include "config.h"
+#include "fsm_round2.h"
 
-fsm_main::fsm_main(robot_t& r) : robot(r)
+fsm_round2::fsm_round2(robot_t& r) : robot(r)
 {
-    // You can set initial state here if you want
-    force_state(SYS_IDLE);
-    current_box_index = 0;
-    #ifdef ROBOT_MASTER
-        sequence[0].pick_slot = 3;
-        sequence[0].drop_slot = 3;
-        sequence[1].pick_slot = 2;
-        sequence[1].drop_slot = 2;
-    #endif
-    #ifdef ROBOT_SLAVE
-        sequence[0].pick_slot = 1;
-        sequence[0].drop_slot = 1;
-        sequence[1].pick_slot = 0;
-        sequence[1].drop_slot = 0;
-    #endif
+    force_state(SYS_IDLE);   
 }
 
-void fsm_main::next_state_rules()
+void fsm_round2::next_state_rules()
 {
+    auto& intersections = robot.front.sensor.intersections;
     // ==========================================================
-    //                    SYSTEM & STARTUP
+    //                    SYSTEM & STARTUP (Ambos os Robôs)
     // ==========================================================
     if(state == SYS_IDLE && robot.front.actuators.isSwitch_left_On)
     {
         set_next_state(SYS_CALIBRATION);
     }
-    else if(state == SYS_CALIBRATION && (robot.thetae > 6.2 || !CALIBRATION_MODE ))//CHECK IF ITS A MINUS
+    else if(state == SYS_CALIBRATION && (robot.thetae > 6.2 || !CALIBRATION_MODE ))
     {
-        
-        for(int i = 0; i<5; i++)
-        {
+        for(int i = 0; i<5; i++) {
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
-        set_next_state(SYS_START);
-    }
-    else if(state == SYS_START && tis >2)
-    {
-        set_next_state(SYS_LEAVE_START);
-    }
-    else if(state==SYS_LEAVE_START && robot.front.sensor.intersections == 3)
-    {
-        pick_slot = sequence[current_box_index].pick_slot;
-        set_next_state(GEN_PICK_ZONE);
+        
+        #ifdef ROBOT_MASTER
+            set_next_state(M_SYS_START); // Master espera pelo sinal de START
+        #endif
+        #ifdef ROBOT_SLAVE
+            set_next_state(S_SYS_START); // Slave vai logo dormir à espera do Master
+        #endif
     }
    
+
+
+    // ==========================================================
+    //               LÓGICA EXCLUSIVA DO MASTER - caixa Verde
+    // ==========================================================
+    #ifdef ROBOT_MASTER
+    
+    
+    if(state == M_SYS_START && tis > 2)//change to while received a correct IR! 
+    {
+        build_sequence_from_IR("Wuoou");
+        //call a function that based on the order of the boxes and color 
+        //creates the sequence witch the robot will need to pick the boxes and perform! 
+        set_next_state(M_SYS_LEAVE_START); // Usa o teu generic navigation
+    }
+    else if(state == M_SYS_LEAVE_START && robot.front.sensor.intersections == 3)
+    {
+        build_currentBox(this->currentBox);
+        set_next_state(GEN_PICK_ZONE);
+    }
+
+    // ==========================================================
+    //               NAV SEQUENCES:
+    // ==========================================================
+    else if(state == M_NAV_PROCESS_BOX)
+    {
+        if(path_strategy == FOLLOW_LINE)
+        {
+            //follow right 
+        }
+        else if(path_strategy == FL_AND_TURNS)
+        {
+            if(intersections == 3 ) //Let's do edge:UP! 
+            {
+                target_distance = d_mv_aft_intersection;
+                move_direction = 1;
+                turn_direction = 1;
+                target_turn_angle = PI/2;
+                state_after_maneuver = M_GEN_DROP_ALIGN;
+                set_next_state(GEN_MOVE_X);
+            }
+        }
+    }
+    else if(state == M_GEN_DROP_ALIGN && tis > 2) 
+    {
+       
+        set_next_state(M_GEN_DROP_TURN_OUT);
+    }
+    else if(state == M_GEN_DROP_TURN_OUT)
+    {
+        target_distance = d_retrive_from_wearhouse;
+        move_direction = -1;
+        turn_direction = -1;
+        target_turn_angle = PI/2;
+        state_after_maneuver = M_GEN_EXITING_PROCESS_MACHINE;
+        set_next_state(GEN_MOVE_X);
+    }
+    else if(state == M_GEN_EXITING_PROCESS_MACHINE)
+    {
+        if (intersections >= 3 )
+        {
+            set_next_state(NAV_TO_WEARHOUSE);
+        }
+    }
+   
+    #endif
+
+
+    // ==========================================================
+    //               LÓGICA EXCLUSIVA DO SLAVE
+    // ==========================================================
+    #ifdef ROBOT_SLAVE
+    
+    // 1. DORMIR À ESPERA DA CAIXA NA MÁQUINA
+    if(state == S_WAITING_FOR_SYNC)
+    {
+        robot.setRobotVW(0.0, 0.0); // Motores parados
+        
+        if(check_sync_from_master()) // Se leu o IR do Master
+        {
+            pick_slot = MACHINE_B_OUTPUT_SLOT;
+            set_next_state(SLAVE_NAV_TO_MACHINE_OUT);
+        }
+    }
+
+    // 2. NAVEGAR PARA O OUTPUT DA MÁQUINA B
+    else if(state == SLAVE_NAV_TO_MACHINE_OUT)
+    {
+        // Lógica de aproximação à saída da máquina (ajustar ao mapa)
+        if(robot.front.sensor.intersections == 1) {
+            set_next_state(GEN_PICK_ALIGN); // Usa o teu pick genérico!
+        }
+    }
+
+    // 3. APANHOU A CAIXA -> VAI PARA O ARMAZÉM DE SAÍDA
+    else if(state == EXITING_PICK_ZONE && has_box)
+    {
+        drop_slot = sequence[completed_green_boxes].drop_slot;
+        set_next_state(NAV_TO_WEARHOUSE_DROP); // Navegação genérica
+    }
+
+    // 4. LARGOU NO ARMAZÉM -> VOLTAR AO HOLDING NODE
+    else if(state == EXITING_DROP_ZONE && !has_box)
+    {
+        completed_green_boxes++;
+        set_next_state(SLAVE_RETURN_TO_HOLDING);
+    }
+
+    // 5. REGRESSA E ENTRA EM WAIT
+    else if(state == SLAVE_RETURN_TO_HOLDING)
+    {
+        // Navega de volta ao cruzamento seguro
+        if(robot.front.sensor.intersections == 2)
+        { 
+            if(completed_green_boxes < total_green_boxes)
+            {
+                set_next_state(S_WAITING_FOR_SYNC);
+            } else
+            {
+                set_next_state(SYS_FINISH); // Acabou o trabalho das verdes!
+            }
+        }
+    
+    }
+    #endif
+
+    // ==========================================================
+    //               GEN_MOVE & GEN_TURN
+    // ==========================================================
     else if(state == GEN_MOVE_X)
     {
         float distance_moved = abs(robot.rel_s - ref_s);
@@ -69,7 +179,7 @@ void fsm_main::next_state_rules()
     }
 
     // ==========================================================
-    //                       GENERIC PICK BOX
+    //                GENERIC PICK BOX & DROP BOX
     // ==========================================================
     else if(state == GEN_PICK_ZONE )
     {
@@ -120,14 +230,10 @@ void fsm_main::next_state_rules()
     {
         if( 3 - robot.front.sensor.intersections == pick_slot)
         {
-            set_next_state(NAV_LEAVING_WEARHOUSE);
+            if(currentBox.color == 'g') set_next_state(M_NAV_PROCESS_BOX);
+            else if(currentBox.color == 'b') set_next_state(NAV_LEAVING_WEARHOUSE);
         }
     }
-
-
-    // ==========================================================
-    //                       GENERIC DROP BOX
-    // ==========================================================
 
     else if(state == GEN_DROP_BOX)
     {
@@ -159,6 +265,8 @@ void fsm_main::next_state_rules()
     }
     else if(state == GEN_DROP_ALIGN && tis > 2)
     {
+        if(currentBox.color == 'g')  total_greens--; //WE DROPED A GREEN BOX! 
+        else if(currentBox.color == 'b') total_blues --;
         set_next_state(GEN_DROP_TURN_OUT);//when entering Turn Off the Magnet! 
     }
     else if(state == GEN_DROP_TURN_OUT)
@@ -174,99 +282,15 @@ void fsm_main::next_state_rules()
     {
         if( 3 - robot.front.sensor.intersections == drop_slot)
         {
-            if(++current_box_index < 2)
-            {
-                // Ainda há caixas para apanhar! Prepara a próxima viagem e volta para a linha.
-                //pick_slot = sequence[current_box_index].pick_slot; DO ONLY ONCE: state = NAV_TO_WEARHOUSE_PICK
-                //drop_slot = sequence[current_box_index].drop_slot;
-                set_next_state(NAV_LEAVING_WEARHOUSE);
-            }
-            else
-            {
-                set_next_state(SYS_IDLE);
-            }
-
         }
     }
 
-    // ==========================================================
-    //                       GENERIC NAV_TO_WEARHOUSE
-    // ==========================================================
-    #ifdef ROBOT_MASTER
-        else if(state == NAV_TO_WEARHOUSE && robot.front.sensor.intersections == 4)//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
-        {
-            if(!robot.front.actuators.isMagnetOn)
-            {
-                pick_slot = sequence[current_box_index].pick_slot;
-                set_next_state(GEN_PICK_ZONE);
-            }
-            else
-            {
-                drop_slot = sequence[current_box_index].drop_slot;
-                set_next_state(GEN_DROP_BOX);
-            }
-            
-        }
-    #endif
-    #ifdef ROBOT_SLAVE
-        else if(state == NAV_TO_WEARHOUSE )//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
-        {
-            if(!robot.front.actuators.isMagnetOn)
-            {
-                if(robot.front.sensor.intersections == 3)
-                {
-                    pick_slot = sequence[current_box_index].pick_slot;
-                    set_next_state(GEN_PICK_ZONE);
-                }
-            }
-            else
-            {
-                if(robot.front.sensor.intersections == 4)
-                {
-                    drop_slot = sequence[current_box_index].drop_slot;
-                    set_next_state(GEN_DROP_BOX);       
-                }
-                
-            } 
-        }
-    #endif
-
-    else if(state == NAV_LEAVING_WEARHOUSE )
-    {
-        //Go x front then turn!
-        if(path_strategy == TURN_AFTER_DETECTION)
-        {
-            if(robot.front.sensor.intersections == 2)   //detetado com UP
-            {
-                state_after_maneuver = NAV_TO_WEARHOUSE;
-                turn_direction = -1;
-                target_turn_angle = PI/4; //45
-                set_next_state(GEN_TURN_90);
-            }
-        }
-        else if(path_strategy == DISTANCE_TURN)
-        {
-            if(robot.front.sensor.intersections == 2)
-            {//I can do to count the fith intersection in UP direction or not!                  
-                
-                //Move forward 4.0cm!
-                target_distance = 0.040f;     
-                move_direction = 1;
-
-                target_turn_angle = PI/2;
-                turn_direction = -1;
-                state_after_maneuver = NAV_TO_WEARHOUSE;//estado final DEPOIS do turn
-                set_next_state(GEN_MOVE_X);//after this we always go GEN_TURN_90! 
-            }
-        }
-        else if(path_strategy == THETA_TURN)
-        {
-            if(robot.thetae < -1.4) set_next_state(NAV_TO_WEARHOUSE);            
-        }
-    }
 }
 
-void fsm_main::enter_state_actions_rules()
+
+
+
+void fsm_round2::enter_state_actions_rules()
 {
     // ==========================================================
     //                    SYSTEM & STARTUP
@@ -276,7 +300,7 @@ void fsm_main::enter_state_actions_rules()
         robot.setRobotVW(0,0);
         robot.front.actuators.magnetOff();
     }
-    else if(state == SYS_START)
+    else if(state == M_SYS_START)
     {
         robot.setRobotVW(0,0);
         robot.thetae = PI*0.5;
@@ -287,9 +311,18 @@ void fsm_main::enter_state_actions_rules()
         robot.front.sensor.intersections = 0;
         robot.front.sensor.readValues();
     }
-    else if(state == SYS_LEAVE_START)
+    else if(state == M_SYS_LEAVE_START)
     {
         robot.front.sensor.intersections = 0;
+    }
+
+    // ==========================================================
+    //             GENERIC NAV to PROCESS BOX
+    // ==========================================================
+    else if(state == M_NAV_PROCESS_BOX)
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.sensor.wasIntersection = false;
     }
 
     
@@ -339,15 +372,15 @@ void fsm_main::enter_state_actions_rules()
         if(robot.front.actuators.isMagnetOn)
         {
             //update pose:
-            robot.xe = 
-            robot.ye =
+            //robot.xe = 
+            //robot.ye =
             robot.thetae = -PI/2;
         }
         else 
         {
             //update pose:
-            robot.xe = 
-            robot.ye =
+            //robot.xe = 
+            //robot.ye =
             robot.thetae = PI/2;
         }
         robot.front.sensor.wasIntersection = false;
@@ -361,10 +394,9 @@ void fsm_main::enter_state_actions_rules()
 
 }
 
-void fsm_main::state_actions_rules()
+void fsm_round2::state_actions_rules()
 {
-    // High-speed reference alias
-    auto& intersections = robot.front.sensor.intersections;
+    auto& intersections = robot.front.sensor.intersections;   
     
     // Run every loop while in current state
     float v_nom, w_nom = 0.0f;
@@ -392,6 +424,23 @@ void fsm_main::state_actions_rules()
     {
         robot.setRobotVW(0.05, 0);
     }
+
+    // ==========================================================
+    //             GENERIC NAV to PROCESS BOX
+    // ==========================================================
+    else if(state == M_NAV_PROCESS_BOX || state == M_GEN_DROP_ALIGN)
+    {
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: UP);
+    }
+    else if(state == M_GEN_EXITING_PROCESS_MACHINE)
+    {
+        if(intersections == 0 || intersections == 2 ) robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
+        else if(intersections == 1) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+
+    }
+
+
+
 
     // ==========================================================
     //                 PICK & DROP BOX/ MANUEVERS 
@@ -448,7 +497,59 @@ void fsm_main::state_actions_rules()
 
 }
 
-void control(robot_t& robot)
+void fsm_round2:: build_sequence_from_IR(String ir_data) 
 {
-    state_machines.step();
+    // RESET às variáveis para garantir que está limpo
+    total_greens = 0;
+    total_blues = 0;
+    int box_index = 0;
+    // u o o u
+
+    for(int i = 0; i < ir_data.length(); i++) {
+        if(box_index > 3) return;         
+        if(ir_data[i] == 'u') {
+            green_pick_slots[total_greens] = box_index;
+            total_greens++;
+            box_index ++;
+        }
+        else if(ir_data[i] == 'o') {
+            blue_pick_slots[total_blues] = box_index;
+            total_blues++;
+            box_index++;
+        }
+    }
 }
+
+
+void fsm_round2::build_currentBox(BoxRound2 &box)
+{
+    if(total_greens > 0 && current_green_index < 4) // when we store a green box we decrement?!
+    {
+        box.color = 'g';
+        box.pick_slot = this->green_pick_slots[this->current_green_index];
+        current_green_index++;
+        //what should be the dropSlot?!
+    }
+    else if(total_blues > 0 && current_blue_index < 4)
+    {
+        box.color = 'b';
+        box.pick_slot = this->blue_pick_slots[this->current_blue_index];
+        current_blue_index++;
+    }
+}
+
+
+// Mais tarde tens de ligar isto à UART1 ou UART2 (Serial1/Serial2)
+void fsm_round2::send_sync_to_slave() {
+    // Exemplo: Serial1.print("RDY\n");
+    // (A implementar quando tratares do hardware IR)
+}
+
+bool fsm_round2::check_sync_from_master() {
+    // Exemplo: Se pressionares um botão no Slave para simular a chegada da SMS
+    // return robot.front.actuators.isSwitch_right_On; 
+    
+    // (A implementar quando tratares da leitura UART)
+    return false; // Retorna true quando ler a frame certa
+}
+
