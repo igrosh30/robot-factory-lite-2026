@@ -83,11 +83,11 @@ void fsm_main::next_state_rules()
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = PI/2;
-            state_after_maneuver = GEN_PICK_COUNT;
+            state_after_maneuver = GEN_PICK_COUNT_START;
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == GEN_PICK_COUNT)
+    else if(state == GEN_PICK_COUNT_START)
     {
         if(pick_slot == robot.front.sensor.intersections)
         {
@@ -305,7 +305,7 @@ void fsm_main::enter_state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_START || state == EXITING_PICK_ZONE)
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -409,7 +409,7 @@ void fsm_main::state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }

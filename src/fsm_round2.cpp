@@ -11,7 +11,7 @@ fsm_round2::fsm_round2(robot_t& r) : robot(r)
 
 void fsm_round2::next_state_rules()
 {
-    auto& intersections = robot.front.sensor.intersections;
+    //auto& intersections = robot.front.sensor.intersections;
     // ==========================================================
     //                    SYSTEM & STARTUP (Ambos os Robôs)
     // ==========================================================
@@ -44,7 +44,7 @@ void fsm_round2::next_state_rules()
     
     if(state == M_SYS_START && tis > 2)//change to while received a correct IR! 
     {
-        build_sequence_from_IR("Wuoou");
+        build_sequence_from_IR("Wouou");
         set_next_state(M_SYS_LEAVE_START); 
     }
     else if(state == M_SYS_LEAVE_START && robot.front.sensor.intersections == 3)
@@ -64,7 +64,7 @@ void fsm_round2::next_state_rules()
         }
         else if(path_strategy == FL_AND_TURNS)
         {
-            if(intersections == 2 ) //Let's do edge:UP! 
+            if(robot.front.sensor.intersections == 2 ) //Let's do edge:UP! 
             {
                 target_distance = d_mv_aft_intersection;
                 move_direction = 1;
@@ -91,7 +91,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_GEN_EXITING_PROCESS_MACHINE)
     {
-        if (intersections == 1 )
+        if (robot.front.sensor.intersections == 1 )
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
@@ -101,11 +101,12 @@ void fsm_round2::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == NAV_FROM_MACHINE && intersections == 1)
+    else if(state == NAV_FROM_MACHINE && robot.front.sensor.intersections == 1)
     {
         isFromMachine = true;
         build_currentBox(this->currentBox);//get the next slot!
         set_next_state(GEN_PICK_ZONE);
+
     }
 
    
@@ -195,13 +196,15 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     //                GENERIC PICK BOX & DROP BOX
     // ==========================================================
-    else if(state == GEN_PICK_ZONE )
+    else if(state == GEN_PICK_ZONE)
     {
         if(!isFromMachine)
         {
             if(currentBox.pick_slot == 0) set_next_state(GEN_PICK_ALIGN);
             else
             {
+                robot.setRobotVW(0,0);
+                
                 target_distance = d_mv_aft_intersection;
                 move_direction = 1;
                 turn_direction = -1;
@@ -235,7 +238,7 @@ void fsm_round2::next_state_rules()
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
-            turn_direction = 1;
+            turn_direction = -1;
             target_turn_angle = PI/2;
             state_after_maneuver = GEN_PICK_ALIGN;
             set_next_state(GEN_MOVE_X);
@@ -262,6 +265,7 @@ void fsm_round2::next_state_rules()
     {
         if( 3 - robot.front.sensor.intersections == currentBox.pick_slot)
         {
+            isFromMachine = false;
             if(currentBox.color == 'g') set_next_state(M_NAV_PROCESS_BOX);
             else if(currentBox.color == 'b') set_next_state(NAV_LEAVING_WEARHOUSE);
         }
@@ -350,7 +354,8 @@ void fsm_round2::enter_state_actions_rules()
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX
     // ==========================================================
-    else if(state == M_NAV_PROCESS_BOX)
+    else if(state == M_NAV_PROCESS_BOX || state == M_GEN_EXITING_PROCESS_MACHINE || 
+            state == NAV_FROM_MACHINE)
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -402,6 +407,7 @@ void fsm_round2::enter_state_actions_rules()
     // ==========================================================
     //                 GENERIC NAV_TO_WEARHOUSE 
     // ==========================================================
+    else if(state == NAV_FROM_MACHINE) robot.setRobotVW(0,0);
     else if(state == NAV_TO_WEARHOUSE || state == NAV_LEAVING_WEARHOUSE)
     {
         robot.setRobotVW(0.0, 0.0);
