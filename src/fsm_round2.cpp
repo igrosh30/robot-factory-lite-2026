@@ -185,7 +185,7 @@ void fsm_round2::next_state_rules()
         state_after_maneuver = S_WAIT_PICK_CMD;
         set_next_state(GEN_MOVE_X);
     }
-    else if(state == S_WAIT_PICK_CMD)
+    else if(state == S_WAIT_PICK_CMD && tis > 2)
     {
         if(robot.appLayer.hasNewCommand())
         {
@@ -195,6 +195,7 @@ void fsm_round2::next_state_rules()
                 set_next_state(S_MACHINE_ALIGN_PICK);
             }
         }
+        else set_next_state(S_MACHINE_ALIGN_PICK);
     }
     else if(state == S_MACHINE_ALIGN_PICK && ((robot.front.actuators.isSwitch_left_On | robot.front.actuators.isSwitch_right_On)) )
     {
@@ -520,7 +521,7 @@ void fsm_round2::enter_state_actions_rules()
     //                 SLAVE ROBOT:
     // ==========================================================
     else if(state == S_NAV_MACHINE_OUT || state == S_NAV_TO_MACHINE_FROM_WHOUSE ||
-            state == S_NAV_EXIT_DROP_ZONE_2_MACHINE)
+            state == S_NAV_EXIT_DROP_ZONE_2_MACHINE|| state == S_NAV_MACHINE_TO_DROP)
     {
         robot.front.sensor.wasIntersection = false;
         robot.front.sensor.intersections = 0;
@@ -663,7 +664,7 @@ void fsm_round2::state_actions_rules()
     else if(state == S_NAV_MACHINE_OUT)//get out at fifth intersection! 
     {
         if(intersections == 0) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-        else robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        else robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
     }
     else if(state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
