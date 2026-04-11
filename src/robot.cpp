@@ -48,7 +48,8 @@ robot_t::robot_t(pico4drive_t& driver)
 bool robot_t::init_COM(Stream* comPort)
 {
   if(comPort == nullptr) return false;
-  currentComState = COM_START; //This will be changed inside the StateMachine! 
+  currentComState = COM_IDLE; //This will be changed inside the StateMachine! 
+  COM_ok = false;// true if PING PONG WORKS! 
   sendTries = 0;
   comTimer = 0;
 
@@ -56,29 +57,32 @@ bool robot_t::init_COM(Stream* comPort)
   return true;
 
 }
-
 void robot_t::updateComState()
 {
-  #ifdef ROBOT_MASTER
+    #ifdef ROBOT_MASTER
+    // ====================== MASTER ======================
     switch(currentComState)
     {
         case ComState::COM_START:
-            
             appLayer.sendPing(SLAVE);
             comTimer = millis();
             currentComState = ComState::COM_WAIT_PONG;
             break;
 
         case ComState::COM_WAIT_PONG:
-            if(sendTries > 200 ) currentComState = ComState::COM_ERROR;
-            
-            appLayer.update();
-            if (appLayer.hasReceivedPong()) 
+            if(sendTries > 20) 
             {
+                currentComState = ComState::COM_ERROR;
+                break;
+            }
+            appLayer.update();
+            if(appLayer.hasReceivedPong())
+            {
+                COM_ok = true;
                 currentComState = ComState::COM_WAIT_SEND;
                 sendTries = 0;
             }
-            else if (millis() - comTimer > 3000) 
+            else if(millis() - comTimer > 3000)
             {
                 sendTries++;
                 comTimer = millis();
@@ -89,65 +93,91 @@ void robot_t::updateComState()
         case ComState::COM_WAIT_SEND:
             if(hasPendingCommand)
             {
-              appLayer.sendCommand(SLAVE,pendingCommandId);
-              hasPendingCommand = false;
-              comTimer = millis();
-              currentComState = ComState::COM_WAIT_ACK;
+                if(hasPendingParam)
+                {
+                  appLayer.sendCommandWithData(NodeId::SLAVE, pendingCommandId, &pendingParam, 1);
+                }
+                else appLayer.sendCommand(NodeId::SLAVE, pendingCommandId);
+                
+                comTimer = millis();
+                currentComState = ComState::COM_WAIT_ACK;
             }
             break;
 
         case ComState::COM_WAIT_ACK:
             appLayer.update();
-            if (appLayer.hasReceivedAck()) 
+            if(sendTries > 100 ){
+              hasPendingCommand = false; // Give up and clear flags
+              hasPendingParam = false;
+              currentComState = COM_ERROR;
+            } 
+            if(appLayer.hasReceivedAck())
             {
-                currentComState = ComState::COM_WAIT_SEND;   // volta ao idle
-                //appLayer.ackReceived = false;
-            }
-            else if (millis() - comTimer > 1000) 
-            {
-                
-                currentComState = ComState::COM_ERROR;
-            }
-            break;
-
-        case ComState::COM_ERROR:
-            
-            currentComState = ComState::COM_START;
-            break;
-    }
-  #endif
-
-  // ====================== SLAVE ======================
-  #ifdef ROBOT_SLAVE
-    switch(currentComState)
-    {
-        case ComState::COM_START:                    // só entra aqui uma vez no init
-            currentComState = ComState::COM_LISTEN;  // vai direto para o estado de escuta
-            break;
-
-        case ComState::COM_LISTEN:                  
-            
-            appLayer.update();
-            if (hasPendingCommand)
-            {
-                appLayer.sendCommand(MASTER, pendingCommandId);   
+                sendTries = 0;
                 hasPendingCommand = false;
+                hasPendingParam = false;
+                currentComState = ComState::COM_WAIT_SEND;
             }
-            // senão fica aqui à espera de comandos do Master
+            else if(millis() - comTimer > 2000)
+            {
+                sendTries++;
+                currentComState = ComState::COM_WAIT_SEND;
+            }
             break;
 
         case ComState::COM_ERROR:
-            currentComState = ComState::COM_LISTEN;   // recupera rápido
+            COM_ok = false;
             break;
     }
     #endif
-    
+
+    // ====================== SLAVE ======================
+    #ifdef ROBOT_SLAVE
+    switch(currentComState)
+    {
+        case ComState::COM_START:
+            currentComState = ComState::COM_LISTEN;
+            break;
+
+        case ComState::COM_LISTEN:
+            appLayer.update();                 
+            
+            if(appLayer.hasNewCommand())
+            {
+
+               
+            }
+            // If the FSM previously asked us to send a STATUS back to Master
+            if(hasPendingCommand)
+            {
+                appLayer.sendCommand(MASTER, pendingCommandId);
+                hasPendingCommand = false;
+            }
+            break;
+
+        case ComState::COM_ERROR:
+            currentComState = ComState::COM_LISTEN;   // auto-recover
+            break;
+    }
+    #endif
 }
+
 void robot_t::send_command(uint8_t cmdId)
 {
   if(robot_id == MASTER && !hasPendingCommand)
   {
     pendingCommandId = cmdId;
+    hasPendingCommand = true;
+    hasPendingParam = false;
+  }
+}
+void robot_t::send_command_param(uint8_t cmdId, uint8_t param)
+{
+  if(robot_id == MASTER && !hasPendingCommand)
+  {
+    pendingCommandId = cmdId;
+    pendingParam = param;   // Store the 1-byte value
+    hasPendingParam = true; // Flag that we have data
     hasPendingCommand = true;
   }
 }

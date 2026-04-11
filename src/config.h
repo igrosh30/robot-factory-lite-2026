@@ -162,19 +162,16 @@ typedef enum {
     M_GEN_EXITING_PROCESS_MACHINE   = 212,
 
 
-    S_SYS_LEAVE_START               = 300,
+    // --- SLAVE STATES:
+    S_WAIT_BOX_INFO                 = 300,
     S_NAV_MACHINE_OUT               = 310,
-    S_MACHINE_ALIGN                 = 320,
+    S_NAV_EXIT_DROP_ZONE_2_MACHINE  = 305,
+    S_NAV_TO_MACHINE_FROM_WHOUSE    = 320,
+    S_WAIT_PICK_CMD                 = 399,
+    S_MACHINE_ALIGN_PICK            = 331,
     S_MACHINE_PICK_BOX              = 330,
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
-    
-    
-    // --- SLAVE STATES:
-    S_SYS_START             = 400,
-    
-
-    
     
 
 } fsm_state;

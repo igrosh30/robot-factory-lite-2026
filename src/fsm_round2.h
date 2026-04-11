@@ -26,6 +26,7 @@ public:
     int path_strategy = FL_AND_TURNS;
     BoxRound2 currentBox;
     int drop_sequence[4];
+    int current_box_index;
     bool isFromMachine = false;
 
     int green_pick_slots[4];
@@ -51,7 +52,7 @@ public:
 
     float ref_theta;
     float target_turn_angle = PI/2;
-    int turn_direction = 0;
+    int turn_direction = 0;// 1: left / -1: right 
 
     fsm_round2(robot_t& r);         
     void build_sequence_from_IR(String ir_data);

@@ -10,6 +10,7 @@
 #include "config.h"
 #include "gchannels.h"
 #include "AppLayer.h"
+#include "fsm_round2.h"
 
 #ifndef NUM_WHEELS
 #define NUM_WHEELS 2
@@ -47,6 +48,7 @@ public:
 
   //COM state:
   ComState currentComState;
+  bool COM_ok;
   uint8_t sendTries;
   uint32_t comTimer;
   int cmdID_send_debug = 0;
@@ -94,6 +96,7 @@ public:
   int led;
 
   
+  
   float tof_dist, prev_tof_dist;
 
   int LastTouchSwitch, TouchSwitch;
@@ -104,11 +107,15 @@ public:
   //COM methods:
   bool init_COM(Stream* comPort);
   void updateComState();
-  void send_command(uint8_t cmdId);
+  void send_command(uint8_t cmdId); 
+  void send_command_param(uint8_t cmdId, uint8_t param); 
+  void listen_command(); //however, I can be always listening... or just enable listening in some states! 
 
   bool hasPendingCommand = false;
   uint8_t pendingCommandId = 0;
 
+  uint8_t pendingParam;      
+  bool hasPendingParam;
 
   robot_t(pico4drive_t& driver);
 

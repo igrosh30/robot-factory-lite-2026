@@ -5,6 +5,14 @@ void AppLayer::init(Stream *port, NodeId id)
 {
     this->myId = id;
     this->ddl.init(port);
+    // Reset all reception flags
+    hasNewCommandReceived = false;
+    receivedCmdId         = 0;
+    receivedDirection     = 0;
+    receivedParamLen      = 0;
+    pongReceived          = false;
+    ackReceived           = false;
+
 }
 
 void AppLayer::sendFrame(const Frame& f)
@@ -21,7 +29,37 @@ void AppLayer::sendPing(NodeId dst) {
     sendFrame(pingFrame);
 }
 
-void AppLayer::update()
+
+void AppLayer::sendCommand(NodeId dst, uint8_t cmdId)
+{
+    sendCommandWithData(dst, cmdId, nullptr, 0);
+}
+
+void AppLayer::sendCommandWithData(NodeId dst, uint8_t cmdId, const uint8_t* data, uint8_t dataLen)
+{
+    this->lastCommandSent = cmdId;
+    this->ackReceived = false;
+
+    uint8_t direction = (cmdId >= 20) ? 1 : 0;
+    uint8_t totalLen = 2 + dataLen;
+    if (totalLen > MAX_PAYLOAD) totalLen = MAX_PAYLOAD;
+
+    Frame cmdFrame;
+    buildHeader(cmdFrame, dst, MsgType::DATA, totalLen);
+
+    cmdFrame.payload.data.direction = direction;
+    cmdFrame.payload.data.cmdId     = cmdId;
+
+    if (dataLen > 0 && data != nullptr)
+        memcpy(cmdFrame.payload.data.param, data, dataLen);
+
+    sendFrame(cmdFrame);
+}
+
+// ================================================================
+//  FRAME PROCESSING
+// ================================================================
+bool AppLayer::update()
 {
     this->ddl.update();
 
@@ -30,86 +68,93 @@ void AppLayer::update()
         Frame incomingFrame;
         this->ddl.getFrame(incomingFrame);
         this->processFrame(incomingFrame);
+        return true;
     }
-}
-
-void AppLayer::sendCommand(NodeId dst, uint8_t cmdId)
-{
-    this->lastCommandSent = cmdId;
-    this->ackReceived = false;
-
-    //NOTE cmdID > 20 is asking something!
-    uint8_t direction = (cmdId >= 20) ? 1 : 0;   // 0 = CMD, 1 = STATUS
-
-    Frame cmdFrame;
-    buildHeader(cmdFrame, dst, MsgType::DATA, 2);   // direction (1 byte) + cmdId (1 byte)
-
-    cmdFrame.payload.data.direction = 0;   // 0 = CMD (MASTER -> SLAVE)
-    cmdFrame.payload.data.cmdId     = cmdId;
-
-    sendFrame(cmdFrame);
+    return false;
 }
 
 void AppLayer::processFrame(const Frame& f) 
 { 
     uint8_t type = f.header.type;
-    uint8_t cmd  = f.payload.data.cmdId;
 
     if(myId == MASTER)
     {
-        if(type == MsgType::PONG)pongReceived = true;
+        if(type == MsgType::PONG) pongReceived = true;
+        
         else if(type == MsgType::ACK && f.payload.action_ack.status == 0) ackReceived = true;
+        
+        else if(type == MsgType::DATA && f.payload.data.direction == 1)
+        {
+            hasNewCommandReceived = true;
+            receivedCmdId         = f.payload.data.cmdId;
+            receivedDirection     = 1;
+            receivedParamLen      = (f.header.len > 2) ? f.header.len - 2 : 0;
+            if (receivedParamLen > 0)
+                memcpy(receivedParams, f.payload.data.param, receivedParamLen);
+        }
     }
     else if(myId == SLAVE)
     {
         if (type == MsgType::PING)
         {
             Frame pong;
-            this->buildHeader(pong,MASTER,PONG,0);
-            this->sendFrame(pong); 
+            buildHeader(pong, MASTER, MsgType::PONG, 0);
+            sendFrame(pong);
             return;
         }
         else if(type == MsgType::DATA)
-    {
-        if(f.payload.data.direction == 0) // CMD
         {
-            Frame ackFrame;
-            buildHeader(ackFrame, MASTER, MsgType::ACK, 2);
-            ackFrame.payload.action_ack.cmdId = f.payload.data.cmdId;
-            ackFrame.payload.action_ack.status = 0;   // OK
-            sendFrame(ackFrame);
+            if(f.payload.data.direction == 0) // CMD from master
+            {
+                // Send ACK 
+                Frame ackFrame;
+                buildHeader(ackFrame, MASTER, MsgType::ACK, 2);
+                ackFrame.payload.action_ack.cmdId = f.payload.data.cmdId;
+                ackFrame.payload.action_ack.status = 0;
+                sendFrame(ackFrame);
 
-            // === NOVO ===
-            hasNewCommand = true;
-            latestCmd = f.payload.data.cmdId;   // precisas de declarar latestCmd
-            return;
+                // === STORE THE COMMAND + PARAMETERS ===
+                hasNewCommandReceived = true;
+                receivedCmdId         = f.payload.data.cmdId;
+                receivedDirection     = 0;
+                receivedParamLen      = (f.header.len > 2) ? f.header.len - 2 : 0;
+                if (receivedParamLen > 0)
+                    memcpy(receivedParams, f.payload.data.param, receivedParamLen);
+                return;
+            }
+            else if(f.payload.data.direction == 1)
+            {
+                //Put logic here to respond! where it is! 
+                
+            }
+
         }
     }
-    }
-
 }
+// ================================================================
+//  HELPERS
+// ================================================================
 
-// Inside AppLayer.cpp
-void AppLayer::sendErrorAck(uint8_t cmdID) {
-    Frame reply;
-    buildHeader(reply, MASTER, MsgType::ACK, 2);
-    reply.payload.action_ack.cmdId = cmdID;
-    reply.payload.action_ack.status = 1; 
-    //transmitReply(reply);
+/*bool AppLayer::hasReceivedPong() const { return pongReceived; }
+bool AppLayer::hasReceivedAck()  const { return ackReceived; }
+
+// New getters for slave FSM
+bool     AppLayer::hasNewCommand()      const { return hasNewCommandReceived; }
+uint8_t  AppLayer::getReceivedCmdId()   const { return receivedCmdId; }
+uint8_t  AppLayer::getReceivedDirection() const { return receivedDirection; }
+uint8_t  AppLayer::getReceivedParamLen()const { return receivedParamLen; }
+const uint8_t* AppLayer::getReceivedParams() const { return receivedParams; }
+
+void AppLayer::clearNewCommand()
+{
+    hasNewCommandReceived = false;
 }
+*/
+
 void AppLayer::buildHeader(Frame& f,NodeId dest, uint8_t type, uint8_t payloadLen) {
     f.sof = SOF_VALUE;
     f.header.src = this->myId; // Automatically set to our ID
     f.header.dest = dest;
     f.header.type = type;
     f.header.len = payloadLen;
-}
-
-bool AppLayer::hasReceivedPong()
-{
-    return pongReceived;
-}
-bool AppLayer::hasReceivedAck()
-{
-    return ackReceived;
 }
