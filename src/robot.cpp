@@ -14,8 +14,16 @@ int sign(T val)
 
 robot_t::robot_t(pico4drive_t& driver)
   : front(driver,Side::FRONT),
-    back (driver,Side::BACK)    
+    back (driver,Side::BACK)
 {
+  #ifdef ROBOT_MASTER
+    robot_id = MASTER;
+
+  #endif
+  #ifdef ROBOT_SLAVE
+    robot_id= SLAVE;
+  #endif
+
   stoped = false;
   wheel_dist = 0.075;
   wheel_radius = 0.0689 / 2;
@@ -33,8 +41,115 @@ robot_t::robot_t(pico4drive_t& driver)
   led = 0;
 
   pchannels = NULL;
-  //fsm = NULL;
+  
+}
 
+//I will do Serial2.setTx and setRx, then I will pass the Serial object in comPort!
+bool robot_t::init_COM(Stream* comPort)
+{
+  if(comPort == nullptr) return false;
+  currentComState = COM_IDLE; //This will be changed inside the StateMachine! 
+  sendTries = 0;
+  comTimer = 0;
+
+  this->appLayer.init(comPort,robot_id);
+  return true;
+
+}
+
+void robot_t::updateComState()
+{
+  #ifdef ROBOT_MASTER
+    switch(currentComState)
+    {
+        case ComState::COM_START:
+            
+            appLayer.sendPing(SLAVE);
+            comTimer = millis();
+            currentComState = ComState::COM_WAIT_PONG;
+            break;
+
+        case ComState::COM_WAIT_PONG:
+            if(sendTries > 5) currentComState = ComState::COM_ERROR;
+            
+            appLayer.update();
+            if (appLayer.hasReceivedPong()) 
+            {
+                currentComState = ComState::COM_WAIT_SEND;
+                sendTries = 0;
+            }
+            else if (millis() - comTimer > 2000) 
+            {
+                sendTries++;
+                comTimer = millis();
+                currentComState = ComState::COM_START;
+            }
+            break;
+
+        case ComState::COM_WAIT_SEND:
+            if(hasPendingCommand)
+            {
+              appLayer.sendCommand(SLAVE,pendingCommandId);
+              hasPendingCommand = false;
+              comTimer = millis();
+              currentComState = ComState::COM_WAIT_ACK;
+            }
+            break;
+
+        case ComState::COM_WAIT_ACK:
+            appLayer.update();
+            if (appLayer.hasReceivedAck()) 
+            {
+                currentComState = ComState::COM_WAIT_SEND;   // volta ao idle
+                //appLayer.ackReceived = false;
+            }
+            else if (millis() - comTimer > 1000) 
+            {
+                
+                currentComState = ComState::COM_ERROR;
+            }
+            break;
+
+        case ComState::COM_ERROR:
+            
+            currentComState = ComState::COM_START;
+            break;
+    }
+  #endif
+
+  // ====================== SLAVE ======================
+  #ifdef ROBOT_SLAVE
+    switch(currentComState)
+    {
+        case ComState::COM_START:                    // só entra aqui uma vez no init
+            currentComState = ComState::COM_LISTEN;  // vai direto para o estado de escuta
+            break;
+
+        case ComState::COM_LISTEN:                  
+            
+            appLayer.update();
+            if (hasPendingCommand)
+            {
+                appLayer.sendCommand(MASTER, pendingCommandId);   
+                hasPendingCommand = false;
+            }
+            // senão fica aqui à espera de comandos do Master
+            break;
+
+        case ComState::COM_ERROR:
+            currentComState = ComState::COM_LISTEN;   // recupera rápido
+            break;
+    }
+    #endif
+    
+}
+void robot_t::send_command(uint8_t cmdId)
+{
+  if(robot_id == MASTER && !hasPendingCommand)
+  {
+    pendingCommandId = cmdId;
+    hasPendingCommand = true;
+  }
 }
 
 void robot_t::odometry(void)

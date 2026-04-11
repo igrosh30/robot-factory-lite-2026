@@ -41,9 +41,9 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     #ifdef ROBOT_MASTER
     
-    
     if(state == M_SYS_START && tis > 2)//change to while received a correct IR! 
     {
+        
         build_sequence_from_IR("Wouou");
         set_next_state(M_SYS_LEAVE_START); 
     }
@@ -119,19 +119,20 @@ void fsm_round2::next_state_rules()
     #ifdef ROBOT_SLAVE
     
     // 1. DORMIR À ESPERA DA CAIXA NA MÁQUINA
-    if(state == S_WAITING_FOR_SYNC)
+    if(state == S_SYS_LEAVE_START)
     {
-        robot.setRobotVW(0.0, 0.0); // Motores parados
+        robot.setRobotVW(0.0, 0.0); 
         
-        if(check_sync_from_master()) // Se leu o IR do Master
+        if(check_sync_from_master()) //first receive the frme then go  
         {
-            pick_slot = MACHINE_B_OUTPUT_SLOT;
-            set_next_state(SLAVE_NAV_TO_MACHINE_OUT);
+            
+            
         }
     }
 
     // 2. NAVEGAR PARA O OUTPUT DA MÁQUINA B
-    else if(state == SLAVE_NAV_TO_MACHINE_OUT)
+    /*
+    else if(state == )
     {
         // Lógica de aproximação à saída da máquina (ajustar ao mapa)
         if(robot.front.sensor.intersections == 1) {
@@ -168,7 +169,7 @@ void fsm_round2::next_state_rules()
             }
         }
     
-    }
+    }*/
     #endif
 
     // ==========================================================
@@ -337,6 +338,7 @@ void fsm_round2::enter_state_actions_rules()
     }
     else if(state == M_SYS_START)
     {
+        robot.currentComState = COM_START;
         robot.setRobotVW(0,0);
         robot.thetae = PI*0.5;
         //Check this!
@@ -470,6 +472,11 @@ void fsm_round2::state_actions_rules()
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX
     // ==========================================================
+    else if(state == M_SYS_START)
+    {
+        if(total_greens > 0 ) robot.send_command(CMD_ID::CMD_GO_PROCESS_MACHINE);
+        else robot.send_command(CMD_ID::CMD_EXECUTE_PICK_BLUE);
+    }
     else if(state == M_SYS_LEAVE_START)
     {
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);

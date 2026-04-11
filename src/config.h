@@ -6,8 +6,8 @@
 //Master - IP: 10.227.21.112
 //Slave -  IP: 10.227.21.116
 
-#define ROBOT_MASTER
-//#define ROBOT_SLAVE
+//#define ROBOT_MASTER
+#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
@@ -160,6 +160,15 @@ typedef enum {
     M_GEN_DROP_ALIGN                = 210,
     M_GEN_DROP_TURN_OUT             = 211,
     M_GEN_EXITING_PROCESS_MACHINE   = 212,
+
+
+    S_SYS_LEAVE_START               = 300,
+    S_NAV_MACHINE_OUT               = 310,
+    S_MACHINE_ALIGN                 = 320,
+    S_MACHINE_PICK_BOX              = 330,
+    S_MACHINE_TURN_OUT              = 340,
+    S_NAV_MACHINE_TO_DROP           = 350,
+    
     
     // --- SLAVE STATES:
     S_SYS_START             = 400,

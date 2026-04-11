@@ -12,7 +12,7 @@
 #include "state_machines.h"
 #include "gchannels.h"
 #include "file_gchannels.h"
-#include "fsm_main.h"
+#include "fsm_round1.h"
 #include "fsm_round2.h"
 
 // ================================================================
@@ -183,7 +183,13 @@ void setup() {
     robot.front.sensor.init();
     //robot.back.sensor.init();
     robot.front.actuators.init();
-    //robot.back.actuators.init();
+    
+    //COM init:
+    Serial1.setTX(0);
+    Serial1.setRX(1);
+    Serial1.begin(9600);
+    robot.init_COM(&Serial1);
+
 
     // Initialize encoders
     encoders[0].begin(encoder_pins[0]);
@@ -208,10 +214,10 @@ void setup() {
     
 
     // PID parameters
-    /**/
     pars_list.register_command("xe", &robot.xe);
     pars_list.register_command("ye", &robot.ye);
     pars_list.register_command("te", &robot.thetae);
+
     pars_list.register_command("kp1", &robot.motors.kp1);
     pars_list.register_command("ki1", &robot.motors.ki1);
     pars_list.register_command("kp2", &robot.motors.kp2);
@@ -338,6 +344,9 @@ void loop() {
         //robot.back.actuators.update();
         robot.front.sensor.readValues();
         //robot.back.sensor.readValues();
+        Serial.printf("Robot COM_STATE:");
+        Serial.print(robot.currentComState);
+        robot.updateComState();
 
         fsm.step();
 

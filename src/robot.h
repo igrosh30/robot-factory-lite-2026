@@ -9,6 +9,7 @@
 #include "Actuators.h"
 #include "config.h"
 #include "gchannels.h"
+#include "AppLayer.h"
 
 #ifndef NUM_WHEELS
 #define NUM_WHEELS 2
@@ -21,20 +22,40 @@ typedef enum
   cm_pos
 } control_mode_t;
 
+enum ComState : uint8_t
+{
+    COM_IDLE,
+    COM_START,
+    COM_WAIT_PONG,
+    COM_WAIT_SEND,
+    COM_WAIT_ACK,
+    COM_ERROR,
+    COM_LISTEN     
+};
+
+
+
 class robot_t
 {
 public:
   MotorController motors;
+  AppLayer appLayer;
   //Sensor frontSensor;
   //Sensor backSensor;
   RobotSide front;
   RobotSide back;
+
+  //COM state:
+  ComState currentComState;
+  uint8_t sendTries;
+  uint32_t comTimer;
 
   Node targetNode;
   Node currentNode;
   //MotorController motor1;
   //MotorController motor2;
   
+  NodeId robot_id;
   int enc1, enc2;
   int Senc1, Senc2;
   float w1e, w2e;
@@ -78,6 +99,14 @@ public:
   gchannels_t* pchannels;
   //state_machine_t* fsm;
   
+  //COM methods:
+  bool init_COM(Stream* comPort);
+  void updateComState();
+  void send_command(uint8_t cmdId);
+
+  bool hasPendingCommand = false;
+  uint8_t pendingCommandId = 0;
+
 
   robot_t(pico4drive_t& driver);
 
@@ -93,8 +122,6 @@ public:
 
   void followLine(float Vnom, RobotSide& sideRef, Side2Follow direction, EdgeDetection edge);
 
-  void send_command(const char *command, float par);
-  void send_command(const char *command, const char *par);
   
   void grabBox(RobotSide& sideRef);
   void dropBox(RobotSide& sideREf);
