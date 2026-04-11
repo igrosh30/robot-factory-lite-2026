@@ -378,6 +378,10 @@ void loop() {
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             serial_commands.send_command("redpath", fsm.path_strategy);
+
+            //COM debug:
+            serial_commands.send_command("st_com", robot.currentComState);
+
             //serial_commands.send_command("d1_slot", fsm.drop_slot);
             //serial_commands.send_command("p1_slot", fsm.pick_slot);
             

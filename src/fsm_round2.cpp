@@ -338,7 +338,7 @@ void fsm_round2::enter_state_actions_rules()
     }
     else if(state == M_SYS_START)
     {
-        robot.currentComState = COM_START;
+        //robot.currentComState = COM_START;
         robot.setRobotVW(0,0);
         robot.thetae = PI*0.5;
         //Check this!

@@ -48,7 +48,7 @@ robot_t::robot_t(pico4drive_t& driver)
 bool robot_t::init_COM(Stream* comPort)
 {
   if(comPort == nullptr) return false;
-  currentComState = COM_IDLE; //This will be changed inside the StateMachine! 
+  currentComState = COM_START; //This will be changed inside the StateMachine! 
   sendTries = 0;
   comTimer = 0;
 
@@ -70,7 +70,7 @@ void robot_t::updateComState()
             break;
 
         case ComState::COM_WAIT_PONG:
-            if(sendTries > 5) currentComState = ComState::COM_ERROR;
+            if(sendTries > 200 ) currentComState = ComState::COM_ERROR;
             
             appLayer.update();
             if (appLayer.hasReceivedPong()) 
@@ -78,7 +78,7 @@ void robot_t::updateComState()
                 currentComState = ComState::COM_WAIT_SEND;
                 sendTries = 0;
             }
-            else if (millis() - comTimer > 2000) 
+            else if (millis() - comTimer > 3000) 
             {
                 sendTries++;
                 comTimer = millis();
