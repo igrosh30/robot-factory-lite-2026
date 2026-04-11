@@ -229,6 +229,12 @@ void setup() {
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);
     
+    //COM debug:
+    pars_list.register_command("s_debug", &robot.send_debug);
+    pars_list.register_command("cmdID", &robot.cmdID_send_debug);
+
+    //pars_list.register_command("dosend", &robot.send_debug);    
+
     //pars_list.register_command("fv", &robot.follow_v);
     //pars_list.register_command("fk", &robot.follow_k);
     
@@ -346,6 +352,8 @@ void loop() {
         //robot.back.sensor.readValues();
         Serial.printf("Robot COM_STATE:");
         Serial.print(robot.currentComState);
+        
+        if(robot.send_debug == 1) robot.send_command(robot.cmdID_send_debug);
         robot.updateComState();
 
         fsm.step();

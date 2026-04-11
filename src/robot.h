@@ -49,6 +49,8 @@ public:
   ComState currentComState;
   uint8_t sendTries;
   uint32_t comTimer;
+  int cmdID_send_debug = 0;
+  int send_debug = 0; // 0 not send , 1 send
 
   Node targetNode;
   Node currentNode;
