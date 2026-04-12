@@ -76,9 +76,11 @@ enum CMD_ID : uint8_t
     // --- MASTER TO SLAVE COMMANDS (Actions) ---
     CMD_WAIT                  = 1,   // Tell slave to hold position
     CMD_GO_PROCESS_MACHINE    = 2,   // Tell slave to navigate to the process machine (Your GO_PICK_GREEN)
-    CMD_EXECUTE_PICK_GREEN    = 3,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
-    CMD_EXECUTE_PICK_BLUE     = 4,   // Tell slave to go handle a blue box (Your PICK_BLUE)
-    CMD_GO_RETRIEVE_ZONE      = 5,   // Tell slave to go to the final retrieve zone
+    INFO_GREEN_BOX            = 3,
+    INFO_BLUE_BOX             = 4,
+    CMD_EXECUTE_PICK_GREEN    = 5,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
+    CMD_EXECUTE_PICK_BLUE     = 6,   // Tell slave to go handle a blue box (Your PICK_BLUE)
+    CMD_GO_RETRIEVE_ZONE      = 7,   // Tell slave to go to the final retrieve zone
     
 
     // --- SLAVE TO MASTER STATUS only when asked! - direction 1

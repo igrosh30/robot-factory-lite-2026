@@ -358,8 +358,19 @@ void loop() {
 
         fsm.step();
 
-        //Update motors PID -> I can pass this to some states!
         robot.motors.PIDController_Update();
+        //Update motors PID -> I can pass this to some states!
+        if((fsm.state == GEN_PICK_ZONE || fsm.state == NAV_FROM_MACHINE  || 
+            fsm.state == GEN_PICK_COUNT_MACHINE) && DEBUG_LEVEL == 1 ) 
+        {
+            // not update the robot.motors.PIDController_Update(); ! so we can move the robot as we want 
+        }
+        else
+        {
+            
+        }
+            
+
 
         // ========== SEND data TO COMROBOT ==========
         if (debug_level > 0) {
@@ -381,11 +392,13 @@ void loop() {
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);
 
+            serial_commands.send_command("b_box", fsm.total_blues);
+            serial_commands.send_command("g_box", fsm.total_greens);
            
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
-            serial_commands.send_command("redpath", fsm.path_strategy);
+            //serial_commands.send_command("redpath", fsm.path_strategy);
 
             //COM debug:
             serial_commands.send_command("st_com", robot.currentComState);
