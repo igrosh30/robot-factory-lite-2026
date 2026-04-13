@@ -224,7 +224,7 @@ void setup() {
     pars_list.register_command("ki2", &robot.motors.ki2);
 
     pars_list.register_command("redpath", &fsm.path_strategy);
-    pars_list.register_command("d_slot", &fsm.drop_slot);
+    //pars_list.register_command("d_slot", &fsm.currentBox);
     
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);

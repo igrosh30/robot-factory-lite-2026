@@ -35,6 +35,8 @@ public:
 
     int blue_pick_slots[4];
     int total_blues = 0;
+    int num_master_blue_boxes = 0;
+    int num_slave_blue_boxes = 0;
     int current_blue_index = 0; 
 
     
@@ -57,6 +59,8 @@ public:
     fsm_round2(robot_t& r);         
     void build_sequence_from_IR(String ir_data);
     void build_currentBox(BoxRound2& box);
+    //returns the number of blue boxes that each robot must process
+    uint8_t build_num_blueBoxPick(uint8_t num_green_box, NodeId robotID);
 
     virtual void next_state_rules() override;
     virtual void enter_state_actions_rules() override;

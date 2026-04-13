@@ -52,7 +52,7 @@ public:
     uint8_t        getReceivedParamLen()const { return receivedParamLen; }
     const uint8_t* getReceivedParams()  const { return receivedParams; }
 
-    void clearNewCommand() { hasNewCommandReceived = false; }
+    void clearNewCommand() {receivedCmdId= 0; hasNewCommandReceived = false; }//I should reset the receiveCmdID and param!
 };
 
 #endif

@@ -118,7 +118,7 @@ void robot_t::updateComState()
                 hasPendingParam = false;
                 currentComState = ComState::COM_WAIT_SEND;
             }
-            else if(millis() - comTimer > 2000)
+            else if(millis() - comTimer > 1000)
             {
                 sendTries++;
                 currentComState = ComState::COM_WAIT_SEND;
@@ -142,11 +142,9 @@ void robot_t::updateComState()
         case ComState::COM_LISTEN:
             appLayer.update();                 
             
-            if(appLayer.hasNewCommand())
+            /*if(appLayer.hasNewCommand())
             {
-
-               
-            }
+               This is checked in the fsm machine! }*/
             // If the FSM previously asked us to send a STATUS back to Master
             if(hasPendingCommand)
             {
@@ -164,7 +162,7 @@ void robot_t::updateComState()
 
 void robot_t::send_command(uint8_t cmdId)
 {
-  if(robot_id == MASTER && !hasPendingCommand)
+  if(!hasPendingCommand)//robot_id == MASTER && 
   {
     pendingCommandId = cmdId;
     hasPendingCommand = true;
@@ -173,7 +171,7 @@ void robot_t::send_command(uint8_t cmdId)
 }
 void robot_t::send_command_param(uint8_t cmdId, uint8_t param)
 {
-  if(robot_id == MASTER && !hasPendingCommand)
+  if( !hasPendingCommand)//robot_id == MASTER &&
   {
     pendingCommandId = cmdId;
     pendingParam = param;   // Store the 1-byte value

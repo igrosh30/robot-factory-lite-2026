@@ -135,21 +135,6 @@ void AppLayer::processFrame(const Frame& f)
 //  HELPERS
 // ================================================================
 
-/*bool AppLayer::hasReceivedPong() const { return pongReceived; }
-bool AppLayer::hasReceivedAck()  const { return ackReceived; }
-
-// New getters for slave FSM
-bool     AppLayer::hasNewCommand()      const { return hasNewCommandReceived; }
-uint8_t  AppLayer::getReceivedCmdId()   const { return receivedCmdId; }
-uint8_t  AppLayer::getReceivedDirection() const { return receivedDirection; }
-uint8_t  AppLayer::getReceivedParamLen()const { return receivedParamLen; }
-const uint8_t* AppLayer::getReceivedParams() const { return receivedParams; }
-
-void AppLayer::clearNewCommand()
-{
-    hasNewCommandReceived = false;
-}
-*/
 
 void AppLayer::buildHeader(Frame& f,NodeId dest, uint8_t type, uint8_t payloadLen) {
     f.sof = SOF_VALUE;

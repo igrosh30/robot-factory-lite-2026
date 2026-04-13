@@ -50,10 +50,10 @@ void fsm_round2::next_state_rules()
     {
         //wait's for the IR from the receiver to tell to start! 
         build_sequence_from_IR("Wouou");
-        
-        //here we have the values for green and blue boxes!
-        //should try to send it! if ack we go to M_SYS_LEAVE_START!
 
+        num_master_blue_boxes= build_num_blueBoxPick(total_greens,NodeId::MASTER);
+        num_slave_blue_boxes= 4- num_master_blue_boxes;//master can also know the num of slave blue boxes! 
+        
         //Send initial total boxes colors!
         if(total_greens > 0) robot.send_command_param(INFO_GREEN_BOX, total_greens);
         else if(total_blues > 0) robot.send_command_param(INFO_BLUE_BOX, total_blues);//should be 4 blues! 
@@ -94,8 +94,8 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_GEN_DROP_TURN_OUT)
     {
+        current_box_index++;
         total_greens--;
-        current_box_index++;//this is to know the drop_slot! 
         target_distance = d_retrive_process_box;
         move_direction = -1;
         turn_direction = 1;
@@ -122,13 +122,10 @@ void fsm_round2::next_state_rules()
         {
             isFromMachine = true;
             build_currentBox(this->currentBox);//get the next slot!
+              
             set_next_state(GEN_PICK_ZONE);
         }
-        
-
     }
-
-   
     #endif
 
 
@@ -155,6 +152,7 @@ void fsm_round2::next_state_rules()
                         this->currentBox.color = 'g';
                         total_greens = total;
                         total_blues = 4- total_greens;
+                        num_slave_blue_boxes = build_num_blueBoxPick(total_greens,NodeId::SLAVE);
                         set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!
                     }
                     else
@@ -168,14 +166,7 @@ void fsm_round2::next_state_rules()
                 }
             }
         }
-        /*
-        else{
-            total_greens = 2;
-            total_blues = 4- total_greens;
-            set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!
-        }
-        */
-        
+        robot.appLayer.clearNewCommand();
     }
     
     else if(state == S_NAV_MACHINE_OUT && intersections == 5)
@@ -204,8 +195,11 @@ void fsm_round2::next_state_rules()
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
             if (cmdId == CMD_EXECUTE_PICK_GREEN) 
             {
+                //SHOULD I RESET HERE?!!!!!!
                 set_next_state(S_MACHINE_ALIGN_PICK);
             }
+            //RESET THE COM FLAGS!
+            robot.appLayer.clearNewCommand();
         }
         //else set_next_state(S_MACHINE_ALIGN_PICK);
     }
@@ -282,6 +276,8 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     else if(state == GEN_PICK_ZONE)
     {
+        //SEE HOW MANY boxes there are to process - if we have green to process - send to pick Area!
+        //Or I should send the total boxes and the robots agree at the begining who takes what?!
         if(!isFromMachine)
         {
             if(currentBox.pick_slot == 0) set_next_state(GEN_PICK_ALIGN);
@@ -386,7 +382,15 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_DROP_ALIGN && tis > 2)
     {
-        if(currentBox.color == 'b') total_blues --;
+        if(currentBox.color == 'b')
+        {
+            #ifdef ROBOT_MASTER
+            num_master_blue_boxes--;
+            #endif
+            #ifdef ROBOT_SLAVE
+            num_slave_blue_boxes--;
+            #endif
+        } 
         else if(currentBox.color == 'g') total_greens--;
         set_next_state(GEN_DROP_TURN_OUT);//when entering Turn Off the Magnet! 
     }
@@ -395,13 +399,12 @@ void fsm_round2::next_state_rules()
         target_distance = d_retrive_from_wearhouse;
         move_direction = -1;
         turn_direction = 1;
-        target_turn_angle = PI/2;
+        target_turn_angle = (currentBox.drop_slot == 0)? PI: PI/2;
         if(total_greens == 0)// let's go pick a blue box!!!!! if there is one left!
         { 
             turn_direction = -1;
-            target_turn_angle = (currentBox.drop_slot == 0)? PI: PI/2;
+            target_turn_angle = PI/2;
             state_after_maneuver = EXITING_DROP_ZONE;
-
         }
         else state_after_maneuver = S_NAV_EXIT_DROP_ZONE_2_MACHINE;
         set_next_state(GEN_MOVE_X);
@@ -410,10 +413,48 @@ void fsm_round2::next_state_rules()
     {
 
         if( 3 - robot.front.sensor.intersections == currentBox.drop_slot)
-        {
+        {    
+            #ifdef ROBOT_MASTER
+            if(num_master_blue_boxes > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
+            else set_next_state (NAV_DOCKING_STATION);
+            #endif
+            #ifdef ROBOT_SLAVE
+            if(num_slave_blue_boxes > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
+            else set_next_state(NAV_DOCKING_STATION);
+            
+            #endif
+        
+        
         }
     }
+    else if(state == NAV_LEAVING_WEARHOUSE )
+    {
+        if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections == 2)
+        {
+            target_distance = d_mv_aft_intersection;
+            state_after_maneuver = NAV_TO_WEARHOUSE;
+            turn_direction = -1;
+            move_direction = 1;
+            target_turn_angle = PI/2; //45
+            set_next_state(GEN_MOVE_X);
+        }
+        
+    }
+    else if(state == NAV_TO_WEARHOUSE)
+    {
+        if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
 
+        if(intersections == 3)
+        {
+            currentBox.drop_slot = drop_sequence[current_box_index++];
+            set_next_state(GEN_DROP_BOX);
+        }
+    }
+    else if(state == NAV_DOCKING_STATION)
+    {
+        robot.setRobotVW(0,0);
+    }
 }
 
 
@@ -504,7 +545,7 @@ void fsm_round2::enter_state_actions_rules()
     // ==========================================================
     else if(state == NAV_TO_WEARHOUSE || state == NAV_LEAVING_WEARHOUSE)
     {
-        robot.setRobotVW(0.0, 0.0);
+        
         if(robot.front.actuators.isMagnetOn)
         {
             //update pose:
@@ -752,18 +793,25 @@ void fsm_round2::build_currentBox(BoxRound2 &box)
     }
 }
 
+uint8_t fsm_round2::build_num_blueBoxPick(uint8_t num_green_box, NodeId robotID)
+{
+    uint8_t num_blueBox = 4- num_green_box;
+    if(num_blueBox == 0) return 0;
+    //if even number:
+    if(num_blueBox % 2 == 0) return num_blueBox / 2;
+    
+    return robotID == MASTER ? (uint8_t)float(num_blueBox)/ 2.0 + 0.5f : 
+                                (uint8_t)float(num_blueBox)/ 2.0 - 0.5f;
+}
 
-// Mais tarde tens de ligar isto à UART1 ou UART2 (Serial1/Serial2)
+
+
 void fsm_round2::send_sync_to_slave() {
-    // Exemplo: Serial1.print("RDY\n");
-    // (A implementar quando tratares do hardware IR)
+
+
 }
 
 bool fsm_round2::check_sync_from_master() {
-    // Exemplo: Se pressionares um botão no Slave para simular a chegada da SMS
-    // return robot.front.actuators.isSwitch_right_On; 
-    
-    // (A implementar quando tratares da leitura UART)
-    return false; // Retorna true quando ler a frame certa
+    return false;
 }
 

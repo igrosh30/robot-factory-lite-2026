@@ -6,8 +6,8 @@
 //Master - IP: 10.227.21.112
 //Slave -  IP: 10.227.21.116
 
-#define ROBOT_MASTER
-//#define ROBOT_SLAVE
+//#define ROBOT_MASTER
+#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
@@ -63,13 +63,13 @@
 //#define COMMAND_LIST_SIZE 32
 
 // Communication modes
-#define DEBUG_LEVEL 1  // 0=minimal, 1= turn off PID! , 2=verbose
+#define DEBUG_LEVEL 1  // 0=minimal, 1=normal, 2=verbose
 
 
 // (Paste your 'savedMin' array here)
 #ifdef ROBOT_MASTER
-    const uint16_t HARDCODED_FRONT_MIN[] = { 110, 98, 89, 74, 78 }; 
-    const uint16_t HARDCODED_FRONT_MAX[] = { 968, 965, 960, 961, 825 };
+    const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
+    const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
 #endif
 
 #ifdef ROBOT_SLAVE
@@ -146,7 +146,7 @@ typedef enum {
     GEN_DROP_TURN_OUT      = 630,
     EXITING_DROP_ZONE      = 640,
     
-    //797 500 511 -- 520
+
     // ==========================================
     // --- Second Round Aux. States
     // ==========================================
@@ -172,6 +172,8 @@ typedef enum {
     S_MACHINE_PICK_BOX              = 330,
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
+    
+    NAV_DOCKING_STATION           = 9999,
     
 
 } fsm_state;
