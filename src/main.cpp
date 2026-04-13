@@ -359,16 +359,7 @@ void loop() {
         fsm.step();
 
         robot.motors.PIDController_Update();
-        //Update motors PID -> I can pass this to some states!
-        if((fsm.state == GEN_PICK_ZONE || fsm.state == NAV_FROM_MACHINE  || 
-            fsm.state == GEN_PICK_COUNT_MACHINE) && DEBUG_LEVEL == 1 ) 
-        {
-            // not update the robot.motors.PIDController_Update(); ! so we can move the robot as we want 
-        }
-        else
-        {
-            
-        }
+        
             
 
 

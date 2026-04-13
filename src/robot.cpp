@@ -93,9 +93,9 @@ void robot_t::updateComState()
         case ComState::COM_WAIT_SEND:
             if(hasPendingCommand)
             {
-                if(hasPendingParam)
+                if(pendingParamLen > 0)
                 {
-                  appLayer.sendCommandWithData(NodeId::SLAVE, pendingCommandId, &pendingParam, 1);
+                  appLayer.sendCommandWithData(NodeId::SLAVE, pendingCommandId, pendingParams, pendingParamLen);
                 }
                 else appLayer.sendCommand(NodeId::SLAVE, pendingCommandId);
                 
@@ -108,14 +108,14 @@ void robot_t::updateComState()
             appLayer.update();
             if(sendTries > 100 ){
               hasPendingCommand = false; // Give up and clear flags
-              hasPendingParam = false;
+              pendingParamLen = 0;
               currentComState = COM_ERROR;
             } 
-            if(appLayer.hasReceivedAck())
+            else if(appLayer.hasReceivedAck())
             {
                 sendTries = 0;
                 hasPendingCommand = false;
-                hasPendingParam = false;
+                pendingParamLen = 0;
                 currentComState = ComState::COM_WAIT_SEND;
             }
             else if(millis() - comTimer > 1000)
@@ -165,17 +165,28 @@ void robot_t::send_command(uint8_t cmdId)
   if(!hasPendingCommand)//robot_id == MASTER && 
   {
     pendingCommandId = cmdId;
+    pendingParamLen = 0;
     hasPendingCommand = true;
-    hasPendingParam = false;
   }
 }
-void robot_t::send_command_param(uint8_t cmdId, uint8_t param)
+void robot_t::send_command_param(uint8_t cmdId, uint8_t param1)
 {
   if( !hasPendingCommand)//robot_id == MASTER &&
   {
     pendingCommandId = cmdId;
-    pendingParam = param;   // Store the 1-byte value
-    hasPendingParam = true; // Flag that we have data
+    pendingParams[0] = param1;
+    pendingParamLen = 0;
+    hasPendingCommand = true;
+  }
+}
+void robot_t::send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2)
+{
+  if( !hasPendingCommand)//robot_id == MASTER &&
+  {
+    pendingCommandId = cmdId;
+    pendingParams[0] = param1;
+    pendingParams[1] = param2;
+    pendingParamLen = 2;
     hasPendingCommand = true;
   }
 }

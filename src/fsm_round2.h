@@ -29,16 +29,19 @@ public:
     int current_box_index;
     bool isFromMachine = false;
 
-    int green_pick_slots[4];
-    int total_greens = 0;
-    int current_green_index = 0; 
+    uint8_t green_pick_slots[4];
+    uint8_t slave_blue_pick_slots[4];
+    uint8_t total_greens = 0;
+    uint8_t current_green_index = 0; 
 
-    int blue_pick_slots[4];
-    int total_blues = 0;
-    int num_master_blue_boxes = 0;
-    int num_slave_blue_boxes = 0;
-    int current_blue_index = 0; 
-
+    uint8_t blue_pick_slots[4];
+    uint8_t master_blue_pick_slots[2];
+    uint8_t slave_blue_pick_slots[2];// Always send slave to the lowest pick slots! 
+    uint8_t total_blues = 0;
+    uint8_t num_master_blue_boxes = 0;
+    uint8_t num_slave_blue_boxes = 0;
+    uint8_t current_blue_index = 0; 
+    bool receivedSlotIndex = false;
     
     int pick_slot = -1; 
     int drop_slot = -1;  
@@ -58,9 +61,10 @@ public:
 
     fsm_round2(robot_t& r);         
     void build_sequence_from_IR(String ir_data);
-    void build_currentBox(BoxRound2& box);
-    //returns the number of blue boxes that each robot must process
-    uint8_t build_num_blueBoxPick(uint8_t num_green_box, NodeId robotID);
+    void build_currentBox(BoxRound2& box, NodeId robotID);
+    
+    //stores the slots and the number of blueBoxes to process! 
+    void build_blueBoxPick(uint8_t num_green_box, NodeId robotID);
 
     virtual void next_state_rules() override;
     virtual void enter_state_actions_rules() override;

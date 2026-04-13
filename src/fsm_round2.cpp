@@ -9,6 +9,14 @@ fsm_round2::fsm_round2(robot_t& r) : robot(r)
     drop_sequence[1] = 2;
     drop_sequence[2] = 1;
     drop_sequence[3] = 0;
+    for(int i = 0; i<2 ; i++)
+    {
+        slave_blue_pick_slots[i] = INVALID_SLOT;
+        master_blue_pick_slots[i] = INVALID_SLOT;
+    }
+    this->num_slave_blue_boxes = 0;
+    this->num_master_blue_boxes = 0;
+    
     //What's the index?
 }
 
@@ -51,9 +59,8 @@ void fsm_round2::next_state_rules()
         //wait's for the IR from the receiver to tell to start! 
         build_sequence_from_IR("Wouou");
 
-        num_master_blue_boxes= build_num_blueBoxPick(total_greens,NodeId::MASTER);
-        num_slave_blue_boxes= 4- num_master_blue_boxes;//master can also know the num of slave blue boxes! 
-        
+        build_blueBoxPick(total_greens,NodeId::MASTER);
+
         //Send initial total boxes colors!
         if(total_greens > 0) robot.send_command_param(INFO_GREEN_BOX, total_greens);
         else if(total_blues > 0) robot.send_command_param(INFO_BLUE_BOX, total_blues);//should be 4 blues! 
@@ -61,7 +68,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_SYS_LEAVE_START && intersections == 3)
     {
-        build_currentBox(this->currentBox);
+        build_currentBox(this->currentBox, NodeId::MASTER);
         set_next_state(GEN_PICK_ZONE);
     }
 
@@ -121,8 +128,7 @@ void fsm_round2::next_state_rules()
         if(intersections == 1)
         {
             isFromMachine = true;
-            build_currentBox(this->currentBox);//get the next slot!
-              
+            build_currentBox(this->currentBox,MASTER);//get the next slot!
             set_next_state(GEN_PICK_ZONE);
         }
     }
@@ -149,19 +155,16 @@ void fsm_round2::next_state_rules()
                     
                     if(cmdId == INFO_GREEN_BOX)
                     {
-                        this->currentBox.color = 'g';
-                        total_greens = total;
-                        total_blues = 4- total_greens;
-                        num_slave_blue_boxes = build_num_blueBoxPick(total_greens,NodeId::SLAVE);
+                        total_greens = total;//This is what we need to perform 
+                        //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
                         set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!
                     }
-                    else
+                    else 
                     {
                         this->currentBox.color = 'b';
                         total_greens = 0;
                         total_blues = 4;
                         //Set the state to rotate and go pick blue boxes! 
-
                     }      
                 }
             }
@@ -169,15 +172,30 @@ void fsm_round2::next_state_rules()
         robot.appLayer.clearNewCommand();
     }
     
-    else if(state == S_NAV_MACHINE_OUT && intersections == 5)
+    else if(state == S_NAV_MACHINE_OUT)
     {
-                
-        target_distance = d_mv_aft_intersection;
-        move_direction = 1;
-        turn_direction = 1;
-        target_turn_angle = PI/2;
-        state_after_maneuver = S_NAV_TO_MACHINE_FROM_WHOUSE;
-        set_next_state(GEN_MOVE_X);
+        if(robot.appLayer.hasNewCommand())
+        {
+            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            if(cmdId == INFO_BLUE_PICK_SLOT)
+            {
+                uint8_t len = robot.appLayer.getReceivedParamLen();
+                const uint8_t* params = robot.appLayer.getReceivedParams();
+                this->num_slave_blue_boxes = len;
+
+                if (len >= 1) this->slave_blue_pick_slots[0] = params[0]; 
+                if(len == 2) this->slave_blue_pick_slots[1] = params[1];
+            }
+        }
+        if(intersections == 5)
+        {
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = S_NAV_TO_MACHINE_FROM_WHOUSE;
+            set_next_state(GEN_MOVE_X);
+        }
     }
     else if (state == S_NAV_TO_MACHINE_FROM_WHOUSE && intersections == 2)
     {
@@ -485,6 +503,15 @@ void fsm_round2::enter_state_actions_rules()
     else if(state == M_SYS_LEAVE_START)
     {
         robot.front.sensor.intersections = 0;
+        if (this->num_slave_blue_boxes == 1) 
+        {
+            robot.send_command_param(INFO_BLUE_PICK_SLOT, slave_blue_pick_slots[0]);
+        }
+        else if (this->num_slave_blue_boxes == 2) 
+        {
+            // Call the 2-parameter overload
+            robot.send_command_param(INFO_BLUE_PICK_SLOT, slave_blue_pick_slots[0], slave_blue_pick_slots[1]);
+        }
     }
 
     // ==========================================================
@@ -776,32 +803,71 @@ void fsm_round2:: build_sequence_from_IR(String ir_data)
 }
 
 
-void fsm_round2::build_currentBox(BoxRound2 &box)
+void fsm_round2::build_currentBox(BoxRound2 &box, NodeId robotID)
 {
-    if(total_greens > 0 && current_green_index < 4) // when we store a green box we decrement?!
+    if(robotID == NodeId::MASTER)// only master picks greenBoxes! 
     {
-        box.color = 'g';
-        box.pick_slot = this->green_pick_slots[this->current_green_index];
-        current_green_index++;
-        //what should be the dropSlot?!
+        if(this->total_greens > 0 && current_green_index < 4) // when we store a green box we decrement?!
+        {
+            box.color = 'g';
+            box.pick_slot = this->green_pick_slots[this->current_green_index];
+            current_green_index++;
+            //what should be the dropSlot?!
+        }
+        else if(this->num_master_blue_boxes > 0 && current_blue_index < 2)
+        {
+            box.color = 'b';
+            box.pick_slot = this->master_blue_pick_slots[this->current_blue_index];
+            current_blue_index++;
+        }
     }
-    else if(total_blues > 0 && current_blue_index < 4)
+    else if(robotID == NodeId::SLAVE)
     {
-        box.color = 'b';
-        box.pick_slot = this->blue_pick_slots[this->current_blue_index];
-        current_blue_index++;
+        if(this->num_slave_blue_boxes > 0 && current_blue_index < 2)
+        {
+            box.color = 'b';
+            box.pick_slot = this->slave_blue_pick_slots[this->current_blue_index];
+            current_blue_index++;
+            //do I need to do num_master_blue boxes!? 
+        }
     }
 }
 
-uint8_t fsm_round2::build_num_blueBoxPick(uint8_t num_green_box, NodeId robotID)
+void fsm_round2::build_blueBoxPick(uint8_t num_green_box, NodeId robotID )
 {
     uint8_t num_blueBox = 4- num_green_box;
-    if(num_blueBox == 0) return 0;
+    uint8_t master_numBox = 0;
+    uint8_t slave_numBox = 0;
+    if(num_blueBox == 0) {
+        this->num_master_blue_boxes = 0;
+        this->num_slave_blue_boxes = 0;
+        return;
+    }
     //if even number:
-    if(num_blueBox % 2 == 0) return num_blueBox / 2;
-    
-    return robotID == MASTER ? (uint8_t)float(num_blueBox)/ 2.0 + 0.5f : 
+    if(num_blueBox % 2 == 0)
+    {
+        master_numBox=  num_blueBox / 2;
+        slave_numBox = master_numBox;
+    } 
+    else{
+        master_numBox =  robotID == MASTER ? (uint8_t)float(num_blueBox)/ 2.0 + 0.5f : 
                                 (uint8_t)float(num_blueBox)/ 2.0 - 0.5f;
+        slave_numBox = num_blueBox-master_numBox;                        
+    } 
+    
+    uint8_t currIndex = 0;
+    for (int i = 0; i< master_numBox; i++)
+    {
+        currIndex++;
+        this->master_blue_pick_slots[i] = this->blue_pick_slots[i];//I want to start getting form the low slots! 
+    }
+    for(int i = 0; i< slave_numBox ; i++)
+    {
+        this->slave_blue_pick_slots[i] = this->blue_pick_slots[currIndex++]; 
+    }
+    this->num_master_blue_boxes = master_numBox;
+    this->num_slave_blue_boxes = slave_numBox;
+    
 }
 
 

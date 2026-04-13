@@ -108,14 +108,16 @@ public:
   bool init_COM(Stream* comPort);
   void updateComState();
   void send_command(uint8_t cmdId); 
-  void send_command_param(uint8_t cmdId, uint8_t param); 
+  void send_command_param(uint8_t cmdId, uint8_t param1); 
+  void send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2); 
   void listen_command(); //however, I can be always listening... or just enable listening in some states! 
 
   bool hasPendingCommand = false;
   uint8_t pendingCommandId = 0;
 
-  uint8_t pendingParam;      
-  bool hasPendingParam;
+  //store param sent:
+  uint8_t pendingParams[2];      
+  uint8_t pendingParamLen;
 
   robot_t(pico4drive_t& driver);
 

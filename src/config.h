@@ -56,6 +56,7 @@
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
 #define CALIBRATION_MODE true
+const uint8_t INVALID_SLOT = 255;
 
 //Communications with ComRobot
 #define GCHANNELS_BUF_IN_SIZE 500U
@@ -153,7 +154,7 @@ typedef enum {
     
     // --- MASTER STATES:
     M_SYS_START             = 100,
-    M_SYS_LEAVE_START       = 101,
+    M_SYS_LEAVE_START       = 101, // SEND SLAVE- pickSlots blue box!  
 
 
     M_NAV_PROCESS_BOX               = 200,
