@@ -6,12 +6,12 @@
 //Master - IP: 10.227.21.112
 //Slave -  IP: 10.227.21.116
 
-#define ROUND_1
+//#define ROUND_1
 //#define ROUND_2
 
 
-#define ROBOT_MASTER
-//#define ROBOT_SLAVE
+//#define ROBOT_MASTER
+#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"

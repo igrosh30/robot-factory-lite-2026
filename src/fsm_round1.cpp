@@ -45,8 +45,12 @@ void fsm_round1::next_state_rules()
     else if(state == COM_INIT) //Master send PING
     {
         #ifdef ROBOT_MASTER
+        //Serial.printf("[MASTER in COM_INIT]");
         if(robot.currentComState == ComState::COM_WAIT_SEND) set_next_state(SYS_LEAVE_START);
-        else if (robot.currentComState == ComState::COM_ERROR);//SET COM ERROR FLAG!
+        else if (robot.currentComState == ComState::COM_ERROR)
+        {
+
+        };
         #endif 
         #ifdef ROBOT_SLAVE
         if(robot.currentComState == ComState::COM_LISTEN){
@@ -73,7 +77,7 @@ void fsm_round1::next_state_rules()
     {
         #ifdef ROBOT_MASTER //TELS SLAVE TO START! 
         
-        if(intersections == 1)
+        if(intersections == 2)
         {
             //Send command to SLAVE START! - robot State Machine andles the rest! 
             robot.send_command(CMD_ID::CMD_SLAVE_START);
@@ -425,8 +429,16 @@ void fsm_round1::state_actions_rules()
     }
     else if(state == SYS_LEAVE_START)
     {
-        v_nom = 0.08;
-        robot.followLine(v_nom, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
+        float v_nom1= 0;
+        #ifdef ROBOT_MASTER
+        v_nom1 = 0.15;
+        #endif
+        #ifdef ROBOT_SLAVE
+        v_nom1 = 0.1;
+        #endif
+        robot.followLine(v_nom1, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
+
+        
     }
     else if(state == SYS_APPROACH_WAREHOUSE)
     {
@@ -482,7 +494,7 @@ void fsm_round1::state_actions_rules()
 
     else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_TO_WEARHOUSE)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(0.12, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
 
     // ==========================================================

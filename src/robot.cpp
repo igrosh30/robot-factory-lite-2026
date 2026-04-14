@@ -64,25 +64,29 @@ void robot_t::updateComState()
     switch(currentComState)
     {
         case ComState::COM_START:
+            Serial.println("[MASTER] sending PING...");
+            Serial.print("Tries:"); Serial.print(sendTries);
+            Serial.println("\n============================================");
             appLayer.sendPing(SLAVE);
             comTimer = millis();
             currentComState = ComState::COM_WAIT_PONG;
             break;
 
         case ComState::COM_WAIT_PONG:
+            appLayer.update();
             if(sendTries > 20) 
             {
+                Serial.printf("exceded tries... going to COM_ERROR...");
                 currentComState = ComState::COM_ERROR;
                 break;
             }
-            appLayer.update();
             if(appLayer.hasReceivedPong())
             {
                 COM_ok = true;
                 currentComState = ComState::COM_WAIT_SEND;
                 sendTries = 0;
             }
-            else if(millis() - comTimer > 3000)
+            else if(millis() - comTimer > 2000)
             {
                 sendTries++;
                 comTimer = millis();

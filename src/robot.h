@@ -30,9 +30,9 @@ enum class ComState : uint8_t
     COM_WAIT_PONG,
     COM_WAIT_SEND,
     COM_WAIT_ACK,
-    COM_ERROR,
     COM_LISTEN_PING,
-    COM_LISTEN     
+    COM_LISTEN,
+    COM_ERROR = 99    
 };
 
 
