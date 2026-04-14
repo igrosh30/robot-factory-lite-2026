@@ -16,6 +16,8 @@ fsm_round2::fsm_round2(robot_t& r) : robot(r)
     }
     this->SLAVE_blueBox = 0;
     this->MASTER_blueBox = 0;
+    //Slave flag to blue Pick Slots
+    this->hasBlueBoxes = false;
 }
 
 void fsm_round2::next_state_rules()
@@ -39,7 +41,7 @@ void fsm_round2::next_state_rules()
         //LET's ADD here the receiving of the IR to translate STATE! 
         #ifdef ROBOT_MASTER
         //_________________________________//
-        // INITIAL BOX LOGIC //
+        // INITIAL BOX LOGIC               //
         //_________________________________//
         build_sequence_from_IR("Wouou");//WE HAVE THE NUM OF BOXES AT WHAT PLACE! 
         build_blueBoxPick(this->total_greens);
@@ -61,7 +63,7 @@ void fsm_round2::next_state_rules()
         #endif 
         #ifdef ROBOT_SLAVE
         if(robot.currentComState == ComState::COM_LISTEN){
-            set_next_state(S_WAIT_CMD_START);
+            set_next_state(S_WAIT_BOX_INFO);
         }
         #endif 
     }
@@ -90,6 +92,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == M_SYS_LEAVE_START && intersections == 3)
     {
+        //here send the slots to the robot slave when entering this state!
         build_currentBox(this->currentBox, NodeId::MASTER);
         set_next_state(GEN_PICK_ZONE);
     }
@@ -161,7 +164,6 @@ void fsm_round2::next_state_rules()
     //               LÓGICA EXCLUSIVA DO SLAVE
     // ==========================================================
     #ifdef ROBOT_SLAVE
-    
     // 1. DORMIR À ESPERA DA CAIXA NA MÁQUINA
     if(state == S_WAIT_BOX_INFO)
     {
@@ -199,7 +201,7 @@ void fsm_round2::next_state_rules()
         if(robot.appLayer.hasNewCommand())
         {
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
-            if(cmdId == INFO_BLUE_PICK_SLOT)
+            if(cmdId == INFO_BLUE_PICK_SLOT && !hasBlueBoxes)
             {
                 uint8_t len = robot.appLayer.getReceivedParamLen();
                 const uint8_t* params = robot.appLayer.getReceivedParams();
@@ -207,6 +209,7 @@ void fsm_round2::next_state_rules()
 
                 if (len >= 1) this->S_blue_PICK[0] = params[0]; 
                 if(len == 2) this->S_blue_PICK[1] = params[1];
+                hasBlueBoxes = true;
             }
         }
         if(intersections == 5)
@@ -528,15 +531,6 @@ void fsm_round2::enter_state_actions_rules()
     else if(state == M_SYS_LEAVE_START)
     {
         robot.front.sensor.intersections = 0;
-        if (this->SLAVE_blueBox == 1) 
-        {
-            robot.send_command_param(INFO_BLUE_PICK_SLOT, S_blue_PICK[0]);
-        }
-        else if (this->SLAVE_blueBox == 2) 
-        {
-            // Call the 2-parameter overload
-            robot.send_command_param(INFO_BLUE_PICK_SLOT, S_blue_PICK[0], S_blue_PICK[1]);
-        }
     }
 
     // ==========================================================
@@ -675,6 +669,15 @@ void fsm_round2::state_actions_rules()
     else if(state == M_SYS_START) robot.setRobotVW(0 ,0); // wait ACK from SLAVE
     else if(state == M_SYS_LEAVE_START)
     {
+        //always sending! the slave will only store once! 
+        if (this->SLAVE_blueBox == 1) 
+        {
+            robot.send_command_param(INFO_BLUE_PICK_SLOT, S_blue_PICK[0]);
+        }
+        else if (this->SLAVE_blueBox == 2) 
+        {
+            robot.send_command_param(INFO_BLUE_PICK_SLOT, S_blue_PICK[0], S_blue_PICK[1]);
+        }
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == M_NAV_PROCESS_BOX || state == M_GEN_DROP_ALIGN)

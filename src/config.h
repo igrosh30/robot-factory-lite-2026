@@ -10,8 +10,8 @@
 //#define ROUND_2
 
 
-#define ROBOT_MASTER
-//#define ROBOT_SLAVE
+//#define ROBOT_MASTER
+#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"

@@ -47,6 +47,7 @@ public:
     uint8_t S_blue_PICK[2];
     uint8_t SLAVE_blueBox = 0;
     
+    bool hasBlueBoxes;
     int pick_slot = -1; 
     int drop_slot = -1;  
     
