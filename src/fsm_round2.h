@@ -66,7 +66,7 @@ public:
 
     fsm_round2(robot_t& r);         
     void build_sequence_from_IR(String ir_data);
-    void build_currentBox(BoxRound2& box, NodeId robotID);
+    void build_currentBox(BoxRound2& box);
     
     //stores the slots and the number of blueBoxes to process at MASTER side - then SEND TO SLAVE it's number! 
     void build_blueBoxPick(uint8_t num_green_box);

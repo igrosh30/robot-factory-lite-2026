@@ -203,18 +203,27 @@ void fsm_round2::next_state_rules()
     
     else if(state == S_NAV_MACHINE_OUT)
     {
-        if(robot.appLayer.hasNewCommand())
+        if(!hasBlueBoxes)
         {
-            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
-            if(cmdId == INFO_BLUE_PICK_SLOT && !hasBlueBoxes)
+            if(robot.appLayer.hasNewCommand())
             {
-                uint8_t len = robot.appLayer.getReceivedParamLen();
-                const uint8_t* params = robot.appLayer.getReceivedParams();
-                this->SLAVE_blueBox = len;
+                Serial.printf("NEW COMAND RECEIVED: ");
+                uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+                Serial.println(cmdId);
+                if(cmdId == INFO_BLUE_PICK_SLOT && !hasBlueBoxes)//should be value 5!
+                {
+                    Serial.println("STORING VALUES.......");
+                    uint8_t len = robot.appLayer.getReceivedParamLen();
+                    Serial.printf("Len of params received: %d\n",len); 
+                    const uint8_t* params = robot.appLayer.getReceivedParams();
+                    this->SLAVE_blueBox = len;
 
-                if (len >= 1) this->S_blue_PICK[0] = params[0]; 
-                if(len == 2) this->S_blue_PICK[1] = params[1];
-                hasBlueBoxes = true;
+                    if (len >= 1) this->S_blue_PICK[0] = params[0]; 
+                    if(len == 2) this->S_blue_PICK[1] = params[1];
+                    hasBlueBoxes = true;
+                    Serial.printf("[SLAVE] blue pick slot:");
+                    for(int i = 0; i< SLAVE_blueBox; i++) Serial.printf("%d-",S_blue_PICK[i]);
+                }
             }
         }
         if(intersections == 5)
@@ -401,7 +410,7 @@ void fsm_round2::next_state_rules()
 
     else if(state == GEN_DROP_BOX)
     {
-
+        //GREEN BOX- SLAVE CALCULATES IN S_NAV_MACHINE_TO_DROP
         if(currentBox.drop_slot == 0)
         {
             set_next_state(GEN_DROP_ALIGN);
@@ -495,8 +504,16 @@ void fsm_round2::next_state_rules()
 
         if(intersections == 3)
         {
-            currentBox.drop_slot = drop_sequence[current_box_index++];
-            set_next_state(GEN_DROP_BOX);
+            if(robot.front.actuators.isMagnetOn)
+            {
+                currentBox.drop_slot = drop_sequence[current_box_index++];
+                set_next_state(GEN_DROP_BOX);
+            }
+            else
+            {
+                build_currentBox(currentBox);
+                set_next_state(GEN_PICK_ZONE);
+            }
         }
     }
     else if(state == NAV_DOCKING_STATION)
@@ -832,34 +849,39 @@ void fsm_round2:: build_sequence_from_IR(String ir_data)
 }
 
 
-void fsm_round2::build_currentBox(BoxRound2 &box, NodeId robotID)//WHAT ABOUT PICK SLOT????
+void fsm_round2::build_currentBox(BoxRound2 &box)//WHAT ABOUT PICK SLOT????
 {
-    if(robotID == NodeId::MASTER)// only master picks greenBoxes! 
+   
+   
+    #ifdef ROBOT_MASTER
+    if(this->total_greens > 0 && current_green_index < 4) // when we store a green box we decrement?!
     {
-        if(this->total_greens > 0 && current_green_index < 4) // when we store a green box we decrement?!
-        {
-            box.color = 'g';
-            box.pick_slot = this->green_pick_slots[this->current_green_index];
-            current_green_index++;
-            //what should be the dropSlot?!
-        }
-        else if(this->MASTER_blueBox > 0 && current_blue_index < 2)
-        {
-            box.color = 'b';
-            box.pick_slot = this->S_blue_PICK[this->current_blue_index];
-            //box.drop_slot = drop_sequence[this->current_blue_index]; 
-            current_blue_index++;
-        }
+        box.color = 'g';
+        box.pick_slot = this->green_pick_slots[this->current_green_index];
+        current_green_index++;
+        //what should be the dropSlot?!
     }
-    else if(robotID == NodeId::SLAVE)
+    else if(this->MASTER_blueBox > 0 && current_blue_index < 2)
     {
-        if(this->SLAVE_blueBox > 0 && current_blue_index < 2)
-        {
-            box.color = 'b';
-            box.pick_slot = this->S_blue_PICK[this->current_blue_index];
-            current_blue_index++;
-        }
+        box.color = 'b';
+        box.pick_slot = this->S_blue_PICK[this->current_blue_index];
+        //box.drop_slot = drop_sequence[this->current_blue_index]; 
+        current_blue_index++;
     }
+
+    #endif
+    #ifdef ROBOT_SLAVE
+    if(this->SLAVE_blueBox > 0 && current_blue_index < 2)
+    {
+        box.color = 'b';
+        box.pick_slot = this->S_blue_PICK[this->current_blue_index];
+        current_blue_index++;
+    }
+    #endif
+    
+    
+        
+    
 }
 
 void fsm_round2::build_blueBoxPick(uint8_t num_green_box)
