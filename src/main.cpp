@@ -64,7 +64,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 0;
+int debug_level = 1;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -267,7 +267,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -386,6 +386,13 @@ void loop() {
 
             //second round debug:
             #ifdef ROUND_2
+            #ifdef  ROBOT_SLAVE
+            serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);
+            
+            
+            #endif   
+
+            serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);

@@ -94,7 +94,7 @@ void fsm_round2::next_state_rules()
     else if(state == M_SYS_LEAVE_START && intersections == 3)
     {
         //here send the slots to the robot slave when entering this state!
-        build_currentBox(this->currentBox, NodeId::MASTER);
+        build_currentBox(this->currentBox);
         set_next_state(GEN_PICK_ZONE);
     }
 
@@ -154,7 +154,7 @@ void fsm_round2::next_state_rules()
         if(intersections == 1)
         {
             isFromMachine = true;
-            build_currentBox(this->currentBox,MASTER);//get the next slot!
+            build_currentBox(this->currentBox);//get the next slot!
             set_next_state(GEN_PICK_ZONE);
         }
     }
@@ -231,19 +231,24 @@ void fsm_round2::next_state_rules()
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = 1;
-            target_turn_angle = PI/2;
+            target_turn_angle = PI/3;
             state_after_maneuver = S_NAV_TO_MACHINE_FROM_WHOUSE;
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if (state == S_NAV_TO_MACHINE_FROM_WHOUSE && intersections == 2)
+    else if (state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
-        target_distance = d_mv_aft_intersection;
-        move_direction = 1;
-        turn_direction = 1;
-        target_turn_angle = PI/2;
-        state_after_maneuver = S_WAIT_PICK_CMD;
-        set_next_state(GEN_MOVE_X);
+        if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections == 2)
+        {
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = S_WAIT_PICK_CMD;
+            set_next_state(GEN_MOVE_X);
+        }
+        
     }
     else if(state == S_WAIT_PICK_CMD)
     {
@@ -272,7 +277,7 @@ void fsm_round2::next_state_rules()
         target_distance = d_retrive_process_box;
         move_direction = -1;
         turn_direction = 1;
-        target_turn_angle = PI/2;
+        target_turn_angle = PI/3;
         state_after_maneuver = S_NAV_MACHINE_TO_DROP;
         set_next_state(GEN_MOVE_X);
     }
@@ -295,7 +300,7 @@ void fsm_round2::next_state_rules()
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = 1;
-            target_turn_angle = PI/2;
+            target_turn_angle = PI/3;
             state_after_maneuver = S_NAV_TO_MACHINE_FROM_WHOUSE;
             set_next_state(GEN_MOVE_X);
         }
@@ -439,6 +444,10 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_DROP_ALIGN && tis > 2)
     {
+        #ifdef ROBOT_SLAVE
+        total_greens--;
+        #endif
+
         if(currentBox.color == 'b')
         {
             #ifdef ROBOT_MASTER
@@ -475,10 +484,17 @@ void fsm_round2::next_state_rules()
             if(MASTER_blueBox > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
             else set_next_state (NAV_DOCKING_STATION);
             #endif
-            #ifdef ROBOT_SLAVE
-            if(SLAVE_blueBox > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
-            else set_next_state(NAV_DOCKING_STATION);
             
+            #ifdef ROBOT_SLAVE
+            // We only enter this state if total_greens == 0, so just check for blue boxes!
+            if(SLAVE_blueBox > 0) 
+            {
+                set_next_state(EXITING_PICK_ZONE); // Go to the Pick Zone!
+            }
+            else 
+            {
+                set_next_state(NAV_DOCKING_STATION);   // No boxes left, go dock!
+            }
             #endif
         
         
@@ -793,7 +809,7 @@ void fsm_round2::state_actions_rules()
     }
     else if(state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
     }
     else if(state == S_MACHINE_ALIGN_PICK)
     {
