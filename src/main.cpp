@@ -25,8 +25,8 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-fsm_round1 fsm(robot);
-//fsm_round2 fsm(robot);
+//fsm_round1 fsm(robot);
+fsm_round2 fsm(robot);
 //fsm_COM fsm(robot);
 
 

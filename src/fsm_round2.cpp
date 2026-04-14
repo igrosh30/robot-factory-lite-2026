@@ -203,10 +203,10 @@ void fsm_round2::next_state_rules()
             {
                 uint8_t len = robot.appLayer.getReceivedParamLen();
                 const uint8_t* params = robot.appLayer.getReceivedParams();
-                this->num_slave_blue_boxes = len;
+                this->SLAVE_blueBox = len;
 
-                if (len >= 1) this->slave_blue_pick_slots[0] = params[0]; 
-                if(len == 2) this->slave_blue_pick_slots[1] = params[1];
+                if (len >= 1) this->S_blue_PICK[0] = params[0]; 
+                if(len == 2) this->S_blue_PICK[1] = params[1];
             }
         }
         if(intersections == 5)
@@ -428,7 +428,7 @@ void fsm_round2::next_state_rules()
             MASTER_blueBox--;
             #endif
             #ifdef ROBOT_SLAVE
-            num_slave_blue_boxes--;
+            SLAVE_blueBox--;
             #endif
         } 
         else if(currentBox.color == 'g') total_greens--;
@@ -459,7 +459,7 @@ void fsm_round2::next_state_rules()
             else set_next_state (NAV_DOCKING_STATION);
             #endif
             #ifdef ROBOT_SLAVE
-            if(num_slave_blue_boxes > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
+            if(SLAVE_blueBox > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
             else set_next_state(NAV_DOCKING_STATION);
             
             #endif
