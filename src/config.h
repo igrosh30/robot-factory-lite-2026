@@ -10,8 +10,8 @@
 //#define ROUND_2
 
 
-//#define ROBOT_MASTER
-#define ROBOT_SLAVE
+#define ROBOT_MASTER
+//#define ROBOT_SLAVE
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
@@ -68,7 +68,7 @@ const uint8_t INVALID_SLOT = 255;
 //#define COMMAND_LIST_SIZE 32
 
 // Communication modes
-#define DEBUG_LEVEL 3  // 0=minimal, 1=normal, 2=verbose, 3= COM
+#define DEBUG_LEVEL 0  // 0=minimal, 1=normal, 2=verbose, 3= COM
 
 
 // (Paste your 'savedMin' array here)

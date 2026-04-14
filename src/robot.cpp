@@ -48,7 +48,7 @@ robot_t::robot_t(pico4drive_t& driver)
 bool robot_t::init_COM(Stream* comPort)
 {
   if(comPort == nullptr) return false;
-  currentComState = COM_IDLE; //This will be changed inside the StateMachine! 
+  currentComState = ComState::COM_IDLE; //This will be changed inside the StateMachine! 
   COM_ok = false;// true if PING PONG WORKS! 
   sendTries = 0;
   comTimer = 0;
@@ -109,7 +109,7 @@ void robot_t::updateComState()
             if(sendTries > 100 ){
               hasPendingCommandSend = false; // Give up and clear flags
               pendingParamLen = 0;
-              currentComState = COM_ERROR;
+              currentComState = ComState::COM_ERROR;
             } 
             else if(appLayer.hasReceivedAck(pendingCommandId))
             {
@@ -143,7 +143,7 @@ void robot_t::updateComState()
           appLayer.update();
           if(robot.appLayer.hasReceivedPing()) currentComState = ComState::COM_LISTEN;
           break;
-          
+
           case ComState::COM_LISTEN:
             appLayer.update();                 
             

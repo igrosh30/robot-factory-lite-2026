@@ -43,7 +43,7 @@ void fsm_COM::next_state_rules()
         #endif 
         #ifdef ROBOT_SLAVE
         if(robot.currentComState == ComState::COM_LISTEN){
-            set_next_state(SYS_START);
+            //set_next_state(SYS_START);
             Serial.println("[FSM_SLAVE] PING received! \n");
         }
         #endif 

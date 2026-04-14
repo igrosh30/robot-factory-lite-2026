@@ -1,7 +1,7 @@
 #include "fsm_round1.h"
 #include "config.h"
 
-fsm_main::fsm_main(robot_t& r) : robot(r)
+fsm_round1::fsm_round1(robot_t& r) : robot(r)
 {
     // You can set initial state here if you want
     force_state(SYS_IDLE);
@@ -20,7 +20,7 @@ fsm_main::fsm_main(robot_t& r) : robot(r)
     #endif
 }
 
-void fsm_main::next_state_rules()
+void fsm_round1::next_state_rules()
 {
     // ==========================================================
     //                    SYSTEM & STARTUP
@@ -306,7 +306,7 @@ void fsm_main::next_state_rules()
     }
 }
 
-void fsm_main::enter_state_actions_rules()
+void fsm_round1::enter_state_actions_rules()
 {
     // ==========================================================
     //                    SYSTEM & STARTUP
@@ -401,7 +401,7 @@ void fsm_main::enter_state_actions_rules()
 
 }
 
-void fsm_main::state_actions_rules()
+void fsm_round1::state_actions_rules()
 {
     // High-speed reference alias
     auto& intersections = robot.front.sensor.intersections;

@@ -25,9 +25,9 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-//fsm_main fsm(robot);
+fsm_round1 fsm(robot);
 //fsm_round2 fsm(robot);
-fsm_COM fsm(robot);
+//fsm_COM fsm(robot);
 
 
 // ================================================================
@@ -64,7 +64,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 0;
+int debug_level = 1;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -267,7 +267,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 5 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -399,7 +399,7 @@ void loop() {
             //serial_commands.send_command("redpath", fsm.path_strategy);
 
             //COM debug:
-            serial_commands.send_command("st_com", robot.currentComState);
+            serial_commands.send_command("st_com", uint8_t(robot.currentComState));
 
             //serial_commands.send_command("d1_slot", fsm.drop_slot);
             //serial_commands.send_command("p1_slot", fsm.pick_slot);

@@ -18,7 +18,7 @@ struct Box
     char color;
 };
 
-class fsm_main : public state_machine_t
+class fsm_round1 : public state_machine_t
 {
 public:
     robot_t& robot;                
@@ -54,7 +54,7 @@ public:
     
     
     
-    fsm_main(robot_t& r);               // constructor
+    fsm_round1(robot_t& r);               // constructor
 
     virtual void next_state_rules() override;
     virtual void enter_state_actions_rules() override;
