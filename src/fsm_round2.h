@@ -36,12 +36,10 @@ public:
 
     uint8_t blue_pick_slots[4];
     uint8_t master_blue_pick_slots[2];
-    uint8_t slave_blue_pick_slots[2];// Always send slave to the lowest pick slots! 
     uint8_t total_blues = 0;
     uint8_t num_master_blue_boxes = 0;
     uint8_t num_slave_blue_boxes = 0;
     uint8_t current_blue_index = 0; 
-    bool receivedSlotIndex = false;
     
     int pick_slot = -1; 
     int drop_slot = -1;  

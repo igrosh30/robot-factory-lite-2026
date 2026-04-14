@@ -36,13 +36,12 @@ void fsm_round2::next_state_rules()
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
-        robot.currentComState = COM_START;//does PING/PONG
+        robot.currentComState = ComState::COM_START;//does PING/PONG
 
         #ifdef ROBOT_MASTER
             set_next_state(M_SYS_START); // Master espera pelo sinal de START
         #endif
         #ifdef ROBOT_SLAVE
-            
             set_next_state(S_WAIT_BOX_INFO); // Slave vai logo dormir à espera do Master
         #endif
     }
@@ -54,17 +53,10 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     #ifdef ROBOT_MASTER
     
-    if(state == M_SYS_START && tis > 2)//change to while received a correct IR! 
+    if(state == M_SYS_START && tis > 4)//change to while received a correct IR! 
     {
-        //wait's for the IR from the receiver to tell to start! 
-        build_sequence_from_IR("Wouou");
-
-        build_blueBoxPick(total_greens,NodeId::MASTER);
-
-        //Send initial total boxes colors!
-        if(total_greens > 0) robot.send_command_param(INFO_GREEN_BOX, total_greens);
-        else if(total_blues > 0) robot.send_command_param(INFO_BLUE_BOX, total_blues);//should be 4 blues! 
-        if(robot.appLayer.hasReceivedAck()) set_next_state(M_SYS_LEAVE_START);
+        //in enterState we set the command to be sent is the infoBOX!... waiting response
+        if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BLUE_PICK_SLOT)) set_next_state(M_SYS_LEAVE_START);
     }
     else if(state == M_SYS_LEAVE_START && intersections == 3)
     {
@@ -499,6 +491,15 @@ void fsm_round2::enter_state_actions_rules()
         robot.dropBox(robot.front);
         robot.front.sensor.intersections = 0;
         robot.front.sensor.readValues();
+        build_sequence_from_IR("Wouou");
+
+        //_________________________________//
+        // COM SENDING + INITIAL BOX LOGIC //
+        //_________________________________//
+        build_blueBoxPick(total_greens,NodeId::MASTER);
+        //Send initial total boxes colors!
+        if(total_greens > 0) robot.send_command_param(INFO_GREEN_BOX, total_greens);
+        else if(total_blues > 0) robot.send_command_param(INFO_BLUE_BOX, total_blues);//should be 4 blues! 
     }
     else if(state == M_SYS_LEAVE_START)
     {

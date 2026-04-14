@@ -76,6 +76,9 @@ enum CMD_ID : uint8_t
     // --- MASTER TO SLAVE COMMANDS (Actions) ---
     CMD_WAIT                  = 1,   // Tell slave to hold position
     CMD_GO_PROCESS_MACHINE    = 2,   // Tell slave to navigate to the process machine (Your GO_PICK_GREEN)
+    CMD_SLAVE_START           = 10,
+    CMD_SLAVE_WAIT            = 15,
+    CMD_SLAVE_GO              = 11,
     INFO_GREEN_BOX            = 3,
     INFO_BLUE_BOX             = 4,
     INFO_BLUE_PICK_SLOT       = 5,

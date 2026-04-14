@@ -25,6 +25,7 @@ void fsm_main::next_state_rules()
     // ==========================================================
     //                    SYSTEM & STARTUP
     // ==========================================================
+    auto& intersections = robot.front.sensor.intersections;
     if(state == SYS_IDLE && robot.front.actuators.isSwitch_left_On)
     {
         set_next_state(SYS_CALIBRATION);
@@ -37,16 +38,67 @@ void fsm_main::next_state_rules()
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
-        set_next_state(SYS_START);
+
+        robot.currentComState = ComState::COM_START;//does PING/PONG
+        set_next_state(COM_INIT);
     }
-    else if(state == SYS_START && tis >2)
+    else if(state == COM_INIT) //Master send PING
     {
-        set_next_state(SYS_LEAVE_START);
+        #ifdef ROBOT_MASTER
+        if(robot.currentComState == ComState::COM_WAIT_SEND) set_next_state(SYS_LEAVE_START);
+        else if (robot.currentComState == ComState::COM_ERROR);//SET COM ERROR FLAG!
+        #endif 
+        #ifdef ROBOT_SLAVE
+        if(robot.currentComState == ComState::COM_LISTEN){
+            set_next_state(S_WAIT_CMD_START);
+        }
+        #endif 
     }
-    else if(state==SYS_LEAVE_START && robot.front.sensor.intersections == 3)
+    else if(state == S_WAIT_CMD_START) // put slave waiting the MASTER CMD...
     {
-        pick_slot = sequence[current_box_index].pick_slot;
-        set_next_state(GEN_PICK_ZONE);
+        #ifdef ROBOT_SLAVE
+        //WAIT's the master to tell to go!
+        if(robot.appLayer.hasNewCommand())
+        {
+            uint8_t cmd = robot.appLayer.getReceivedCmdId();
+            if(cmd == CMD_ID::CMD_SLAVE_START)
+            {
+                set_next_state(SYS_LEAVE_START);
+            }
+
+        }
+        #endif
+    }
+    else if(state==SYS_LEAVE_START )
+    {
+        #ifdef ROBOT_MASTER //TELS SLAVE TO START! 
+        
+        if(intersections == 1)
+        {
+            //Send command to SLAVE START! - robot State Machine andles the rest! 
+            robot.send_command(CMD_ID::CMD_SLAVE_START);
+        }
+        #endif
+        //STATE transition:
+        if(intersections == 3)
+        {
+            pick_slot = sequence[current_box_index].pick_slot;
+            #ifdef ROBOT_MASTER
+            set_next_state(GEN_PICK_ZONE);
+            #endif
+            #ifdef ROBOT_SLAVE
+            set_next_state(S_WAIT_PERMISSION);
+            #endif
+        }
+    }
+    else if(state == S_WAIT_PERMISSION)
+    {
+        uint8_t cmd = robot.appLayer.getReceivedCmdId();
+        if(cmd == CMD_ID::CMD_SLAVE_GO)
+        {
+            if(robot.front.actuators.isMagnetOn) set_next_state(GEN_DROP_BOX);
+            else set_next_state(GEN_PICK_ZONE);
+        }
     }
    
     else if(state == GEN_MOVE_X)
@@ -192,47 +244,35 @@ void fsm_main::next_state_rules()
     // ==========================================================
     //                       GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
-    #ifdef ROBOT_MASTER
-        else if(state == NAV_TO_WEARHOUSE && robot.front.sensor.intersections == 4)//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
+    
+    else if(state == NAV_TO_WEARHOUSE )//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
+    {
+        if(robot.front.sensor.intersections == 1 && tis < 0.1/robot.v_req) robot.front.sensor.intersections = 0; // reset if after the turn count 1 one int more!
+        if(robot.front.sensor.intersections == 3)
         {
             if(!robot.front.actuators.isMagnetOn)
             {
                 pick_slot = sequence[current_box_index].pick_slot;
+                #ifdef ROBOT_MASTER
                 set_next_state(GEN_PICK_ZONE);
+                #endif
+                #ifdef ROBOT_SLAVE
+                set_next_state(S_WAIT_PERMISSION);
+                #endif
             }
             else
             {
                 drop_slot = sequence[current_box_index].drop_slot;
                 set_next_state(GEN_DROP_BOX);
             }
-            
         }
-    #endif
-    #ifdef ROBOT_SLAVE
-        else if(state == NAV_TO_WEARHOUSE )//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
-        {
-            if(!robot.front.actuators.isMagnetOn)
-            {
-                if(robot.front.sensor.intersections == 3)
-                {
-                    pick_slot = sequence[current_box_index].pick_slot;
-                    set_next_state(GEN_PICK_ZONE);
-                }
-            }
-            else
-            {
-                if(robot.front.sensor.intersections == 4)
-                {
-                    drop_slot = sequence[current_box_index].drop_slot;
-                    set_next_state(GEN_DROP_BOX);       
-                }
-                
-            } 
-        }
-    #endif
-
-    else if(state == NAV_LEAVING_WEARHOUSE )
+    }
+    else if(state == NAV_LEAVING_WEARHOUSE)
     {
+        #ifdef ROBOT_MASTER
+        robot.send_command(CMD_SLAVE_GO);
+        #endif
+        //if(robot.front.sensor.intersections == 1 && tis < 0.1/robot.v_req) robot.front.sensor.intersections = 0; // reset if after the turn count 1 one int more!
         //Go x front then turn!
         if(path_strategy == TURN_AFTER_DETECTION)
         {
@@ -276,7 +316,7 @@ void fsm_main::enter_state_actions_rules()
         robot.setRobotVW(0,0);
         robot.front.actuators.magnetOff();
     }
-    else if(state == SYS_START)
+    else if(state == S_WAIT_CMD_START)
     {
         robot.setRobotVW(0,0);
         robot.thetae = PI*0.5;
@@ -444,6 +484,11 @@ void fsm_main::state_actions_rules()
     {
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
+
+    // ==========================================================
+    //                       SLAVE ACTIONS:
+    // ==========================================================
+    else if(state == S_WAIT_PERMISSION) robot.setRobotVW(0,0);
 
 
 }

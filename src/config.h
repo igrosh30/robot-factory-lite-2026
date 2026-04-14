@@ -6,6 +6,10 @@
 //Master - IP: 10.227.21.112
 //Slave -  IP: 10.227.21.116
 
+#define ROUND_1
+//#define ROUND_2
+
+
 //#define ROBOT_MASTER
 #define ROBOT_SLAVE
 // Proteção de compilação
@@ -55,7 +59,7 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE true
+#define CALIBRATION_MODE false
 const uint8_t INVALID_SLOT = 255;
 
 //Communications with ComRobot
@@ -64,7 +68,7 @@ const uint8_t INVALID_SLOT = 255;
 //#define COMMAND_LIST_SIZE 32
 
 // Communication modes
-#define DEBUG_LEVEL 1  // 0=minimal, 1=normal, 2=verbose
+#define DEBUG_LEVEL 3  // 0=minimal, 1=normal, 2=verbose, 3= COM
 
 
 // (Paste your 'savedMin' array here)
@@ -119,13 +123,17 @@ typedef enum {
     SYS_IDLE               = 0, 
     SYS_SET_CALIBRATION    = 1, 
     SYS_CALIBRATION        = 2, 
-    SYS_START              = 3, 
     SYS_LEAVE_START        = 4, 
     SYS_APPROACH_WAREHOUSE = 5, 
 
     NAV_TO_WEARHOUSE       = 799,
     NAV_LEAVING_WEARHOUSE  = 798,
     NAV_FROM_MACHINE       = 797,
+
+    // ==========================================
+    // --- COMMUNICATION STATES:
+    // ==========================================
+    COM_INIT               = 400,
 
     // ==========================================
     // --- GENERIC MANEUVERS- from Start Point
@@ -164,7 +172,9 @@ typedef enum {
 
 
     // --- SLAVE STATES:
-    S_WAIT_BOX_INFO                 = 300,
+    S_WAIT_CMD_START                = 300, 
+    S_WAIT_PERMISSION               = 301,
+    S_WAIT_BOX_INFO                 = 302,   
     S_NAV_MACHINE_OUT               = 310,
     S_NAV_EXIT_DROP_ZONE_2_MACHINE  = 305,
     S_NAV_TO_MACHINE_FROM_WHOUSE    = 320,

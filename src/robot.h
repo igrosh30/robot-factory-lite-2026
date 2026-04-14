@@ -23,7 +23,7 @@ typedef enum
   cm_pos
 } control_mode_t;
 
-enum ComState : uint8_t
+enum class ComState : uint8_t
 {
     COM_IDLE,
     COM_START,
@@ -31,6 +31,7 @@ enum ComState : uint8_t
     COM_WAIT_SEND,
     COM_WAIT_ACK,
     COM_ERROR,
+    COM_LISTEN_PING,
     COM_LISTEN     
 };
 
@@ -112,7 +113,7 @@ public:
   void send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2); 
   void listen_command(); //however, I can be always listening... or just enable listening in some states! 
 
-  bool hasPendingCommand = false;
+  bool hasPendingCommandSend = false;
   uint8_t pendingCommandId = 0;
 
   //store param sent:

@@ -91,7 +91,7 @@ void robot_t::updateComState()
             break;
 
         case ComState::COM_WAIT_SEND:
-            if(hasPendingCommand)
+            if(hasPendingCommandSend)
             {
                 if(pendingParamLen > 0)
                 {
@@ -107,14 +107,14 @@ void robot_t::updateComState()
         case ComState::COM_WAIT_ACK:
             appLayer.update();
             if(sendTries > 100 ){
-              hasPendingCommand = false; // Give up and clear flags
+              hasPendingCommandSend = false; // Give up and clear flags
               pendingParamLen = 0;
               currentComState = COM_ERROR;
             } 
-            else if(appLayer.hasReceivedAck())
+            else if(appLayer.hasReceivedAck(pendingCommandId))
             {
                 sendTries = 0;
-                hasPendingCommand = false;
+                hasPendingCommandSend = false;
                 pendingParamLen = 0;
                 currentComState = ComState::COM_WAIT_SEND;
             }
@@ -136,20 +136,25 @@ void robot_t::updateComState()
     switch(currentComState)
     {
         case ComState::COM_START:
-            currentComState = ComState::COM_LISTEN;
+            currentComState = ComState::COM_LISTEN_PING;
             break;
 
-        case ComState::COM_LISTEN:
+        case ComState::COM_LISTEN_PING:
+          appLayer.update();
+          if(robot.appLayer.hasReceivedPing()) currentComState = ComState::COM_LISTEN;
+          break;
+          
+          case ComState::COM_LISTEN:
             appLayer.update();                 
             
             /*if(appLayer.hasNewCommand())
             {
                This is checked in the fsm machine! }*/
             // If the FSM previously asked us to send a STATUS back to Master
-            if(hasPendingCommand)
+            if(hasPendingCommandSend)
             {
                 appLayer.sendCommand(MASTER, pendingCommandId);
-                hasPendingCommand = false;
+                hasPendingCommandSend = false;
             }
             break;
 
@@ -162,32 +167,32 @@ void robot_t::updateComState()
 
 void robot_t::send_command(uint8_t cmdId)
 {
-  if(!hasPendingCommand)//robot_id == MASTER && 
+  if(!hasPendingCommandSend)//robot_id == MASTER && 
   {
     pendingCommandId = cmdId;
     pendingParamLen = 0;
-    hasPendingCommand = true;
+    hasPendingCommandSend = true;
   }
 }
 void robot_t::send_command_param(uint8_t cmdId, uint8_t param1)
 {
-  if( !hasPendingCommand)//robot_id == MASTER &&
+  if( !hasPendingCommandSend)//robot_id == MASTER &&
   {
     pendingCommandId = cmdId;
     pendingParams[0] = param1;
     pendingParamLen = 0;
-    hasPendingCommand = true;
+    hasPendingCommandSend = true;
   }
 }
 void robot_t::send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2)
 {
-  if( !hasPendingCommand)//robot_id == MASTER &&
+  if( !hasPendingCommandSend)//robot_id == MASTER &&
   {
     pendingCommandId = cmdId;
     pendingParams[0] = param1;
     pendingParams[1] = param2;
     pendingParamLen = 2;
-    hasPendingCommand = true;
+    hasPendingCommandSend = true;
   }
 }
 

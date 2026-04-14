@@ -14,7 +14,7 @@
 #include "file_gchannels.h"
 #include "fsm_round1.h"
 #include "fsm_round2.h"
-
+#include "COM_fsm.h"
 // ================================================================
 //                      YOUR ROBOT CONFIGURATION
 // ================================================================
@@ -26,7 +26,9 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 //fsm_main fsm(robot);
-fsm_round2 fsm(robot);
+//fsm_round2 fsm(robot);
+fsm_COM fsm(robot);
+
 
 // ================================================================
 //                      WIFI/UDP CONFIGURATION
@@ -62,7 +64,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 1;
+int debug_level = 0;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -223,7 +225,8 @@ void setup() {
     pars_list.register_command("kp2", &robot.motors.kp2);
     pars_list.register_command("ki2", &robot.motors.ki2);
 
-    pars_list.register_command("redpath", &fsm.path_strategy);
+    
+    //pars_list.register_command("redpath", &fsm.path_strategy);
     //pars_list.register_command("d_slot", &fsm.currentBox);
     
     // Line following parameters
@@ -264,7 +267,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 150 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 5 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -350,15 +353,18 @@ void loop() {
         //robot.back.actuators.update();
         robot.front.sensor.readValues();
         //robot.back.sensor.readValues();
-        Serial.printf("Robot COM_STATE:");
-        Serial.print(robot.currentComState);
         
-        if(robot.send_debug == 1) robot.send_command(robot.cmdID_send_debug);
-        robot.updateComState();
-
-        fsm.step();
-
-        robot.motors.PIDController_Update();
+        if(DEBUG_LEVEL == 3) // let's only do COM DEBUG! 
+        {
+            robot.updateComState();
+            fsm.step();
+        }
+        else{
+            robot.updateComState();
+            fsm.step();
+            robot.motors.PIDController_Update();
+        } 
+        
         
             
 
@@ -379,13 +385,14 @@ void loop() {
             
 
             //second round debug:
+            #ifdef ROUND_2
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);
 
             serial_commands.send_command("b_box", fsm.total_blues);
             serial_commands.send_command("g_box", fsm.total_greens);
-           
+            #endif    
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);

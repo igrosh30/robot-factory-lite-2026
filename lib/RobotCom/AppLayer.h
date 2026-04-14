@@ -13,8 +13,10 @@ private:
     NodeId myId = MASTER;
 
     // Communication status flags
+    bool slave_ReceivedPing = false;
     bool pongReceived = false;
     bool ackReceived = false;
+    uint8_t cmdACK = 0;
     uint8_t lastCommandSent = 0;
 
     // NEW: Received command from the other robot (used by SLAVE mainly)
@@ -29,6 +31,7 @@ private:
     void buildHeader(Frame& f, NodeId dest, uint8_t type, uint8_t payloadLen);
 
 public:
+    
     void init(Stream* port, NodeId id);
 
     // --- Sending ---
@@ -41,9 +44,10 @@ public:
 
     // --- Receiving ---
     bool update();          // must be called every loop
-
+    
+    bool hasReceivedPing() const {return slave_ReceivedPing; }
     bool hasReceivedPong() const { return pongReceived; }
-    bool hasReceivedAck()  const { return ackReceived; }
+    bool hasReceivedAck(uint8_t cmdID)  const { return ackReceived && cmdID == cmdACK; }
 
     // New getters for the FSM (mainly on the SLAVE side)
     bool           hasNewCommand()      const { return hasNewCommandReceived; }

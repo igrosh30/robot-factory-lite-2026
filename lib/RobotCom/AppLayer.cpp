@@ -81,7 +81,11 @@ void AppLayer::processFrame(const Frame& f)
     {
         if(type == MsgType::PONG) pongReceived = true;
         
-        else if(type == MsgType::ACK && f.payload.action_ack.status == 0) ackReceived = true;
+        else if(type == MsgType::ACK && f.payload.action_ack.status == 0)
+        {
+            cmdACK = f.payload.action_ack.cmdId;
+            ackReceived = true;
+        }
         
         else if(type == MsgType::DATA && f.payload.data.direction == 1)
         {
@@ -97,6 +101,7 @@ void AppLayer::processFrame(const Frame& f)
     {
         if (type == MsgType::PING)
         {
+            slave_ReceivedPing = true;
             Frame pong;
             buildHeader(pong, MASTER, MsgType::PONG, 0);
             sendFrame(pong);
