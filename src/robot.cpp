@@ -184,7 +184,7 @@ void robot_t::send_command_param(uint8_t cmdId, uint8_t param1)
   {
     pendingCommandId = cmdId;
     pendingParams[0] = param1;
-    pendingParamLen = 0;
+    pendingParamLen = 1;
     hasPendingCommandSend = true;
   }
 }

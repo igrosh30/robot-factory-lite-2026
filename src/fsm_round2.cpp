@@ -63,6 +63,7 @@ void fsm_round2::next_state_rules()
         #endif 
         #ifdef ROBOT_SLAVE
         if(robot.currentComState == ComState::COM_LISTEN){
+            Serial.println("COM INIT SUCCESS!");
             set_next_state(S_WAIT_BOX_INFO);
         }
         #endif 
@@ -169,18 +170,22 @@ void fsm_round2::next_state_rules()
     {
         if(robot.appLayer.hasNewCommand())
         {
+            Serial.print("Received a Command: ");
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            Serial.println(cmdId);
             if (cmdId == INFO_GREEN_BOX || cmdId == INFO_BLUE_BOX) 
             {
                 if (robot.appLayer.getReceivedParamLen() > 0) 
                 {
                     const uint8_t* params = robot.appLayer.getReceivedParams();
                     uint8_t total = params[0]; // This is the 1 byte you sent from Master
-                    
+                    Serial.print("Value received:");
+                    Serial.println(total);
                     if(cmdId == INFO_GREEN_BOX)
                     {
                         total_greens = total;//This is what we need to perform 
                         //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
+                        Serial.println("GOING TO NAV_MACHINE OUT....");
                         set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!
                     }
                     else 
