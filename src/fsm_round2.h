@@ -29,17 +29,23 @@ public:
     int current_box_index;
     bool isFromMachine = false;
 
+    //---------GREEN BOX-----------//
     uint8_t green_pick_slots[4];
-    uint8_t slave_blue_pick_slots[4];
     uint8_t total_greens = 0;
     uint8_t current_green_index = 0; 
 
-    uint8_t blue_pick_slots[4];
-    uint8_t master_blue_pick_slots[2];
+    //---------BLUE BOX-----------//
+    uint8_t blue_pick_slots[4]; //here we have all the slots of the blue boxes at the beggining of the round
     uint8_t total_blues = 0;
-    uint8_t num_master_blue_boxes = 0;
-    uint8_t num_slave_blue_boxes = 0;
     uint8_t current_blue_index = 0; 
+    
+    //MASTER blue box logic:
+    uint8_t M_blue_PICK[2];
+    uint8_t MASTER_blueBox = 0;
+    
+    //SLAVE blue box logic:
+    uint8_t S_blue_PICK[2];
+    uint8_t SLAVE_blueBox = 0;
     
     int pick_slot = -1; 
     int drop_slot = -1;  
@@ -61,8 +67,8 @@ public:
     void build_sequence_from_IR(String ir_data);
     void build_currentBox(BoxRound2& box, NodeId robotID);
     
-    //stores the slots and the number of blueBoxes to process! 
-    void build_blueBoxPick(uint8_t num_green_box, NodeId robotID);
+    //stores the slots and the number of blueBoxes to process at MASTER side - then SEND TO SLAVE it's number! 
+    void build_blueBoxPick(uint8_t num_green_box);
 
     virtual void next_state_rules() override;
     virtual void enter_state_actions_rules() override;
