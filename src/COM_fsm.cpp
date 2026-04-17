@@ -104,24 +104,32 @@ void fsm_COM::next_state_rules()
     }
     #endif
 
+
     else if(state == S_WAIT_CMD_START && tis > 2)
     {
         #ifdef ROBOT_SLAVE_00
         // WAIT for the master to tell us to go!
         if(robot.appLayer.hasNewCommand())
         {
-            uint8_t cmd = robot.appLayer.getReceivedCmdId();
-            
-            if(cmd == CMD_ID::CMD_SLAVE_START)
+            Serial.print("Received a Command: ");
+            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            Serial.println(cmdId);
+
+            if (cmdId == INFO_BOX_MACHINE_B || cmdId == INFO_BOX_MACHINE_A) 
             {
-                Serial.println("\n============================================");
-                Serial.printf("[FSM_SLAVE] SUCCESS! Received CMD: %d\n", cmd);
-                Serial.println("============================================");
-                
-                robot.appLayer.clearNewCommand(); 
-                set_next_state(SYS_LEAVE_START);
+                if (robot.appLayer.getReceivedParamLen() > 0) 
+                {
+                    const uint8_t* params = robot.appLayer.getReceivedParams();
+                    uint8_t val = params[0]; // This is the 1 byte you sent from Master
+                    Serial.print("[SLAVE] received:");
+                    Serial.println(val);
+                    processBox_MachineB = val;//This is what we need to perform 
+                    //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
+                    set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
+                }
             }
         }
+        robot.appLayer.clearNewCommand();
         #endif
         
         #ifdef ROBOT_MASTER
