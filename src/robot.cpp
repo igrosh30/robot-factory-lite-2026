@@ -117,7 +117,8 @@ void robot_t::updateComState()
           if(sendTries > 20)//ERROR in PING 
           {
               COM_SLAVE01_ok = false;
-              if(!COM_SLAVE00_ok && !COM_SLAVE01_ok) currentComState = ComState::COM_ERROR;
+              sendTries = 0;
+              currentComState = ComState::COM_WAIT_SEND; 
           }
           if(appLayer.hasReceivedPong())
           {

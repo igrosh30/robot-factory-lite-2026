@@ -83,11 +83,14 @@ void AppLayer::processFrame(const Frame& f)
     if(myId == MASTER)
     {
         if(type == MsgType::PONG){
+            Serial.printf("\n[MASTER APP] PONG ARRIVED! Frame SRC: %d | I am waiting for: %d\n", f.header.src, this->pingTo_id);
             if(f.header.src == this->pingTo_id)
             {
                 pongReceived = true;
-                this->pingTo_id = 0;//Reset 
+                Serial.println("[MASTER APP] IDs Match! pongReceived = true");
+                this->pingTo_id = -1;//Reset 
             }
+            else Serial.println("[MASTER APP] ERROR: IDs DO NOT MATCH! Ignoring PONG.");
         } 
         
         else if(type == MsgType::ACK && f.payload.action_ack.status == 0)
@@ -106,11 +109,13 @@ void AppLayer::processFrame(const Frame& f)
                 memcpy(receivedParams, f.payload.data.param, receivedParamLen);
         }
     }
-    else if(myId == SLAVE_00 || myId == SLAVE_01)
+    else
     {
         if (type == MsgType::PING)
         {
-            Serial.println("Slave Received PING!...\n");
+
+            Serial.printf("\n[SLAVE APP] Heard a PING! Dest ID: %d | My ID: %d\n", f.header.dest, this->myId);
+            Serial.println("[SLAVE APP] The PING is for me! Sending PONG back...");
             slave_ReceivedPing = true;
             Frame pong;
             buildHeader(pong, MASTER, MsgType::PONG, 0);
