@@ -52,8 +52,8 @@ bool robot_t::init_COM(Stream* comPort)
 {
   if(comPort == nullptr) return false;
   currentComState = ComState::COM_IDLE; //This will be changed inside the StateMachine! 
-  COM_SLAVE00_ok = false;// true if PING PONG WORKS! 
-  COM_SLAVE01_ok = false;
+  COM_SLAVE00_ok = true;// true if PING PONG WORKS! 
+  COM_SLAVE01_ok = true;
   sendTries = 0;
   comTimer = 0;
 
@@ -138,7 +138,22 @@ void robot_t::updateComState()
           break;        
 
         case ComState::COM_WAIT_SEND:
-
+          if(pending_id_dest == SLAVE_00)
+          {
+            if(hasPendingCommandSend)
+            {
+                
+                if(pendingParamLen > 0)
+                {
+                  appLayer.sendCommandWithData(NodeId::SLAVE_00, pendingCommandId, pendingParams, pendingParamLen);
+                }else 
+                {
+                  appLayer.sendCommand(NodeId::SLAVE_00, pendingCommandId);    
+                }
+                comTimer = millis();
+                currentComState = ComState::COM_WAIT_ACK;
+            }
+        /*
           if(pending_id_dest == SLAVE_00)
           {
             if(hasPendingCommandSend)
@@ -161,10 +176,24 @@ void robot_t::updateComState()
                   hasPendingCommandSend = false; // FREE THE BUFFER!
                   pendingParamLen = 0;
                 }
-            }
+            }*/
           }
           else if(pending_id_dest == SLAVE_01)
           {
+            if(hasPendingCommandSend)
+            {
+              if(pendingParamLen > 0)
+              {
+                appLayer.sendCommandWithData(NodeId::SLAVE_01, pendingCommandId, pendingParams, pendingParamLen);
+              }else 
+              {
+                appLayer.sendCommand(NodeId::SLAVE_01, pendingCommandId);    
+              }
+              comTimer = millis();
+              if(CMD_ID::CMD_EXECUTE_PICK_RED == pendingCommandId) currentComState = ComState::COM_WAIT_ACK_DROP_RED;
+              else currentComState = ComState::COM_WAIT_ACK;
+            }
+            /*
             if(hasPendingCommandSend)
             {
               if(COM_SLAVE01_ok) // Slave is ONLINE: Send it
@@ -186,7 +215,7 @@ void robot_t::updateComState()
                 hasPendingCommandSend = false; // FREE THE BUFFER!
                 pendingParamLen = 0;
               }
-            }
+            }*/
           }
           break;
 

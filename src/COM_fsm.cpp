@@ -10,6 +10,7 @@ fsm_COM::fsm_COM(robot_t& r) : robot(r)
 
 void fsm_COM::next_state_rules()
 {
+    Serial.println(state);
     // ==========================================================
     //                    SYSTEM & STARTUP
     // ==========================================================
@@ -21,10 +22,10 @@ void fsm_COM::next_state_rules()
         robot.currentComState = ComState::COM_WAIT_SEND; //does PING/PONG
         set_next_state(COM_BOXES_SLAVE_00);
         #endif
-        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
+        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
         robot.currentComState = ComState::COM_LISTEN; //JUMP to listen! 
         set_next_state(S_WAIT_CMD_START);
-        
+
         #endif
         
         //set_next_state(SYS_CALIBRATION);
@@ -62,19 +63,6 @@ void fsm_COM::next_state_rules()
         #endif 
         
     }
-    else if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
-    {
-        //if(IR_received) - process the message! 
-        #ifdef ROBOT_MASTER
-        //_________________________________//
-        // INITIAL BOX LOGIC               //
-        //_________________________________//
-        //build_sequence_from_IR("Wowou");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
-        //build_blueBoxPick();
-        set_next_state(COM_BOXES_SLAVE_00);
-        //blue box Pick will be only for one slave to do (if we had 3 blue boxes? here will be good to send other slave!) 
-        #endif
-    }
    
     // ==========================================================
     //      MASTER envia no inicio as caixas a processar! 
@@ -84,10 +72,7 @@ void fsm_COM::next_state_rules()
     {
         //TELL SLAVE_00 how many boxes he will proces@Machine B:
         uint8_t t_box =3;
-        if(t_box > 0)
-        {    
-            robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
-        } 
+        robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
 
         //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
@@ -115,7 +100,7 @@ void fsm_COM::next_state_rules()
     #endif
 
 
-    else if(state == S_WAIT_CMD_START && tis > 2)
+    else if(state == S_WAIT_CMD_START)
     {
         #ifdef ROBOT_SLAVE_00
         // WAIT for the master to tell us to go!
