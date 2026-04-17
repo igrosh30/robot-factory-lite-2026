@@ -27,14 +27,14 @@ CRC:
   */
 
 //note that this will need to be only 1byte! 
-enum NodeId //change to be for now 
+enum NodeId : uint8_t//change to be for now 
 {
     MASTER = 0,
     SLAVE_00 = 1,
     SLAVE_01 = 2
 };
 
-enum MsgType//maybe we can change the DATA type...
+enum MsgType : uint8_t//maybe we can change the DATA type...
 {
     PING        = 1,
     PONG        = 2,

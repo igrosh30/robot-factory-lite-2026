@@ -21,7 +21,7 @@ void AppLayer::sendFrame(const Frame& f)
 }
 
 
-void AppLayer::sendPing(NodeId dst) 
+void AppLayer::sendPing(uint8_t dst) 
 {
     this->pongReceived = false; 
     this->pingTo_id = dst;
@@ -32,12 +32,12 @@ void AppLayer::sendPing(NodeId dst)
 }
 
 
-void AppLayer::sendCommand(NodeId dst, uint8_t cmdId)
+void AppLayer::sendCommand(uint8_t dst, uint8_t cmdId)
 {
     sendCommandWithData(dst, cmdId, nullptr, 0);
 }
 
-void AppLayer::sendCommandWithData(NodeId dst, uint8_t cmdId, const uint8_t* data, uint8_t dataLen)
+void AppLayer::sendCommandWithData(uint8_t dst, uint8_t cmdId, const uint8_t* data, uint8_t dataLen)
 {
     this->lastCommandSent = cmdId;
     this->ackReceived = false;
@@ -151,7 +151,7 @@ void AppLayer::processFrame(const Frame& f)
 // ================================================================
 
 
-void AppLayer::buildHeader(Frame& f,NodeId dest, uint8_t type, uint8_t payloadLen) {
+void AppLayer::buildHeader(Frame& f, uint8_t dest, uint8_t type, uint8_t payloadLen) {
     f.sof = SOF_VALUE;
     f.header.src = this->myId; // Automatically set to our ID
     f.header.dest = dest;

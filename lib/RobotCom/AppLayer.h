@@ -29,16 +29,16 @@ private:
 
     void sendFrame(const Frame& f);
     void processFrame(const Frame& f);
-    void buildHeader(Frame& f, NodeId dest, uint8_t type, uint8_t payloadLen);
+    void buildHeader(Frame& f, uint8_t dest, uint8_t type, uint8_t payloadLen);
 
 public:
     uint8_t lastCommandSent = 0;
     void init(Stream* port, NodeId id);
 
     // --- Sending ---
-    void sendPing(NodeId dst);
-    void sendCommand(NodeId dst, uint8_t cmdId);                    // old simple version (wrapper)
-    void sendCommandWithData(NodeId dst, uint8_t cmdId,
+    void sendPing(uint8_t dst);
+    void sendCommand(uint8_t dst, uint8_t cmdId);                    // old simple version (wrapper)
+    void sendCommandWithData(uint8_t dst, uint8_t cmdId,
                              const uint8_t* data, uint8_t dataLen); // new powerful version
 
     void sendErrorAck(uint8_t cmdID);

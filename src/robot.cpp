@@ -118,7 +118,6 @@ void robot_t::updateComState()
           {
               COM_SLAVE01_ok = false;
               if(!COM_SLAVE00_ok && !COM_SLAVE01_ok) currentComState = ComState::COM_ERROR;
-              
           }
           if(appLayer.hasReceivedPong())
           {
@@ -127,7 +126,7 @@ void robot_t::updateComState()
               currentComState = ComState::COM_WAIT_SEND;
               sendTries = 0;
           }
-          else if(millis() - comTimer > 1000)
+          else if(millis() - comTimer > 2000)
           {
               sendTries++;
               comTimer = millis();
@@ -142,7 +141,6 @@ void robot_t::updateComState()
           {
             if(hasPendingCommandSend)
             {
-                
                 if(pendingParamLen > 0)
                 {
                   appLayer.sendCommandWithData(NodeId::SLAVE_00, pendingCommandId, pendingParams, pendingParamLen);
@@ -218,7 +216,35 @@ void robot_t::updateComState()
             }*/
           }
           break;
-
+        
+        case ComState::COM_WAIT_ACK:
+          appLayer.update();
+          if(sendTries > 10 ){ //CHECK HOW MANY TRIES!
+            hasPendingCommandSend = false; // Give up and clear flags
+            pendingParamLen = 0;
+            currentComState = ComState::COM_ERROR;
+          } 
+          else if(appLayer.hasReceivedAck(pendingCommandId))
+          {
+            Serial.println("[MASTER] ACK Received!");
+            sendTries = 0;
+            hasPendingCommandSend = false;
+            pendingParamLen = 0;
+            
+            //LOGIC to master sends SLAVE_00 that he can pick the green box! 
+            if(appLayer.lastCommandSent == CMD_ID::CMD_EXECUTE_PICK_GREEN) currentComState = ComState::COM_SEND_PICK_GREEN;
+            else currentComState = ComState::COM_WAIT_SEND;
+          }
+          else if(millis() - comTimer > 200) // This is a timeout! I should resend the frame if we enter here! 
+          {
+            //resend the frame!!!!!!!
+            sendTries++;
+            Serial.printf("[MASTER] Missed ACK. Resending CMD: %d (Try: %d)\n", pendingCommandId, sendTries);
+            if(pendingParamLen > 0) appLayer.sendCommandWithData(pending_id_dest, pendingCommandId, pendingParams, pendingParamLen);
+            else  appLayer.sendCommand(pending_id_dest, pendingCommandId);    
+            
+          }
+          break;
 
         case ComState::COM_WAIT_ACK_DROP_RED:
           appLayer.update();
@@ -229,16 +255,17 @@ void robot_t::updateComState()
             } 
             else if(appLayer.hasReceivedAck(pendingCommandId))
             {
-                sendTries = 0;
-                hasPendingCommandSend = false;
-                pendingParamLen = 0;
-                currentComState = ComState::COM_WAIT_SEND;
+              Serial.println("[MASTER] RED BOX DROPPED! Freeing COM layer.");
+              sendTries = 0;
+              hasPendingCommandSend = false;
+              pendingParamLen = 0;
+              currentComState = ComState::COM_SEND_PICK_GREEN;
             }
             else if(millis() - comTimer > 500)
             {
                 sendTries++;
-                //resent de command! 
-                appLayer.sendCommand(NodeId::SLAVE_01, pendingCommandId);    
+                comTimer = millis();
+                appLayer.sendCommand(NodeId::SLAVE_01, pendingCommandId);//Resend the CMD!
             }
             break;
 
@@ -247,9 +274,9 @@ void robot_t::updateComState()
             appLayer.sendCommand(NodeId::SLAVE_00,CMD_ID::CMD_EXECUTE_PICK_GREEN);
             
             if(sendTries > 100 ){
-            hasPendingCommandSend = false; // Give up and clear flags
-            pendingParamLen = 0;
-            currentComState = ComState::COM_ERROR;
+              hasPendingCommandSend = false; // Give up and clear flags
+              pendingParamLen = 0;
+              currentComState = ComState::COM_ERROR;
             } 
             else if(appLayer.hasReceivedAck(pendingCommandId))
             {
@@ -264,28 +291,6 @@ void robot_t::updateComState()
               currentComState = ComState::COM_WAIT_SEND;
             }
             break;
-
-        case ComState::COM_WAIT_ACK:
-          appLayer.update();
-          if(sendTries > 100 ){
-            hasPendingCommandSend = false; // Give up and clear flags
-            pendingParamLen = 0;
-            currentComState = ComState::COM_ERROR;
-          } 
-          else if(appLayer.hasReceivedAck(pendingCommandId))
-          {
-              sendTries = 0;
-              hasPendingCommandSend = false;
-              pendingParamLen = 0;
-              currentComState = ComState::COM_WAIT_SEND;
-          }
-          else if(millis() - comTimer > 500)
-          {
-              sendTries++;
-              if(appLayer.lastCommandSent == CMD_ID::CMD_EXECUTE_PICK_GREEN)currentComState = ComState::COM_SEND_PICK_GREEN;
-              else currentComState = ComState::COM_WAIT_SEND;
-          }
-          break;
 
         case ComState::COM_ERROR:
           COM_SLAVE00_ok = false;
