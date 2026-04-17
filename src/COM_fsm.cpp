@@ -123,7 +123,7 @@ void fsm_COM::next_state_rules()
                     uint8_t val = params[0]; // This is the 1 byte you sent from Master
                     Serial.print("[SLAVE] received:");
                     Serial.println(val);
-                    processBox_MachineB = val;//This is what we need to perform 
+                    //processBox_MachineB = val;//This is what we need to perform 
                     //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
                     set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
                 }

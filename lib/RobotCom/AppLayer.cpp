@@ -69,7 +69,8 @@ bool AppLayer::update()
     {
         Frame incomingFrame;
         this->ddl.getFrame(incomingFrame);
-        this->processFrame(incomingFrame);
+        if(incomingFrame.header.dest == myId) this->processFrame(incomingFrame);
+        
         return true;
     }
     return false;
