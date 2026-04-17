@@ -16,8 +16,18 @@ void fsm_COM::next_state_rules()
     if(state == SYS_IDLE && robot.front.actuators.isSwitch_left_On)
     {
         Serial.println("[FSM] Switch pressed. Moving to INIT.");
-        robot.currentComState = ComState::COM_START; //does PING/PONG
-        set_next_state(SYS_CALIBRATION);
+        #ifdef ROBOT_MASTER
+        //jump to wait_send! 
+        robot.currentComState = ComState::COM_WAIT_SEND; //does PING/PONG
+        set_next_state(COM_BOXES_SLAVE_00);
+        #endif
+        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
+        robot.currentComState = ComState::COM_LISTEN; //JUMP to listen! 
+        set_next_state(S_WAIT_CMD_START);
+        
+        #endif
+        
+        //set_next_state(SYS_CALIBRATION);
     }
     else if(state == SYS_CALIBRATION)
     {
