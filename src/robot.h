@@ -27,7 +27,10 @@ enum class ComState : uint8_t
 {
     COM_IDLE,
     COM_START,
-    COM_WAIT_PONG,
+    COM_WAIT_SLAVE00_PONG,
+    COM_WAIT_SLAVE01_PONG,
+    COM_WAIT_ACK_DROP_RED,
+    COM_SEND_PICK_GREEN,
     COM_WAIT_SEND,
     COM_WAIT_ACK,
     COM_LISTEN_PING,
@@ -49,18 +52,18 @@ public:
 
   //COM state:
   ComState currentComState;
-  bool COM_ok;
+  NodeId robot_id;
+  bool COM_SLAVE00_ok;
+  bool COM_SLAVE01_ok;
   uint8_t sendTries;
   uint32_t comTimer;
   int cmdID_send_debug = 0;
   int send_debug = 0; // 0 not send , 1 send
 
-  Node targetNode;
-  Node currentNode;
   //MotorController motor1;
   //MotorController motor2;
   
-  NodeId robot_id;
+  
   int enc1, enc2;
   int Senc1, Senc2;
   float w1e, w2e;
@@ -108,12 +111,17 @@ public:
   //COM methods:
   bool init_COM(Stream* comPort);
   void updateComState();
-  void send_command(uint8_t cmdId); 
-  void send_command_param(uint8_t cmdId, uint8_t param1); 
-  void send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2); 
-  void listen_command(); //however, I can be always listening... or just enable listening in some states! 
+  void send_command(uint8_t dst, uint8_t cmdId); 
+  void send_command_param(uint8_t dst, uint8_t cmdId, uint8_t param1); 
+  void send_command_param(uint8_t dst, uint8_t cmdId, uint8_t param1, uint8_t param2); 
+  
+  #ifdef ROBOT_SLAVE_01
+  bool drop_greenBox = false;
+  void slave01_dropGreenBox();
+  #endif
 
   bool hasPendingCommandSend = false;
+  uint8_t pending_id_dest = 0;
   uint8_t pendingCommandId = 0;
 
   //store param sent:
@@ -140,9 +148,6 @@ public:
   bool has2Boxes();
   bool hasDroped2Boxes();
 
-  //LOCALISATION METHODS:
-  bool atPikZone();
-  bool atDropZone();
 };
 
 extern robot_t robot;

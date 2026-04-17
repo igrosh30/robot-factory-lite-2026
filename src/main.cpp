@@ -14,6 +14,7 @@
 #include "file_gchannels.h"
 #include "fsm_round1.h"
 #include "fsm_round2.h"
+#include "fsm_round3.h"
 #include "COM_fsm.h"
 // ================================================================
 //                      YOUR ROBOT CONFIGURATION
@@ -26,8 +27,9 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 //fsm_round1 fsm(robot);
-fsm_round2 fsm(robot);
-//fsm_COM fsm(robot);
+//fsm_round2 fsm(robot);
+//fsm_round3 fsm(robot);
+fsm_COM fsm(robot);
 
 
 // ================================================================
@@ -64,7 +66,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 1;
+int debug_level = 0;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -267,7 +269,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -382,16 +384,14 @@ void loop() {
             serial_commands.send_command("vreq", robot.v_req);
             serial_commands.send_command("wreq", robot.w_req);
             serial_commands.send_command("theta", robot.thetae);
+    
+
             
 
-            //second round debug:
-            #ifdef ROUND_2
-            #ifdef  ROBOT_SLAVE
-            serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);
-            
-            
+            #if (DEBUG_LEVEL != 3)
+            #ifdef  ROBOT_SLAVE_01
+            serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);    
             #endif   
-
             serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);

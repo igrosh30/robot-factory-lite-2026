@@ -12,7 +12,7 @@ fsm_round1::fsm_round1(robot_t& r) : robot(r)
         sequence[1].pick_slot = 2;
         sequence[1].drop_slot = 2;
     #endif
-    #ifdef ROBOT_SLAVE
+    #ifdef ROBOT_SLAVE_00
         sequence[0].pick_slot = 1;
         sequence[0].drop_slot = 1;
         sequence[1].pick_slot = 0;
@@ -52,7 +52,7 @@ void fsm_round1::next_state_rules()
 
         };
         #endif 
-        #ifdef ROBOT_SLAVE
+        #ifdef ROBOT_SLAVE_00
         if(robot.currentComState == ComState::COM_LISTEN){
             set_next_state(S_WAIT_CMD_START);
         }
@@ -60,7 +60,7 @@ void fsm_round1::next_state_rules()
     }
     else if(state == S_WAIT_CMD_START) // put slave waiting the MASTER CMD...
     {
-        #ifdef ROBOT_SLAVE
+        #ifdef ROBOT_SLAVE_00
         //WAIT's the master to tell to go!
         if(robot.appLayer.hasNewCommand())
         {
@@ -80,7 +80,7 @@ void fsm_round1::next_state_rules()
         if(intersections == 2)
         {
             //Send command to SLAVE START! - robot State Machine andles the rest! 
-            robot.send_command(CMD_ID::CMD_SLAVE_START);
+            robot.send_command(NodeId::SLAVE_00,CMD_ID::CMD_SLAVE_START);
         }
         #endif
         //STATE transition:
@@ -90,7 +90,7 @@ void fsm_round1::next_state_rules()
             #ifdef ROBOT_MASTER
             set_next_state(GEN_PICK_ZONE);
             #endif
-            #ifdef ROBOT_SLAVE
+            #ifdef ROBOT_SLAVE_00
             set_next_state(S_WAIT_PERMISSION);
             #endif
         }
@@ -139,11 +139,11 @@ void fsm_round1::next_state_rules()
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = PI/2;
-            state_after_maneuver = GEN_PICK_COUNT_START;
+            state_after_maneuver = GEN_PICK_COUNT_NAV_FROM_START;
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == GEN_PICK_COUNT_START)
+    else if(state == GEN_PICK_COUNT_NAV_FROM_START)
     {
         if(pick_slot == robot.front.sensor.intersections)
         {
@@ -260,7 +260,7 @@ void fsm_round1::next_state_rules()
                 #ifdef ROBOT_MASTER
                 set_next_state(GEN_PICK_ZONE);
                 #endif
-                #ifdef ROBOT_SLAVE
+                #ifdef ROBOT_SLAVE_00
                 set_next_state(S_WAIT_PERMISSION);
                 #endif
             }
@@ -274,7 +274,7 @@ void fsm_round1::next_state_rules()
     else if(state == NAV_LEAVING_WEARHOUSE)
     {
         #ifdef ROBOT_MASTER
-        robot.send_command(CMD_SLAVE_GO);
+        robot.send_command(NodeId::SLAVE_00,CMD_SLAVE_GO);
         #endif
         //if(robot.front.sensor.intersections == 1 && tis < 0.1/robot.v_req) robot.front.sensor.intersections = 0; // reset if after the turn count 1 one int more!
         //Go x front then turn!
@@ -349,7 +349,7 @@ void fsm_round1::enter_state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT_START || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == EXITING_PICK_ZONE)
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -433,7 +433,7 @@ void fsm_round1::state_actions_rules()
         #ifdef ROBOT_MASTER
         v_nom1 = 0.15;
         #endif
-        #ifdef ROBOT_SLAVE
+        #ifdef ROBOT_SLAVE_00
         v_nom1 = 0.1;
         #endif
         robot.followLine(v_nom1, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
@@ -461,7 +461,7 @@ void fsm_round1::state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }

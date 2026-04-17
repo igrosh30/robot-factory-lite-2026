@@ -17,12 +17,15 @@ robot_t::robot_t(pico4drive_t& driver)
     back (driver,Side::BACK)
 {
   #ifdef ROBOT_MASTER
-    robot_id = MASTER;
-
+  robot_id = MASTER;
   #endif
-  #ifdef ROBOT_SLAVE
-    robot_id= SLAVE;
+  #ifdef ROBOT_SLAVE_00
+  robot_id= SLAVE_00;
   #endif
+  #ifdef ROBOT_SLAVE_01
+  robot_id = SLAVE_01;
+  #endif
+  
 
   stoped = false;
   wheel_dist = 0.075;
@@ -49,7 +52,8 @@ bool robot_t::init_COM(Stream* comPort)
 {
   if(comPort == nullptr) return false;
   currentComState = ComState::COM_IDLE; //This will be changed inside the StateMachine! 
-  COM_ok = false;// true if PING PONG WORKS! 
+  COM_SLAVE00_ok = false;// true if PING PONG WORKS! 
+  COM_SLAVE01_ok = false;
   sendTries = 0;
   comTimer = 0;
 
@@ -64,53 +68,132 @@ void robot_t::updateComState()
     switch(currentComState)
     {
         case ComState::COM_START:
-            Serial.println("[MASTER] sending PING...");
-            Serial.print("Tries:"); Serial.print(sendTries);
-            Serial.println("\n============================================");
-            appLayer.sendPing(SLAVE);
-            comTimer = millis();
-            currentComState = ComState::COM_WAIT_PONG;
-            break;
+          //---------SERIAL PRINTS---------  
+          Serial.println("[MASTER] sending PING to Slave 00...");
+          Serial.print("Tries:"); Serial.print(sendTries);
+          Serial.println("\n============================================");
+          
+          appLayer.sendPing(SLAVE_00); 
+          comTimer = millis();
+          currentComState = ComState::COM_WAIT_SLAVE00_PONG;
+          break;
 
-        case ComState::COM_WAIT_PONG:
-            appLayer.update();
-            if(sendTries > 20) 
-            {
-                Serial.printf("exceded tries... going to COM_ERROR...");
-                currentComState = ComState::COM_ERROR;
-                break;
-            }
-            if(appLayer.hasReceivedPong())
-            {
-                COM_ok = true;
-                currentComState = ComState::COM_WAIT_SEND;
-                sendTries = 0;
-            }
-            else if(millis() - comTimer > 2000)
-            {
-                sendTries++;
-                comTimer = millis();
-                currentComState = ComState::COM_START;
-            }
-            break;
+        case ComState::COM_WAIT_SLAVE00_PONG:
+          appLayer.update();
+          if(sendTries > 20) 
+          {
+              Serial.printf("exceded tries... Ping to SLAVE_00 failded");
+              COM_SLAVE00_ok = false;
+              //Send Ping to SLAVE_01...
+              appLayer.sendPing(SLAVE_01); 
+              currentComState = ComState::COM_WAIT_SLAVE01_PONG;
+              comTimer = millis();
+              sendTries = 0;
+              //send a ping to SLAVE01:
+              //currentComState = ComState::COM_ERROR;
+
+              //break;
+          }
+          if(appLayer.hasReceivedPong())
+          {
+              COM_SLAVE00_ok = true;
+              //send now to SLAVE_01
+              Serial.println("[MASTER] sending PING to Slave 01...");
+              appLayer.sendPing(SLAVE_01); 
+              currentComState = ComState::COM_WAIT_SLAVE01_PONG;
+              comTimer = millis();
+              sendTries = 0;
+          }
+          else if(millis() - comTimer > 2000)
+          {
+              sendTries++;
+              comTimer = millis();
+              currentComState = ComState::COM_START;
+          }
+          break;
+
+        case ComState::COM_WAIT_SLAVE01_PONG:
+          appLayer.update();
+          if(sendTries > 20)//ERROR in PING 
+          {
+              COM_SLAVE01_ok = false;
+              if(!COM_SLAVE00_ok && !COM_SLAVE01_ok) currentComState = ComState::COM_ERROR;
+              
+          }
+          if(appLayer.hasReceivedPong())
+          {
+            Serial.println("[MASTER]: Received Pong from SLAVE_01...");
+              COM_SLAVE01_ok = true;
+              currentComState = ComState::COM_WAIT_SEND;
+              sendTries = 0;
+          }
+          else if(millis() - comTimer > 1000)
+          {
+              sendTries++;
+              comTimer = millis();
+              //just need to resend if failed!
+              Serial.println("[MASTER] TIMEOUT, recending PING frame to SlAVE_01");
+              appLayer.sendPing(SLAVE_01);
+          }
+          break;        
 
         case ComState::COM_WAIT_SEND:
+
+          if(pending_id_dest == SLAVE_00)
+          {
             if(hasPendingCommandSend)
             {
+                if(COM_SLAVE00_ok) // Slave is ONLINE: Send it
+                {
+                  if(pendingParamLen > 0)
+                  {
+                    appLayer.sendCommandWithData(NodeId::SLAVE_00, pendingCommandId, pendingParams, pendingParamLen);
+                  }else 
+                  {
+                    appLayer.sendCommand(NodeId::SLAVE_00, pendingCommandId);    
+                  }
+                  comTimer = millis();
+                  currentComState = ComState::COM_WAIT_ACK;
+                }
+                else // Slave is OFFLINE: Drop the command to prevent deadlock!
+                {
+                  Serial.println("Error: Slave 00 is offline. Dropping command.");
+                  hasPendingCommandSend = false; // FREE THE BUFFER!
+                  pendingParamLen = 0;
+                }
+            }
+          }
+          else if(pending_id_dest == SLAVE_01)
+          {
+            if(hasPendingCommandSend)
+            {
+              if(COM_SLAVE01_ok) // Slave is ONLINE: Send it
+              {
                 if(pendingParamLen > 0)
                 {
-                  appLayer.sendCommandWithData(NodeId::SLAVE, pendingCommandId, pendingParams, pendingParamLen);
+                  appLayer.sendCommandWithData(NodeId::SLAVE_01, pendingCommandId, pendingParams, pendingParamLen);
+                }else 
+                {
+                  appLayer.sendCommand(NodeId::SLAVE_01, pendingCommandId);    
                 }
-                else appLayer.sendCommand(NodeId::SLAVE, pendingCommandId);
-                
                 comTimer = millis();
-                currentComState = ComState::COM_WAIT_ACK;
+                if(CMD_ID::CMD_EXECUTE_PICK_RED == pendingCommandId) currentComState = ComState::COM_WAIT_ACK_DROP_RED;
+                else currentComState = ComState::COM_WAIT_ACK;
+              }
+              else // Slave is OFFLINE: Drop the command to prevent deadlock!
+              {
+                Serial.println("Error: Slave 01 is offline. Dropping command.");
+                hasPendingCommandSend = false; // FREE THE BUFFER!
+                pendingParamLen = 0;
+              }
             }
-            break;
+          }
+          break;
 
-        case ComState::COM_WAIT_ACK:
-            appLayer.update();
-            if(sendTries > 100 ){
+
+        case ComState::COM_WAIT_ACK_DROP_RED:
+          appLayer.update();
+          if(sendTries > 100 ){
               hasPendingCommandSend = false; // Give up and clear flags
               pendingParamLen = 0;
               currentComState = ComState::COM_ERROR;
@@ -122,21 +205,68 @@ void robot_t::updateComState()
                 pendingParamLen = 0;
                 currentComState = ComState::COM_WAIT_SEND;
             }
-            else if(millis() - comTimer > 1000)
+            else if(millis() - comTimer > 500)
             {
                 sendTries++;
-                currentComState = ComState::COM_WAIT_SEND;
+                //resent de command! 
+                appLayer.sendCommand(NodeId::SLAVE_01, pendingCommandId);    
             }
             break;
 
-        case ComState::COM_ERROR:
-            COM_ok = false;
+        break;
+        case ComState::COM_SEND_PICK_GREEN:
+            appLayer.sendCommand(NodeId::SLAVE_00,CMD_ID::CMD_EXECUTE_PICK_GREEN);
+            
+            if(sendTries > 100 ){
+            hasPendingCommandSend = false; // Give up and clear flags
+            pendingParamLen = 0;
+            currentComState = ComState::COM_ERROR;
+            } 
+            else if(appLayer.hasReceivedAck(pendingCommandId))
+            {
+              sendTries = 0;
+              hasPendingCommandSend = false;
+              pendingParamLen = 0;
+              currentComState = ComState::COM_WAIT_SEND;
+            }
+            else if(millis() - comTimer > 500)
+            {
+              sendTries++;
+              currentComState = ComState::COM_WAIT_SEND;
+            }
             break;
+
+        case ComState::COM_WAIT_ACK:
+          appLayer.update();
+          if(sendTries > 100 ){
+            hasPendingCommandSend = false; // Give up and clear flags
+            pendingParamLen = 0;
+            currentComState = ComState::COM_ERROR;
+          } 
+          else if(appLayer.hasReceivedAck(pendingCommandId))
+          {
+              sendTries = 0;
+              hasPendingCommandSend = false;
+              pendingParamLen = 0;
+              currentComState = ComState::COM_WAIT_SEND;
+          }
+          else if(millis() - comTimer > 500)
+          {
+              sendTries++;
+              if(appLayer.lastCommandSent == CMD_ID::CMD_EXECUTE_PICK_GREEN)currentComState = ComState::COM_SEND_PICK_GREEN;
+              else currentComState = ComState::COM_WAIT_SEND;
+          }
+          break;
+
+        case ComState::COM_ERROR:
+          COM_SLAVE00_ok = false;
+          break;
     }
     #endif
 
     // ====================== SLAVE ======================
-    #ifdef ROBOT_SLAVE
+    
+    #if defined(ROBOT_SLAVE_00) || defined( ROBOT_SLAVE_01)
     switch(currentComState)
     {
         case ComState::COM_START:
@@ -145,16 +275,22 @@ void robot_t::updateComState()
 
         case ComState::COM_LISTEN_PING:
           appLayer.update();
-          if(robot.appLayer.hasReceivedPing()) currentComState = ComState::COM_LISTEN;
+          if(appLayer.hasReceivedPing()){
+            appLayer.clearPingFlag();
+            currentComState = ComState::COM_LISTEN;
+            Serial.println("Received PING...");
+          } 
           break;
 
           case ComState::COM_LISTEN:
+            Serial.println("Listeting FRAMES");
             appLayer.update();                 
             
             /*if(appLayer.hasNewCommand())
             {
                This is checked in the fsm machine! }*/
             // If the FSM previously asked us to send a STATUS back to Master
+
             if(hasPendingCommandSend)
             {
                 appLayer.sendCommand(MASTER, pendingCommandId);
@@ -169,29 +305,32 @@ void robot_t::updateComState()
     #endif
 }
 
-void robot_t::send_command(uint8_t cmdId)
+void robot_t::send_command(uint8_t dst,uint8_t cmdId)
 {
   if(!hasPendingCommandSend)//robot_id == MASTER && 
   {
+    pending_id_dest = dst;
     pendingCommandId = cmdId;
     pendingParamLen = 0;
     hasPendingCommandSend = true;
   }
 }
-void robot_t::send_command_param(uint8_t cmdId, uint8_t param1)
+void robot_t::send_command_param(uint8_t dst, uint8_t cmdId, uint8_t param1)
 {
   if( !hasPendingCommandSend)//robot_id == MASTER &&
   {
+    pending_id_dest = dst;
     pendingCommandId = cmdId;
     pendingParams[0] = param1;
     pendingParamLen = 1;
     hasPendingCommandSend = true;
   }
 }
-void robot_t::send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2)
+void robot_t::send_command_param(uint8_t dst, uint8_t cmdId, uint8_t param1, uint8_t param2)
 {
   if( !hasPendingCommandSend)//robot_id == MASTER &&
   {
+    pending_id_dest = dst;
     pendingCommandId = cmdId;
     pendingParams[0] = param1;
     pendingParams[1] = param2;
@@ -199,6 +338,14 @@ void robot_t::send_command_param(uint8_t cmdId, uint8_t param1, uint8_t param2)
     hasPendingCommandSend = true;
   }
 }
+#ifdef ROBOT_SLAVE_01
+void robot_t::slave01_dropGreenBox() // trigers that the slave01 dropped a green box!
+{
+  if(robot.front.actuators.isMagnetOn) this->drop_greenBox = false;
+  else  this->drop_greenBox = true;
+}
+#endif
+
 
 void robot_t::odometry(void)
 {
@@ -266,19 +413,6 @@ bool robot_t::hasDroped2Boxes(){
 }
 
 
-bool robot_t:: atPikZone()
-{
-  //how do I know that I'm here? odometry? intersections?
-  if(currentNode.id == 0) return true;
-  else return false;
-}
-
-bool robot_t:: atDropZone()
-{
-  //how do I know that I'm here? odometry? intersections?
-  if(currentNode.id == 26) return true;
-  else return false;
-}
 
 void robot_t::followLineLeft(float Vnom, Side side ){
 }

@@ -30,7 +30,8 @@ CRC:
 enum NodeId //change to be for now 
 {
     MASTER = 0,
-    SLAVE = 1
+    SLAVE_00 = 1,
+    SLAVE_01 = 2
 };
 
 enum MsgType//maybe we can change the DATA type...
@@ -76,15 +77,22 @@ enum CMD_ID : uint8_t
     // --- MASTER TO SLAVE COMMANDS (Actions) ---
     CMD_WAIT                  = 1,   // Tell slave to hold position
     CMD_GO_PROCESS_MACHINE    = 2,   // Tell slave to navigate to the process machine (Your GO_PICK_GREEN)
-    CMD_SLAVE_START           = 10,
-    CMD_SLAVE_WAIT            = 15,
-    CMD_SLAVE_GO              = 11,
-    INFO_GREEN_BOX            = 3,
-    INFO_BLUE_BOX             = 4,
-    INFO_BLUE_PICK_SLOT       = 5,
+    CMD_SLAVE_START           = 3,
+    CMD_SLAVE_WAIT            = 4,
+    CMD_EXECUTE_PICK_BLUE     = 5,   // Tell slave to go handle a blue box (Your PICK_BLUE)
     CMD_EXECUTE_PICK_GREEN    = 6,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
-    CMD_EXECUTE_PICK_BLUE     = 7,   // Tell slave to go handle a blue box (Your PICK_BLUE)
+    CMD_EXECUTE_PICK_RED      = 7,
     CMD_GO_RETRIEVE_ZONE      = 8,   // Tell slave to go to the final retrieve zone
+
+    //-----INFO BOXES FOR SLAVES!
+    CMD_SLAVE_GO              = 11,
+    INFO_BOX_MACHINE_B        = 12,
+    INFO_BOX_MACHINE_A        = 13,
+    INFO_GREEN_BOX            = 14,
+    INFO_BLUE_BOX             = 15,
+    INFO_BLUE_PICK_SLOT       = 16,
+
+    
     
 
     // --- SLAVE TO MASTER STATUS only when asked! - direction 1

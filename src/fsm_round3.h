@@ -1,17 +1,13 @@
-#ifndef FSM_ROUND2_H
-#define FSM_ROUND2_H
+#ifndef FSM_ROUND3_H
+#define FSM_ROUND3_H
 
 #include "state_machines.h"
 #include "robot.h"      
 #include "config.h"
 
 
-enum PathStrategy_to_ProcessBox {
-    FOLLOW_LINE = 1,
-    FL_AND_TURNS = 2,
-};
 
-struct BoxRound2
+struct BoxRoun3
 {
     uint8_t pick_slot;
     uint8_t drop_slot;
@@ -19,15 +15,18 @@ struct BoxRound2
 };
 
 
-class fsm_round2 : public state_machine_t
+class fsm_round3 : public state_machine_t
 {
 public:
     robot_t& robot;                
-    int path_strategy = FL_AND_TURNS;
-    BoxRound2 currentBox;
-    int drop_sequence[4];
-    int current_box_index;
-    bool isFromMachine = false;
+    
+    #ifdef ROBOT_MASTER
+    
+    
+    //---------RED BOX-----------//
+    uint8_t red_pick_slots[4];
+    uint8_t total_reds = 0;
+    uint8_t current_red_index = 0;
 
     //---------GREEN BOX-----------//
     uint8_t green_pick_slots[4];
@@ -37,21 +36,37 @@ public:
     //---------BLUE BOX-----------//
     uint8_t blue_pick_slots[4]; //here we have all the slots of the blue boxes at the beggining of the round
     uint8_t total_blues = 0;
-    uint8_t current_blue_index = 0; 
     
-    //MASTER blue box logic:
+
     uint8_t M_blue_PICK[2];
     uint8_t MASTER_blueBox = 0;
-    
-    //SLAVE blue box logic:
+
+    void build_sequence_from_IR(String ir_data);
+    void build_blueBoxPick();
+    #endif
+
+    #ifdef ROBOT_SLAVE_00
+    uint8_t processBox_MachineB;
+    #endif
+
+    #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
+    //This will be sent to SLAVE_01 by MASTER!!
+    uint8_t SLAVE_blueBox = 0; // number of times that the slave will need to pick from that spot a box!
     uint8_t S_blue_PICK[2];
-    uint8_t SLAVE_blueBox = 0;
-    
+    uint8_t current_blue_index = 0; // do I need current blue index? I just need box_index
+    uint8_t processBox_MachineA;
     bool hasBlueBoxesInfo;
+    #endif
+
+
+    BoxRound2 currentBox;
+    int current_box_index;
+    int drop_sequence[4]; //this is Globaly defined!
+
     int pick_slot = -1; 
     int drop_slot = -1;  
     
-    
+    bool isFromMachine = false;//flag to Master know if he's entering from the processMahine or not!
     int state_after_maneuver;
     float d_retrive_process_box = 0.19f;
     float d_retrive_from_wearhouse = 0.1f; 
@@ -64,20 +79,16 @@ public:
     float target_turn_angle = PI/2;
     int turn_direction = 0;// 1: left / -1: right 
 
-    fsm_round2(robot_t& r);         
-    void build_sequence_from_IR(String ir_data);
+    fsm_round3(robot_t& r);   
     void build_currentBox(BoxRound2& box);
-    
     //stores the slots and the number of blueBoxes to process at MASTER side - then SEND TO SLAVE it's number! 
-    void build_blueBoxPick(uint8_t num_green_box);
+    
 
     virtual void next_state_rules() override;
     virtual void enter_state_actions_rules() override;
     virtual void state_actions_rules() override;
 
-    
-    void send_sync_to_slave();
-    bool check_sync_from_master();
+
 };
 
 #endif

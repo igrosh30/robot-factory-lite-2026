@@ -10,14 +10,15 @@ class AppLayer
 private:
     DataLink ddl;           // low-level serial + parser
 
-    NodeId myId = MASTER;
+    NodeId myId;
 
     // Communication status flags
     bool slave_ReceivedPing = false;
+    uint8_t pingTo_id = 0;
     bool pongReceived = false;
     bool ackReceived = false;
     uint8_t cmdACK = 0;
-    uint8_t lastCommandSent = 0;
+    
 
     // NEW: Received command from the other robot (used by SLAVE mainly)
     bool     hasNewCommandReceived = false;
@@ -31,7 +32,7 @@ private:
     void buildHeader(Frame& f, NodeId dest, uint8_t type, uint8_t payloadLen);
 
 public:
-    
+    uint8_t lastCommandSent = 0;
     void init(Stream* port, NodeId id);
 
     // --- Sending ---
@@ -44,7 +45,7 @@ public:
 
     // --- Receiving ---
     bool update();          // must be called every loop
-    
+    void clearPingFlag() { slave_ReceivedPing = false; }
     bool hasReceivedPing() const {return slave_ReceivedPing; }
     bool hasReceivedPong() const { return pongReceived; }
     bool hasReceivedAck(uint8_t cmdID)  const { return ackReceived && cmdID == cmdACK; }

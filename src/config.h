@@ -10,14 +10,19 @@
 #define ROUND_2
 
 
-//#define ROBOT_MASTER
-#define ROBOT_SLAVE
+#define ROBOT_MASTER
+//#define ROBOT_SLAVE_00
+//#define ROBOT_SLAVE_01
+
 // Proteção de compilação
-#if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE)
+#if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
     #error "ERRO: Tens de definir se é o MASTER ou o SLAVE no config.h!"
 #endif
-#if defined(ROBOT_MASTER) && defined(ROBOT_SLAVE)
-    #error "ERRO: Não podes definir MASTER e SLAVE ao mesmo tempo!"
+
+#if (defined(ROBOT_MASTER) && defined(ROBOT_SLAVE_00)) || \
+    (defined(ROBOT_MASTER) && defined(ROBOT_SLAVE_01)) || \
+    (defined(ROBOT_SLAVE_00) && defined(ROBOT_SLAVE_01))
+    #error "ERRO: Múltiplos robots definidos ao mesmo tempo! Define apenas UM."
 #endif
 
 // ================================================================
@@ -68,20 +73,24 @@ const uint8_t INVALID_SLOT = 255;
 //#define COMMAND_LIST_SIZE 32
 
 // Communication modes
-#define DEBUG_LEVEL 0  // 0=minimal, 1=normal, 2=verbose, 3= COM
+#define DEBUG_LEVEL 3  // 0=minimal, 1=normal, 2=verbose, 3= COM
 
 
 // (Paste your 'savedMin' array here)
 #ifdef ROBOT_MASTER
-    const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
-    const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
+const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
+const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
 #endif
 
-#ifdef ROBOT_SLAVE
-    const uint16_t HARDCODED_FRONT_MIN[] = { 181, 186, 186, 112, 126 }; 
-    const uint16_t HARDCODED_FRONT_MAX[] = { 981, 980, 981, 975, 975 };
+#ifdef ROBOT_SLAVE_00
+const uint16_t HARDCODED_FRONT_MIN[] = { 181, 186, 186, 112, 126 }; 
+const uint16_t HARDCODED_FRONT_MAX[] = { 981, 980, 981, 975, 975 };
 #endif
 
+#ifdef ROBOT_SLAVE_01
+const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
+const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
+#endif
 
 // ================================================================
 // 1. Structs e tipos personalizados
@@ -121,19 +130,21 @@ typedef enum {
     // --- SYSTEM & STARTUP (0 - 99) ---
     // ==========================================
     SYS_IDLE               = 0, 
-    SYS_SET_CALIBRATION    = 1, 
-    SYS_CALIBRATION        = 2, 
+    SYS_CALIBRATION        = 1, 
+    SYS_WAIT_IR            = 2,
     SYS_LEAVE_START        = 4, 
     SYS_APPROACH_WAREHOUSE = 5, 
 
     NAV_TO_WEARHOUSE       = 799,
     NAV_LEAVING_WEARHOUSE  = 798,
-    NAV_FROM_MACHINE       = 797,
+    M_NAV_FROM_MACHINE     = 797,
 
     // ==========================================
     // --- COMMUNICATION STATES:
     // ==========================================
-    COM_INIT               = 400,
+    COM_INIT               = 40, 
+    COM_BOXES_SLAVE_00     = 41,
+    COM_BOXES_SLAVE_01     = 42,
 
     // ==========================================
     // --- GENERIC MANEUVERS- from Start Point
@@ -142,12 +153,13 @@ typedef enum {
     GEN_MOVE_X             = 800,
     
     GEN_PICK_ZONE          = 500,
-    GEN_PICK_COUNT_START   = 510,
-    GEN_PICK_COUNT_MACHINE = 511,
+    GEN_PICK_COUNT_NAV_FROM_START   = 510,
+    GEN_PICK_COUNT_FROM_MACHINE = 511,
     GEN_PICK_ALIGN         = 520,
     GEN_PICK_BOX           = 530,
     GEN_PICK_TURN_OUT      = 540,
     EXITING_PICK_ZONE      = 550,
+    EXITING_PICK_ZONE_RED  = 555,
 
     GEN_DROP_BOX           = 600,
     GEN_DROP_COUNT         = 610,
@@ -157,21 +169,31 @@ typedef enum {
     
 
     // ==========================================
-    // --- Second Round Aux. States
+    // ---          MASTER STATES:
     // ==========================================
     
-    // --- MASTER STATES:
+    // --- MASTER init states
     M_SYS_START             = 100,
     M_SYS_LEAVE_START       = 101, // SEND SLAVE- pickSlots blue box!  
 
+    // --- Green Box
+    M_NAV_PROCESS_GREEN_BOX         = 200,
+    M_GEN_DROP_ALIGN                = 201,
+    M_GEN_DROP_TURN_OUT             = 202,
+    M_EXT_PROC_MACH_GREEN           = 203,
+    M_EXT_PROC_MACH_BLUE            = 204,      
+    
+    //-----Red Box
+    M_NAV_DROP_RED                  = 210,
+    M_DROP_ALIGN_RED                = 211,
+    M_DROP_TURN_OUT_RED             = 212,
+    M_NAV_PICK_FROM_RED             = 213,
 
-    M_NAV_PROCESS_BOX               = 200,
-    M_GEN_DROP_ALIGN                = 210,
-    M_GEN_DROP_TURN_OUT             = 211,
-    M_GEN_EXITING_PROCESS_MACHINE   = 212,
 
 
-    // --- SLAVE STATES:
+    // ==========================================
+    // ---          SLAVE STATES:
+    // ==========================================
     S_WAIT_CMD_START                = 300, 
     S_WAIT_PERMISSION               = 301,
     S_WAIT_BOX_INFO                 = 302,   
@@ -184,6 +206,17 @@ typedef enum {
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
     
+    //SLAVE 01 STATES:
+    S1_NAV_MACHINE_A                 = 400,
+    S1_ALIGN_PICK_A                  = 410,
+    S1_PICK_BOX_A                    = 411,
+    S1_NAV_DROP_B                    = 420,
+    S1_ALIGN_DROP_B                  = 430,
+    S1_NAV_MACHINE_A_FROM_B          = 440,
+    
+
+
+
     NAV_DOCKING_STATION           = 9999,
     
 

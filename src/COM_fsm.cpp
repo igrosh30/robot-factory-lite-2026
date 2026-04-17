@@ -1,5 +1,6 @@
 #include "COM_fsm.h"
 #include "config.h"
+#include "fsm_round3.h"
 
 fsm_COM::fsm_COM(robot_t& r) : robot(r)
 {
@@ -12,45 +13,100 @@ void fsm_COM::next_state_rules()
     // ==========================================================
     //                    SYSTEM & STARTUP
     // ==========================================================
-    auto& intersections = robot.front.sensor.intersections;
-    
     if(state == SYS_IDLE && robot.front.actuators.isSwitch_left_On)
     {
-        Serial.println("[FSM] Switch pressed. Moving to SYS_CALIBRATION.");
+        Serial.println("[FSM] Switch pressed. Moving to INIT.");
         robot.currentComState = ComState::COM_START; //does PING/PONG
         set_next_state(SYS_CALIBRATION);
     }
     else if(state == SYS_CALIBRATION)
     {
-        Serial.println("[FSM] PING/PONG process...");
         
         #ifdef ROBOT_MASTER
         if(robot.currentComState == ComState::COM_WAIT_SEND)
         {
-            set_next_state(S_WAIT_CMD_START);
+            set_next_state(SYS_WAIT_IR);
             Serial.println("\n============================================");
             Serial.println("[FSM_MASTER] PING/PONG SUCESS!");
             Serial.println("============================================\n\n");
+            Serial.println("[FSM_MASTER] Waiting for IR....");
         } 
-        else if(robot.currentComState == ComState::COM_WAIT_PONG)
+        else if(robot.currentComState == ComState::COM_WAIT_SLAVE00_PONG)
         {
-            Serial.println("[FSM_MASTER] Waiting PONG...");
+            Serial.println("[FSM_MASTER] Waiting PONG from SLAVE_00...");
+        }
+        else if(robot.currentComState == ComState::COM_WAIT_SLAVE01_PONG)
+        {
+            //Serial.println("[FSM_MASTER] Waiting PONG from SLAVE_01...");
         }
         else if (robot.currentComState == ComState::COM_ERROR){
             Serial.println("[FSM_MASTER] ERROR in PING/PONG!\n");
             Serial.println("[FSM_MASTER] RUNING WITHOUT COM...\n");
         }
         #endif 
-        #ifdef ROBOT_SLAVE
+        #if defined(ROBOT_SLAVE_00) || defined( ROBOT_SLAVE_01)
         if(robot.currentComState == ComState::COM_LISTEN){
             //set_next_state(SYS_START);
             Serial.println("[FSM_SLAVE] PING received! \n");
         }
         #endif 
+        
     }
+    else if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
+    {
+        //if(IR_received) - process the message! 
+        #ifdef ROBOT_MASTER
+        //_________________________________//
+        // INITIAL BOX LOGIC               //
+        //_________________________________//
+        //build_sequence_from_IR("Wowou");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
+        //build_blueBoxPick();
+        set_next_state(COM_BOXES_SLAVE_00);
+        //blue box Pick will be only for one slave to do (if we had 3 blue boxes? here will be good to send other slave!) 
+        #endif
+    }
+   
+    // ==========================================================
+    //      MASTER envia no inicio as caixas a processar! 
+    // ==========================================================
+    #ifdef ROBOT_MASTER
+    if(state == COM_BOXES_SLAVE_00)
+    {
+        //TELL SLAVE_00 how many boxes he will proces@Machine B:
+        uint8_t t_box =3;
+        if(t_box > 0)
+        {    
+            robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
+        } 
+
+        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+        if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
+        {
+            Serial.printf("[MASTER] ack received from SLAVE_00!\n");
+            Serial.printf("[MASTER] sending now Box info to SLAVE_01\n");
+            set_next_state(COM_BOXES_SLAVE_01);
+        }
+        
+    }
+    else if(state == COM_BOXES_SLAVE_01)
+    {
+        //TELL SLAVE_01 how many boxes he will proces@Machine B:
+        
+        Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n",1);
+        robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, 1);        
+
+        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+        if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
+        {
+            Serial.printf("[MASTER] ack received from SLAVE_01!\n");
+            //set_next_state(M_SYS_LEAVE_START);
+        }
+    }
+    #endif
+
     else if(state == S_WAIT_CMD_START && tis > 2)
     {
-        #ifdef ROBOT_SLAVE
+        #ifdef ROBOT_SLAVE_00
         // WAIT for the master to tell us to go!
         if(robot.appLayer.hasNewCommand())
         {
@@ -72,15 +128,15 @@ void fsm_COM::next_state_rules()
         set_next_state(SYS_LEAVE_START);
         #endif
     }
+    
+    /*
     else if(state == SYS_LEAVE_START)
     {
         #ifdef ROBOT_MASTER 
-
-        // 1. Queue the command at exactly 5 seconds
         if(tis > 5) 
         {
             Serial.println("\n[FSM_MASTER] 5 seconds passed. Sending CMD_SLAVE_START to comms layer!");
-            robot.send_command(CMD_ID::CMD_SLAVE_START);
+            robot.send_command(NodeId::SLAVE_00 ,CMD_ID::CMD_SLAVE_START);
         }
         
         // 2. Wait for the ACK! (The background updateComState will make hasPendingCommandSend false when ACK arrives)
@@ -94,14 +150,14 @@ void fsm_COM::next_state_rules()
         
         #endif
 
-        #ifdef ROBOT_SLAVE
+        #ifdef ROBOT_SLAVE_00
         set_next_state(SYS_IDLE);
         #endif
     }
     else if(state == GEN_MOVE_X)
     {
            
-    }
+    }*/
 }
 
 void fsm_COM::enter_state_actions_rules()
@@ -112,8 +168,3 @@ void fsm_COM::state_actions_rules()
 {
 }
 
-// ====================================================================
-// WARNING: DO NOT ADD void control(robot_t& robot) HERE!
-// It will cause the "multiple definition" linker error. 
-// Leave it in your main.cpp or fsm_round1.cpp!
-// ====================================================================

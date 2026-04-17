@@ -21,8 +21,10 @@ void AppLayer::sendFrame(const Frame& f)
 }
 
 
-void AppLayer::sendPing(NodeId dst) {
+void AppLayer::sendPing(NodeId dst) 
+{
     this->pongReceived = false; 
+    this->pingTo_id = dst;
     this->lastCommandSent = MsgType::PING;
     Frame pingFrame;
     buildHeader(pingFrame, dst, MsgType::PING, 0); 
@@ -79,7 +81,13 @@ void AppLayer::processFrame(const Frame& f)
 
     if(myId == MASTER)
     {
-        if(type == MsgType::PONG) pongReceived = true;
+        if(type == MsgType::PONG){
+            if(f.header.src == this->pingTo_id)
+            {
+                pongReceived = true;
+                this->pingTo_id = 0;//Reset 
+            }
+        } 
         
         else if(type == MsgType::ACK && f.payload.action_ack.status == 0)
         {
@@ -97,10 +105,11 @@ void AppLayer::processFrame(const Frame& f)
                 memcpy(receivedParams, f.payload.data.param, receivedParamLen);
         }
     }
-    else if(myId == SLAVE)
+    else if(myId == SLAVE_00 || myId == SLAVE_01)
     {
         if (type == MsgType::PING)
         {
+            Serial.println("Slave Received PING!...\n");
             slave_ReceivedPing = true;
             Frame pong;
             buildHeader(pong, MASTER, MsgType::PONG, 0);
