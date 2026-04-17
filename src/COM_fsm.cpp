@@ -10,7 +10,7 @@ fsm_COM::fsm_COM(robot_t& r) : robot(r)
 
 void fsm_COM::next_state_rules()
 {
-    Serial.println(state);
+    //
     // ==========================================================
     //                    SYSTEM & STARTUP
     // ==========================================================
