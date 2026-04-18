@@ -66,33 +66,38 @@ void fsm_COM::next_state_rules()
     //      MASTER envia no inicio as caixas a processar! 
     // ==========================================================
     #ifdef ROBOT_MASTER
+
     if(state == COM_BOXES_SLAVE_00)
     {
-        //TELL SLAVE_00 how many boxes he will proces@Machine B:
-        uint8_t t_box =3;
-        robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
+        // ONLY send if the COM layer is ready AND we haven't already finished the job
+        if(!robot.hasPendingCommandSend && !robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
+        {
+            uint8_t t_box = 3;
+            Serial.printf("[MASTER] Sending to SLAVE_00 process %d boxes from Machine B \n", t_box);
+            robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B, t_box);
+        }
 
-        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+        // We wait for an ack of the INFO_BOX_MACHINE_B
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
         {
             Serial.printf("[MASTER] ack received from SLAVE_00!\n");
-            Serial.printf("[MASTER] sending now Box info to SLAVE_01\n");
             set_next_state(COM_BOXES_SLAVE_01);
         }
-        
     }
+    
     else if(state == COM_BOXES_SLAVE_01)
     {
-        //TELL SLAVE_01 how many boxes he will proces@Machine B:
-        
-        Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n",1);
-        robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, 1);        
-
+        // ONLY send if the COM layer is ready AND we haven't already finished the job
+        if(!robot.hasPendingCommandSend && !robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
+        {
+            Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n", 1);
+            robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, 1);        
+        }
           
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
         {
             Serial.printf("[MASTER] ack received from SLAVE_01!\n");
-            //set_next_state(M_SYS_LEAVE_START);
+            set_next_state(M_SYS_LEAVE_START);
         }
     }
     #endif
@@ -121,8 +126,8 @@ void fsm_COM::next_state_rules()
                     set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
                 }
             }
+            robot.appLayer.clearNewCommand();
         }
-        robot.appLayer.clearNewCommand();
         #endif
         
         #ifdef ROBOT_MASTER
@@ -130,7 +135,7 @@ void fsm_COM::next_state_rules()
         #endif
         
         #ifdef ROBOT_SLAVE_01
-        Serial.println("[SLAVE_01] Waiting command");
+        
         // WAIT for the master to tell us to go!
         if(robot.appLayer.hasNewCommand())
         {
@@ -155,7 +160,10 @@ void fsm_COM::next_state_rules()
         robot.appLayer.clearNewCommand();
         #endif
     }
-    
+    else if(state == M_SYS_LEAVE_START)
+    {
+        Serial.println("[MASTER] all COM ok, leaving START area!");
+    }
     /*
     else if(state == SYS_LEAVE_START)
     {
@@ -193,5 +201,6 @@ void fsm_COM::enter_state_actions_rules()
 
 void fsm_COM::state_actions_rules()
 {
+    if(state == S_WAIT_CMD_START) Serial.println("[SLAVE] Waiting command");;
 }
 

@@ -127,7 +127,7 @@ void robot_t::updateComState()
               currentComState = ComState::COM_WAIT_SEND;
               sendTries = 0;
           }
-          else if(millis() - comTimer > 2000)
+          else if(millis() - comTimer > 3500)
           {
               sendTries++;
               comTimer = millis();
@@ -220,7 +220,7 @@ void robot_t::updateComState()
         
         case ComState::COM_WAIT_ACK:
           appLayer.update();
-          if(sendTries > 10 ){ //CHECK HOW MANY TRIES!
+          if(sendTries > 20 ){ //CHECK HOW MANY TRIES!
             hasPendingCommandSend = false; // Give up and clear flags
             pendingParamLen = 0;
             currentComState = ComState::COM_ERROR;
@@ -236,9 +236,10 @@ void robot_t::updateComState()
             if(appLayer.lastCommandSent == CMD_ID::CMD_EXECUTE_PICK_GREEN) currentComState = ComState::COM_SEND_PICK_GREEN;
             else currentComState = ComState::COM_WAIT_SEND;
           }
-          else if(millis() - comTimer > 200) // This is a timeout! I should resend the frame if we enter here! 
+          else if(millis() - comTimer > 2000) // This is a timeout! I should resend the frame if we enter here! 
           {
             //resend the frame!!!!!!!
+            comTimer = millis();
             sendTries++;
             Serial.printf("[MASTER] Missed ACK. Resending CMD: %d (Try: %d)\n", pendingCommandId, sendTries);
             if(pendingParamLen > 0) appLayer.sendCommandWithData(pending_id_dest, pendingCommandId, pendingParams, pendingParamLen);
