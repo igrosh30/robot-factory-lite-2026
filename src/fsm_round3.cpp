@@ -42,7 +42,7 @@ void fsm_round3::next_state_rules()
         }
         set_next_state(COM_INIT);
     }
-    else if(state == COM_INIT)
+    else if(state == COM_INIT )
     {
         #ifdef ROBOT_MASTER
         set_next_state(SYS_WAIT_IR);
@@ -706,6 +706,7 @@ void fsm_round3:: enter_state_actions_rules()
     }
     else if(state == COM_INIT)
     {
+        robot.setRobotVW(0,0);
         #ifdef ROBOT_MASTER
         robot.currentComState = ComState::COM_START;//transit to start PING/PONG
         #endif

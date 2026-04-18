@@ -442,7 +442,7 @@ void loop() {
             #if (DEBUG_LEVEL != 3)
             #ifdef  ROBOT_MASTER
             serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);    
-            #endif   
+               
             serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
@@ -456,6 +456,7 @@ void loop() {
             #endif
             #ifdef ROBOT_SLAVE_00
             serial_commands.send_command("boxB", fsm.processBox_MachineB);
+            #endif
             #endif
             
             serial_commands.send_command("ve", robot.ve);

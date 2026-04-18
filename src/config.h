@@ -4,7 +4,8 @@
 #include <Arduino.h>
 
 //Master - IP: 10.227.21.112
-//Slave -  IP: 10.227.21.115 com7 
+//Slave00- IP: 10.227.21.115 com7 
+//SLAVE01- IP: 10.227.21.110 com8
 
 //#define ROUND_1
 #define ROUND_2
@@ -64,7 +65,7 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE false
+#define CALIBRATION_MODE false 
 const uint8_t INVALID_SLOT = 255;
 
 //Communications with ComRobot
@@ -88,8 +89,8 @@ const uint16_t HARDCODED_FRONT_MAX[] = { 981, 980, 981, 975, 975 };
 #endif
 
 #ifdef ROBOT_SLAVE_01
-const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
-const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
+const uint16_t HARDCODED_FRONT_MIN[] = { 136, 125, 132, 139, 127 }; 
+const uint16_t HARDCODED_FRONT_MAX[] = { 972, 967, 972, 974, 972 };
 #endif
 
 // ================================================================
