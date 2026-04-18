@@ -10,9 +10,9 @@
 #define ROUND_2
 
 
-#define ROBOT_MASTER
+//#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-//#define ROBOT_SLAVE_01
+#define ROBOT_SLAVE_01
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
@@ -74,7 +74,7 @@ const uint8_t INVALID_SLOT = 255;
 
 // Communication modes
 #define DEBUG_LEVEL 3  // 0=minimal, 1=normal, 2=verbose, 3= COM
-
+//#define CONFIG_H12_CANNELS
 
 // (Paste your 'savedMin' array here)
 #ifdef ROBOT_MASTER

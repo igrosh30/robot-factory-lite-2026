@@ -71,6 +71,47 @@ int debug_level = 0;
 // ================================================================
 //                      HELPER FUNCTIONS
 // ================================================================
+#ifdef CONFIG_H12_CANNELS
+bool hc12_configured = false; 
+void forceHC12Config() {
+    Serial.println("\n--- STARTING HC-12 AUTO-CONFIG ---");
+    
+    // HC-12 AT mode always communicates at 9600 baud
+    Serial1.setTX(0);
+    Serial1.setRX(1);
+    Serial1.begin(9600);
+    delay(1000); // Give the module a second to wake up
+
+    // 1. Factory Reset
+    Serial.println("Sending AT+DEFAULT...");
+    Serial1.print("AT+DEFAULT");
+    delay(500);
+    while(Serial1.available()) Serial.write(Serial1.read());
+    Serial.println();
+
+    // 2. Force 9600 Baud
+    Serial.println("Sending AT+B9600...");
+    Serial1.print("AT+B9600");
+    delay(500);
+    while(Serial1.available()) Serial.write(Serial1.read());
+    Serial.println();
+
+    // 3. Set Channel 86
+    Serial.println("Sending AT+C080...");
+    Serial1.print("AT+C080");
+    delay(500);
+    while(Serial1.available()) Serial.write(Serial1.read());
+    Serial.println();
+
+    // 4. Verify Settings
+    Serial.println("Sending AT+RX...");
+    Serial1.print("AT+RX");
+    delay(500);
+    while(Serial1.available()) Serial.write(Serial1.read());
+    Serial.println("\n--- CONFIGURATION COMPLETE! ---");
+}
+#endif
+
 void read_PIO_encoders(void) {
     encoders[0].update();
     encoders[1].update();
@@ -180,6 +221,11 @@ void setup() {
     pinMode(MOTOR2B_PIN, OUTPUT);
 
     // ========== INITIALIZE HARDWARE ==========
+    // ========== COMROBOT COMMUNICATION SETUP ==========
+    Serial.begin(115200);
+    delay(1000);// Give time for serial to initialize
+
+
     pico4drive.init();  
     analogReadResolution(10);
 
@@ -188,20 +234,16 @@ void setup() {
     //robot.back.sensor.init();
     robot.front.actuators.init();
     
-    //COM init:
+    // Initialize encoders
+    encoders[0].begin(encoder_pins[0]);
+    encoders[1].begin(encoder_pins[1]);
+
+   //COM init:
     Serial1.setTX(0);
     Serial1.setRX(1);
     Serial1.begin(9600);
     robot.init_COM(&Serial1);
 
-
-    // Initialize encoders
-    encoders[0].begin(encoder_pins[0]);
-    encoders[1].begin(encoder_pins[1]);
-
-    // ========== COMROBOT COMMUNICATION SETUP ==========
-    Serial.begin(115200);
-    delay(1000);// Give time for serial to initialize
 
     // ========== REGISTER COMMANDS ==========
     pars_list.max_sparce_send = 4;
@@ -280,6 +322,7 @@ void setup() {
     }
 
     Serial.println();
+    
 
     // ========== TIMING SETUP ==========
     float control_interval = 0.04;  // In seconds
@@ -366,8 +409,16 @@ void loop() {
             fsm.step();
             robot.motors.PIDController_Update();
         } 
+        // Put this at the very top of your loop!
         
-        
+
+        #ifdef CONFIG_H12_CANNELS
+        if (!hc12_configured) {
+            delay(4000); // Wait 4 full seconds to let you open the Serial Monitor!
+            forceHC12Config();
+            hc12_configured = true; // Never run this again
+        }
+        #endif
             
 
 
@@ -510,7 +561,6 @@ void loop() {
         last_blink = millis();
     }
 }
-
 
 /*
 */

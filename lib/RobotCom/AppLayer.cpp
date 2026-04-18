@@ -119,7 +119,7 @@ void AppLayer::processFrame(const Frame& f)
             slave_ReceivedPing = true;
             Frame pong;
             buildHeader(pong, MASTER, MsgType::PONG, 0);
-            delay(2);//Give time to hardware
+            delay(40);//Give time to hardware
             sendFrame(pong);
             return;
         }
@@ -132,7 +132,7 @@ void AppLayer::processFrame(const Frame& f)
                 buildHeader(ackFrame, MASTER, MsgType::ACK, 2);
                 ackFrame.payload.action_ack.cmdId = f.payload.data.cmdId;
                 ackFrame.payload.action_ack.status = 0;
-                delay(2);
+                delay(40);
                 sendFrame(ackFrame);
 
                 // === STORE THE COMMAND + PARAMETERS ===
