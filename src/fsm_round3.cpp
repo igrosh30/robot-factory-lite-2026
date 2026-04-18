@@ -1085,7 +1085,8 @@ void fsm_round3::state_actions_rules()
         {
             robot.setRobotVW(0.04, -0.8);
         }
-        else{
+        else
+        {
             robot.setRobotVW(0.08, 0);
         }
     }

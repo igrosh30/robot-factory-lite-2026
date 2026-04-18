@@ -28,8 +28,8 @@ pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 //fsm_round1 fsm(robot);
 //fsm_round2 fsm(robot);
-//fsm_round3 fsm(robot);
-fsm_COM fsm(robot);
+fsm_round3 fsm(robot);
+//fsm_COM fsm(robot);
 
 
 // ================================================================
@@ -66,7 +66,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 0;
+int debug_level = 1;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -311,7 +311,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -440,7 +440,7 @@ void loop() {
             
 
             #if (DEBUG_LEVEL != 3)
-            #ifdef  ROBOT_SLAVE_01
+            #ifdef  ROBOT_MASTER
             serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);    
             #endif   
             serial_commands.send_command("b_idx", fsm.current_box_index);
@@ -451,6 +451,12 @@ void loop() {
             serial_commands.send_command("b_box", fsm.total_blues);
             serial_commands.send_command("g_box", fsm.total_greens);
             #endif    
+            #ifdef ROBOT_SLAVE_01
+            serial_commands.send_command("boxA", fsm.processBox_MachineA);
+            #endif
+            #ifdef ROBOT_SLAVE_00
+            serial_commands.send_command("boxB", fsm.processBox_MachineB);
+            #endif
             
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
