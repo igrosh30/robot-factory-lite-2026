@@ -10,9 +10,9 @@
 #define ROUND_2
 
 
-//#define ROBOT_MASTER
+#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_01
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)

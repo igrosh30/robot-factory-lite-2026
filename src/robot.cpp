@@ -318,7 +318,7 @@ void robot_t::updateComState()
           break;
 
           case ComState::COM_LISTEN:
-            Serial.println("Listeting FRAMES");
+            //Serial.println("Listeting FRAMES");
             appLayer.update();                 
             
             /*if(appLayer.hasNewCommand())

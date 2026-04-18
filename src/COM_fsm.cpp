@@ -34,7 +34,7 @@ void fsm_COM::next_state_rules()
         #ifdef ROBOT_MASTER
         if(robot.currentComState == ComState::COM_WAIT_SEND)
         {
-            set_next_state(SYS_WAIT_IR);
+            set_next_state(COM_BOXES_SLAVE_00);
             Serial.println("\n============================================");
             Serial.println("[FSM_MASTER] PING/PONG SUCESS!");
             Serial.println("============================================\n\n");
@@ -77,7 +77,7 @@ void fsm_COM::next_state_rules()
         {
             Serial.printf("[MASTER] ack received from SLAVE_00!\n");
             Serial.printf("[MASTER] sending now Box info to SLAVE_01\n");
-            set_next_state(COM_BOXES_SLAVE_01);
+            //set_next_state(COM_BOXES_SLAVE_01);
         }
         
     }
