@@ -253,7 +253,7 @@ void setup() {
     //pars_list.register_command("ver", &version);
     
     // Robot control commands
-    pars_list.register_command("vreq", &robot.v_req);
+    //pars_list.register_command("vreq", &robot.v_req);
     pars_list.register_command("wreq", &robot.w_req);
     //pars_list.register_command("mode", (int*)&robot.control_mode);
     
@@ -398,18 +398,17 @@ void loop() {
         //robot.back.actuators.update();
         robot.front.sensor.readValues();
         //robot.back.sensor.readValues();
+        robot.updateComState();
+        fsm.step();
+        robot.motors.PIDController_Update();
         
+        /*
         if(DEBUG_LEVEL == 3) // let's only do COM DEBUG! 
         {
             robot.updateComState();
             fsm.step();
-        }
-        else{
-            robot.updateComState();
-            fsm.step();
-            robot.motors.PIDController_Update();
-        } 
-        // Put this at the very top of your loop!
+        }*/
+       
         
 
         #ifdef CONFIG_H12_CANNELS
@@ -442,14 +441,21 @@ void loop() {
             #if (DEBUG_LEVEL != 3)
             #ifdef  ROBOT_MASTER
             serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);    
-               
+            
+            //CURRENT BOX DEBUG:
             serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);
 
-            serial_commands.send_command("b_box", fsm.total_blues);
+            //Boxes calculations:
+            serial_commands.send_command("r_box", fsm.total_reds);
+            serial_commands.send_command("r_idx", fsm.red_pick_slots[fsm.current_red_index]);
             serial_commands.send_command("g_box", fsm.total_greens);
+            serial_commands.send_command("g_idx", fsm.green_pick_slots[fsm.current_green_index]);
+            serial_commands.send_command("M_bl", fsm.MASTER_blueBox);
+            serial_commands.send_command("b_box", fsm.total_blues);
+            
             #endif    
             #ifdef ROBOT_SLAVE_01
             serial_commands.send_command("boxA", fsm.processBox_MachineA);
@@ -495,9 +501,7 @@ void loop() {
 
 
             //Back Sensor data
-            /*
-*/
-            
+
             
             //Front Sensor data
             

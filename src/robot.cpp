@@ -33,7 +33,12 @@ robot_t::robot_t(pico4drive_t& driver)
   dv_max = 5;
   dw_max = 10;
   dt = 0.04;
-
+  //ini
+  
+  v_req = 0.0f;
+  w_req = 0.0f;
+  v = 0.0f;
+  w = 0.0f;
   p1e = 0;
   p2e = 0;
 

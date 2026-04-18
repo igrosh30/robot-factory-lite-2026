@@ -11,9 +11,9 @@
 #define ROUND_2
 
 
-#define ROBOT_MASTER
+//#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-//#define ROBOT_SLAVE_01
+#define ROBOT_SLAVE_01
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
@@ -170,7 +170,7 @@ typedef enum {
     
 
     // ==========================================
-    // ---          MASTER STATES:
+    // ---          MASTER STATES:          ////201 -- 202 -- 204
     // ==========================================
     
     // --- MASTER init states
@@ -209,6 +209,7 @@ typedef enum {
     
     //SLAVE 01 STATES:
     S1_NAV_MACHINE_A                 = 400,
+    S1_NAV_MACHINE_A_ALIGN           = 401,
     S1_ALIGN_PICK_A                  = 410,
     S1_PICK_BOX_A                    = 411,
     S1_NAV_DROP_B                    = 420,
