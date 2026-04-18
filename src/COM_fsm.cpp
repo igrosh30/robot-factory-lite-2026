@@ -55,7 +55,7 @@ void fsm_COM::next_state_rules()
         #endif 
         #if defined(ROBOT_SLAVE_00) || defined( ROBOT_SLAVE_01)
         if(robot.currentComState == ComState::COM_LISTEN){
-            //set_next_state(SYS_START);
+            set_next_state(S_WAIT_CMD_START);
             Serial.println("[FSM_SLAVE] PING received! \n");
         }
         #endif 
@@ -77,7 +77,7 @@ void fsm_COM::next_state_rules()
         {
             Serial.printf("[MASTER] ack received from SLAVE_00!\n");
             Serial.printf("[MASTER] sending now Box info to SLAVE_01\n");
-            //set_next_state(COM_BOXES_SLAVE_01);
+            set_next_state(COM_BOXES_SLAVE_01);
         }
         
     }
@@ -88,7 +88,7 @@ void fsm_COM::next_state_rules()
         Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n",1);
         robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, 1);        
 
-        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+          
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
         {
             Serial.printf("[MASTER] ack received from SLAVE_01!\n");
@@ -108,7 +108,7 @@ void fsm_COM::next_state_rules()
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
             Serial.println(cmdId);
 
-            if (cmdId == INFO_BOX_MACHINE_B || cmdId == INFO_BOX_MACHINE_A) 
+            if (cmdId == INFO_BOX_MACHINE_B ) 
             {
                 if (robot.appLayer.getReceivedParamLen() > 0) 
                 {
@@ -127,6 +127,32 @@ void fsm_COM::next_state_rules()
         
         #ifdef ROBOT_MASTER
         set_next_state(SYS_LEAVE_START);
+        #endif
+        
+        #ifdef ROBOT_SLAVE_01
+        Serial.println("[SLAVE_01] Waiting command");
+        // WAIT for the master to tell us to go!
+        if(robot.appLayer.hasNewCommand())
+        {
+            Serial.print("Received a Command: ");
+            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            Serial.println(cmdId);
+
+            if (cmdId == INFO_BOX_MACHINE_A) 
+            {
+                if (robot.appLayer.getReceivedParamLen() > 0) 
+                {
+                    const uint8_t* params = robot.appLayer.getReceivedParams();
+                    uint8_t val = params[0]; // This is the 1 byte you sent from Master
+                    Serial.print("[SLAVE] received:");
+                    Serial.println(val);
+                    //processBox_MachineB = val;//This is what we need to perform 
+                    //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
+                    set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
+                }
+            }
+        }
+        robot.appLayer.clearNewCommand();
         #endif
     }
     
