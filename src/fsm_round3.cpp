@@ -45,52 +45,31 @@ void fsm_round3::next_state_rules()
     else if(state == COM_INIT)
     {
         #ifdef ROBOT_MASTER
-        //Serial.printf("[MASTER in COM_INIT]");
-        if(robot.currentComState == ComState::COM_WAIT_SEND) set_next_state(SYS_WAIT_IR);
-        else if (robot.currentComState == ComState::COM_ERROR)
-        {
-            Serial.printf("COM_INIT failed!");
-        };
-        #endif 
+        set_next_state(SYS_WAIT_IR);
+        #endif
         
         #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
-        if(robot.currentComState == ComState::COM_LISTEN){
-            Serial.println("COM INIT SUCCESS!");
-            set_next_state(S_WAIT_BOX_INFO);
-        }
-        #endif 
-    }
-    else if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
-    {
-        //if(IR_received) - process the message! 
-        #ifdef ROBOT_MASTER
-        //_________________________________//
-        // INITIAL BOX LOGIC               //
-        //_________________________________//
-        build_sequence_from_IR("Wowou");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
-        build_blueBoxPick();
-        set_next_state(COM_BOXES_SLAVE_00);
-        //blue box Pick will be only for one slave to do (if we had 3 blue boxes? here will be good to send other slave!) 
+        set_next_state(S_WAIT_BOX_INFO);
         #endif
+
     }
    
     // ==========================================================
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == COM_BOXES_SLAVE_00)
+    if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
     {
-        //TELL SLAVE_00 how many boxes he will proces@Machine B:
-        uint8_t t_box = this->total_reds + this->total_greens;
-        if(t_box > 0)
-        {
-            Serial.printf("[MASTER] Sending to SLAVE_0 process %d boxes from Machine B!\n", t_box);
-            robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
-        } 
-        else if(this->total_blues > 0) robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BLUE_BOX, this->total_blues); //there are 4 blue boxes! 
-        //In the case of 4 blue boxes - we should call the fsm_round1 !!! so this never appens! 
-
-        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+        //_________________________________//
+        // INITIAL BOX LOGIC               //
+        //_________________________________//
+        build_sequence_from_IR("Wowou");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
+        build_blueBoxPick();
+        set_next_state(COM_BOXES_SLAVE_00);
+    }
+    else if(state == COM_BOXES_SLAVE_00)
+    {
+        //the send occurs when entering the state! 
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
         {
             Serial.printf("[MASTER] ack received from SLAVE_00!\n");
@@ -100,14 +79,6 @@ void fsm_round3::next_state_rules()
     }
     else if(state == COM_BOXES_SLAVE_01)
     {
-        //TELL SLAVE_01 how many boxes he will proces@Machine B:
-        if(this->total_reds > 0){
-            Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n",this->total_reds);
-            robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, this->total_reds);
-        }
-        else if(this->total_blues > 0) robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BLUE_BOX, this->total_blues); //there are 4 blue boxes! 
-        //In the case of 4 blue boxes - we should call the fsm_round1 !!! so this never appens! 
-
         //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
         {
@@ -121,8 +92,6 @@ void fsm_round3::next_state_rules()
         //build_currentBox(this->currentBox);
         set_next_state(GEN_PICK_ZONE);
     }
-
-
 
     // ====================================
     //     MASTER process Red BOX!:
@@ -393,7 +362,12 @@ void fsm_round3::next_state_rules()
         }
         if(intersections == 3)
         {
-
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = S_WAIT_PICK_CMD;
+            set_next_state(GEN_MOVE_X);
         }
     }
     else if(state == S_WAIT_PICK_CMD) // SET ROBOT TO STOP!
@@ -413,7 +387,7 @@ void fsm_round3::next_state_rules()
     {
         set_next_state(S1_PICK_BOX_A);//entering here, activate the magnet!!!!!
     }
-    else if(state == S1_PICK_BOX_A && tis > 0.7)
+    else if(state == S1_PICK_BOX_A && tis > 0.5)
     {
         target_distance = d_retrive_process_box;
         move_direction = -1;
@@ -445,6 +419,10 @@ void fsm_round3::next_state_rules()
         else if(processBox_MachineA == 0 && SLAVE_blueBox > 0 ) state_after_maneuver = M_EXT_PROC_MACH_BLUE;
         else state_after_maneuver = NAV_DOCKING_STATION;
         set_next_state(GEN_MOVE_X);
+    }
+    else if(state == S1_NAV_MACHINE_A_FROM_B && intersections == 2)
+    {
+        set_next_state(S_WAIT_PICK_CMD);
     }    
 
     #endif
@@ -728,12 +706,43 @@ void fsm_round3:: enter_state_actions_rules()
     }
     else if(state == COM_INIT)
     {
+        #ifdef ROBOT_MASTER
         robot.currentComState = ComState::COM_START;//transit to start PING/PONG
+        #endif
+        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
+        robot.currentComState = ComState::COM_START;
+        #endif
+    }
+    #ifdef ROBOT_MASTER
+    if(state == COM_BOXES_SLAVE_00)
+    {
+        
+       //TELL SLAVE_00 how many boxes he will proces@Machine B:
+        uint8_t t_box = this->total_reds + this->total_greens;
+        if(t_box > 0)
+        {
+            Serial.printf("[MASTER] Sending to SLAVE_0 process %d boxes from Machine B!\n", t_box);
+            robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B,t_box);
+        } 
+        else if(this->total_blues > 0) robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B, this->total_blues);
+    }
+    else if(state == COM_BOXES_SLAVE_01)
+    {
+        //TELL SLAVE_01 how many boxes he will proces@Machine B:
+        if(this->total_reds > 0){
+            Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n",this->total_reds);
+            robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, this->total_reds);
+        }
+        else if(this->total_blues > 0) robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BLUE_BOX, this->total_blues); //there are 4 blue boxes! 
+        //In the case of 4 blue boxes - we should call the fsm_round1 !!! so this never appens! 
     }
     else if(state == M_SYS_LEAVE_START)
     {
         robot.front.sensor.intersections = 0;
     }
+    #endif
+
+    
 
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX Green/Red
@@ -837,6 +846,16 @@ void fsm_round3:: enter_state_actions_rules()
     {
         robot.front.actuators.magnetOn();
     }
+
+    #ifdef ROBOT_SLAVE_01
+    if(state ==S1_NAV_MACHINE_A || state == S1_NAV_DROP_B || state == S1_NAV_MACHINE_A_FROM_B )
+    {
+        robot.front.sensor.wasIntersection = false;
+        robot.front.sensor.intersections = 0;
+    }
+    else if(state == S1_PICK_BOX_A) robot.front.actuators.magnetOn();
+
+    #endif
     
 
 }
@@ -1040,6 +1059,48 @@ void fsm_round3::state_actions_rules()
     
     
     #endif
+
+    #ifdef ROBOT_SLAVE_01
+    if(state == S_WAIT_BOX_INFO || state == S_WAIT_PICK_CMD)
+    {
+        robot.setRobotVW(0,0);
+    }
+    else if(state == S1_NAV_MACHINE_A)
+    {
+        if(intersections == 0) robot.followLine(0.12, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        else if(intersections == 1) robot.followLine(0.12, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        else if(intersections == 2) robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
+    }
+    else if(state == S1_ALIGN_PICK_A )
+    {
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }
+    else if(state ==S1_PICK_BOX_A)
+    {
+        if(robot.front.actuators.isSwitch_left_On)
+        {
+            robot.setRobotVW(0.04, 0.8);
+        }
+        else if(robot.front.actuators.isSwitch_right_On)
+        {
+            robot.setRobotVW(0.04, -0.8);
+        }
+        else{
+            robot.setRobotVW(0.08, 0);
+        }
+    }
+    else if(state == S1_NAV_DROP_B || state == S1_ALIGN_DROP_B)
+    {
+        robot.followLine(0.12, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+    }
+    else if(state == S1_NAV_MACHINE_A_FROM_B)
+    {
+        robot.followLine(0.12, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }
+
+
+    #endif
+
 }
 
 #ifdef ROBOT_MASTER
