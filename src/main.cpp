@@ -323,6 +323,7 @@ void setup() {
 
     Serial.println();
     
+    robot.front.sensor.setCalibration(HARDCODED_FRONT_MIN,HARDCODED_FRONT_MAX);
 
     // ========== TIMING SETUP ==========
     float control_interval = 0.04;  // In seconds
@@ -396,11 +397,20 @@ void loop() {
         //Actuators Update, Switches&Magnets
         robot.front.actuators.update();
         //robot.back.actuators.update();
-        robot.front.sensor.readValues();
-        //robot.back.sensor.readValues();
+        //robot.front.sensor.readValues();
+        
         robot.updateComState();
         fsm.step();
         robot.motors.PIDController_Update();
+
+
+        /*
+        if(robot.front.sensor.intersections == 0) robot.front.sensor.getLineError(Side2Follow::LEFT, EdgeDetection:: UP);
+        else if(robot.front.sensor.intersections == 1) robot.front.sensor.getLineError(Side2Follow::LEFT, EdgeDetection:: DOWN);
+        else if(robot.front.sensor.intersections == 2) robot.front.sensor.getLineError(Side2Follow::LEFT, EdgeDetection:: DOWN);
+        */
+        //robot.back.sensor.readValues();
+        
         
         /*
         if(DEBUG_LEVEL == 3) // let's only do COM DEBUG! 

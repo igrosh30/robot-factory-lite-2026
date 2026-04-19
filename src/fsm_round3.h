@@ -71,6 +71,8 @@ public:
     float d_retrive_process_box = 0.19f;
     float d_retrive_from_wearhouse = 0.1f; 
     float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
+    float d_mv_aft_intersection_drop = 0.04f;
+    float d_mv_aft_intersection_B = 0.06f;
     float ref_s;
     float target_distance = 0.0f;
     int move_direction = 0;

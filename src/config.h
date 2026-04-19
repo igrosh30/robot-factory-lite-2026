@@ -138,6 +138,7 @@ typedef enum {
 
     NAV_TO_WEARHOUSE       = 799,
     NAV_LEAVING_WEARHOUSE  = 798,
+    NAV_LEAVING_CENTER     = 796,
     M_NAV_FROM_MACHINE     = 797,
 
     // ==========================================

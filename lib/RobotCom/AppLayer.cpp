@@ -129,7 +129,7 @@ void AppLayer::processFrame(const Frame& f)
             {
                 // Send ACK 
                 Frame ackFrame;
-                buildHeader(ackFrame, MASTER, MsgType::ACK, 2);
+                buildHeader(ackFrame, MASTER, MsgType::ACK, 2);//I can easilly respond to who sent the frame! f.header.src is the dest!
                 ackFrame.payload.action_ack.cmdId = f.payload.data.cmdId;
                 ackFrame.payload.action_ack.status = 0;
                 delay(40);
