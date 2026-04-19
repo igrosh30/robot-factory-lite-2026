@@ -11,9 +11,9 @@
 #define ROUND_2
 
 
-//#define ROBOT_MASTER
+#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_01
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
@@ -74,6 +74,7 @@ const uint8_t INVALID_SLOT = 255;
 //#define COMMAND_LIST_SIZE 32
 
 // Communication modes
+#define WAIT_CMD_WITH_TIME
 #define DEBUG_LEVEL 0 // 0=minimal, 1=normal, 2=verbose, 3= COM
 //#define CONFIG_H12_CANNELS
 
@@ -147,6 +148,9 @@ typedef enum {
     COM_INIT               = 40, 
     COM_BOXES_SLAVE_00     = 41,
     COM_BOXES_SLAVE_01     = 42,
+    COM_BLUE_SLOT_SLAVE_01 = 43, 
+    COM_WAIT_BLUE_SLOT     = 44,
+    COM_SLV_01_WAIT        = 45,
 
     // ==========================================
     // --- GENERIC MANEUVERS- from Start Point
@@ -171,7 +175,7 @@ typedef enum {
     
 
     // ==========================================
-    // ---          MASTER STATES:          ////201 -- 202 -- 204
+    // ---          MASTER STATES:         
     // ==========================================
     
     // --- MASTER init states
@@ -216,7 +220,7 @@ typedef enum {
     S1_NAV_DROP_B                    = 420,
     S1_ALIGN_DROP_B                  = 430,
     S1_NAV_MACHINE_A_FROM_B          = 440,
-    
+    S1_ENTER_PICK                    = 450,
 
 
 

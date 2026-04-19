@@ -29,8 +29,6 @@ enum class ComState : uint8_t
     COM_START,
     COM_WAIT_SLAVE00_PONG,
     COM_WAIT_SLAVE01_PONG,
-    COM_WAIT_ACK_DROP_RED,
-    COM_SEND_PICK_GREEN,
     COM_WAIT_SEND,
     COM_WAIT_ACK,
     COM_LISTEN_PING,
@@ -120,6 +118,7 @@ public:
   void slave01_dropGreenBox();
   #endif
 
+  
   bool hasPendingCommandSend = false;
   uint8_t pending_id_dest = 0;
   uint8_t pendingCommandId = 0;
@@ -136,12 +135,10 @@ public:
 
   void accelerationLimit(void);
   void calcMotorsVoltage(void);
-
-  void followLineRight(float Vnom,Side side);
-  void followLineLeft(float Vnom,Side side);
+  
 
   void followLine(float Vnom, RobotSide& sideRef, Side2Follow direction, EdgeDetection edge);
-
+  void followLine_v2(float Vnom, RobotSide& sideRef, Side2Follow direction, EdgeDetection edge);
   
   void grabBox(RobotSide& sideRef);
   void dropBox(RobotSide& sideREf);

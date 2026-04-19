@@ -58,6 +58,7 @@ class Sensor
         void readValues();
 
         void getLineError(Side2Follow side2follow, EdgeDetection edgeSide);
+        void getLineError_v1(Side2Follow side2follow,EdgeDetection edgeSide);//don't turn if all on black! 
 
         bool activated(float normVal);
 

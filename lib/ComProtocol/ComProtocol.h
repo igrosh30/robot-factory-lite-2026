@@ -83,7 +83,7 @@ enum CMD_ID : uint8_t
     CMD_EXECUTE_PICK_GREEN    = 6,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
     CMD_EXECUTE_PICK_RED      = 7,
     CMD_GO_RETRIEVE_ZONE      = 8,   // Tell slave to go to the final retrieve zone
-
+    CMD_CAN_ENTER_PICK        = 9,
     //-----INFO BOXES FOR SLAVES!
     CMD_SLAVE_GO              = 11,
     INFO_BOX_MACHINE_B        = 12,

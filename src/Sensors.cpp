@@ -187,3 +187,115 @@ bool Sensor:: activated(float normVal)
     if(normVal <= 500) return false;
     else return true;
 }
+
+void Sensor :: getLineError_v1(Side2Follow side2follow,EdgeDetection edgeSide) 
+{
+    readValues(); // refresh the debug data- Only to check the last readed values! 
+
+    uint16_t tempValues[NUM_SENSORS];
+    readRaw(tempValues);
+
+    flagFound = false;
+    flagInters = false;   
+
+    if(side2follow == Side2Follow::LEFT)
+    {
+        flagType= 0;
+        //1- need to normalize the values- each sensor can have different high/low values
+        for (int i = 0; i < NUM_SENSORS; i++)
+        {
+            int min = minValues[i];int max = maxValues[i];
+
+            if(min == max ) erro = 0;
+            int tempVal = constrain(tempValues[i],min,max);
+            IR_norm1[i] = tempVal;
+            tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
+
+            if(tempVal<50) IR_norm[i] =0; //if less than 5%
+            IR_norm[i] = tempVal;
+
+            if(!flagFound)
+            {
+                if(i==0)
+                {
+                    if(activated(IR_norm[0]))
+                    {
+                        erro = sensorDist[0];
+                        flagFound = true;
+                    } 
+                }
+                else if(activated(IR_norm[i]) && (!activated(IR_norm[i-1])))//IR[i] is black, IR[i-1] needs to be white
+                {
+                    erro = sensorDist[i];
+                    flagFound = true;
+                }  
+            }
+        }
+            bool inIntersectionNow = (activated(IR_norm[3]) && activated(IR_norm[4])) ;
+            if (edgeSide == EdgeDetection::UP && inIntersectionNow && !wasIntersection) {
+                intersections++;
+                flagInters = true;
+            }
+            // FlancoSide::DOWN (Black to White - Falling Edge)
+            else if (edgeSide == EdgeDetection::DOWN && !inIntersectionNow && wasIntersection) {
+                intersections++;
+                flagInters = true;
+            }
+            wasIntersection = inIntersectionNow;
+            if(activated(IR_norm[0])&&activated(IR_norm[1])&&activated(IR_norm[3])&&activated(IR_norm[4]))
+            {
+                erro = 0;//don't turn... only cound intersections! 
+            }
+    }
+    else if(side2follow == Side2Follow::RIGHT)
+    {
+        flagType= 1;
+        //1- need to normalize the values- each sensor can have different high/low values
+        for (int i = 0; i < NUM_SENSORS; i++)
+        {
+            int min = minValues[i];int max = maxValues[i];
+
+            if(min == max ) erro= 0;
+            int tempVal = constrain(tempValues[i],min,max);
+            IR_norm1[i] = tempVal;
+            tempVal = map(tempVal,min,max,1000,0);//maping values we will consider white as 0 - no interes in rotating, only back capturing! 
+
+            if(tempVal<50) IR_norm[i] =0; //if less than 5%
+            IR_norm[i] = tempVal;
+        }
+        for(int i= NUM_SENSORS-2; i > 0 ;i--)
+        {
+            if(!flagFound)
+            {
+                if(activated(IR_norm[4]))
+                {
+                    erro = sensorDist[4];
+                    flagFound = true;
+                }
+                else if(activated(IR_norm[i]) && (!activated(IR_norm[i+1])))
+                {
+                    erro = sensorDist[i];
+                    flagFound = true;
+                }
+            }
+        }
+        if(!flagFound && (activated(IR_norm[0]) && !activated(IR_norm[1])))
+        {
+            
+        }
+            bool inIntersectionNow = (activated(IR_norm[1]) && activated(IR_norm[0])) ;
+            if (edgeSide == EdgeDetection::UP && inIntersectionNow && !wasIntersection) {
+                intersections++;
+                flagInters = true;
+            }
+            else if (edgeSide == EdgeDetection::DOWN && !inIntersectionNow && wasIntersection) {
+                intersections++;
+                flagInters = true;
+            }
+            if(activated(IR_norm[0])&&activated(IR_norm[1])&&activated(IR_norm[3])&&activated(IR_norm[4]))
+            {
+                erro = 0;//don't turn... only cound intersections! 
+            }  
+            wasIntersection = inIntersectionNow;  
+    }  
+}

@@ -73,6 +73,7 @@ public:
     float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
     float d_mv_aft_intersection_drop = 0.04f;
     float d_mv_aft_intersection_B = 0.06f;
+    float d_aft_dropRed = 0.17f;
     float ref_s;
     float target_distance = 0.0f;
     int move_direction = 0;

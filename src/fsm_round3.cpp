@@ -5,9 +5,9 @@ fsm_round3:: fsm_round3(robot_t& r) : robot(r)
     force_state(SYS_IDLE);
 
     current_box_index = 0;
-    drop_sequence[0] = 3;
+    drop_sequence[0] = 1;
     drop_sequence[1] = 2;
-    drop_sequence[2] = 1;
+    drop_sequence[2] = 3;
     drop_sequence[3] = 0;
 
     #ifdef ROBOT_MASTER
@@ -51,7 +51,7 @@ void fsm_round3::next_state_rules()
         this->processBox_MachineA = 1;
         this->SLAVE_blueBox = 1;
         set_next_state(S1_ALIGN_DROP_B);
-        S1_NAV_MACHINE_A
+        
         
         this->processBox_MachineA = 1;
         hasBlueBoxesInfo = true;
@@ -105,6 +105,15 @@ void fsm_round3::next_state_rules()
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
         {
             Serial.printf("[MASTER] ack received from SLAVE_01!\n");
+            set_next_state(COM_BLUE_SLOT_SLAVE_01);
+        }
+    }
+    else if(state == COM_BLUE_SLOT_SLAVE_01)
+    {
+        //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
+        if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BLUE_PICK_SLOT))
+        {
+            Serial.printf("[MASTER] ack received from SLAVE_01!\n");
             set_next_state(M_SYS_LEAVE_START);
         }
     }
@@ -132,7 +141,7 @@ void fsm_round3::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == M_DROP_ALIGN_RED && tis > 3)
+    else if(state == M_DROP_ALIGN_RED && tis > 2.6)
     {
         //SEND SLAVE_01 pick box!!!
         robot.send_command(NodeId::SLAVE_01,CMD_ID::CMD_EXECUTE_PICK_RED);
@@ -163,6 +172,7 @@ void fsm_round3::next_state_rules()
     {
         if(intersections == 2 ) //Let's do edge:UP! 
         {
+
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = 1;
@@ -171,11 +181,10 @@ void fsm_round3::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == M_GEN_DROP_ALIGN && tis > 3) 
+    else if(state == M_GEN_DROP_ALIGN && tis > 3)//this was a GREEN BOX RIGHT?! 
     {
-        
-        //
         robot.send_command(NodeId::SLAVE_00, CMD_ID::CMD_EXECUTE_PICK_GREEN);
+        
         //MASTER DROPED BOX!
         robot.front.actuators.magnetOff();
         current_box_index++;
@@ -265,7 +274,7 @@ void fsm_round3::next_state_rules()
     }
     else if (state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
-        if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections == 1 && tis < 0.2/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
         if(intersections == 2)
         {
             target_distance = d_mv_aft_intersection_B;
@@ -275,10 +284,28 @@ void fsm_round3::next_state_rules()
             state_after_maneuver = S_WAIT_PICK_CMD;
             set_next_state(GEN_MOVE_X);
         }
-        
     }
-    else if(state == S_WAIT_PICK_CMD && tis > 5)
+    else if(state == S_WAIT_PICK_CMD)
     {
+        #ifdef WAIT_CMD_WITH_TIME
+        if(this->current_box_index == 0)
+        {
+            if(tis > 20)
+            {
+                set_next_state(S_MACHINE_ALIGN_PICK);   
+                robot.appLayer.clearNewCommand();
+            }
+        }
+        else if(this->current_box_index > 0)
+        {
+            if(tis > 15)
+            {
+                set_next_state(S_MACHINE_ALIGN_PICK);   
+                robot.appLayer.clearNewCommand();
+            }
+        }
+        #endif
+
         if(robot.appLayer.hasNewCommand())
         {
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
@@ -290,14 +317,15 @@ void fsm_round3::next_state_rules()
             //RESET THE COM FLAGS!
             robot.appLayer.clearNewCommand();
         }
-        else set_next_state(S_MACHINE_ALIGN_PICK);
+        
+        //else set_next_state(S_MACHINE_ALIGN_PICK);
     }
     else if(state == S_MACHINE_ALIGN_PICK && ((robot.front.actuators.isSwitch_left_On || robot.front.actuators.isSwitch_right_On)) )
     {
         set_next_state(S_MACHINE_PICK_BOX);
     }
 
-    else if(state == S_MACHINE_PICK_BOX && tis > 0.5) set_next_state(S_MACHINE_TURN_OUT);
+    else if(state == S_MACHINE_PICK_BOX && tis > 0.4) set_next_state(S_MACHINE_TURN_OUT);
     
     else if(state == S_MACHINE_TURN_OUT)
     {
@@ -347,7 +375,7 @@ void fsm_round3::next_state_rules()
         {
             Serial.print("Received a Command: ");
             uint8_t cmdId = robot.appLayer.getReceivedCmdId();
-            Serial.println(cmdId);
+            //Serial.println(cmdId);
 
             if (cmdId == INFO_BOX_MACHINE_A) 
             {
@@ -360,25 +388,24 @@ void fsm_round3::next_state_rules()
                     processBox_MachineA = val;//This is what we need to perform 
                     //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
                     Serial.println("GOING TO NAV_MACHINE OUT....");
-                    set_next_state(S1_NAV_MACHINE_A);//for now we will move the slave to machine OUTPUT!     
+                    set_next_state(COM_WAIT_BLUE_SLOT);//for now we will move the slave to machine OUTPUT!     
                 }
             }
         }
         robot.appLayer.clearNewCommand();
     }
-    else if(state == S1_NAV_MACHINE_A)
+    else if(state == COM_WAIT_BLUE_SLOT)
     {
-        //ALWASY BE WATCHING FOR BLUE BOX INFO!! while going to process box output!   
-        if(!hasBlueBoxesInfo)
-        {   
-            if(robot.appLayer.hasNewCommand())
+        if(robot.appLayer.hasNewCommand())
+        {
+            Serial.print("Received a Command: ");
+            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            //Serial.println(cmdId);
+
+            if (cmdId == CMD_ID::INFO_BLUE_PICK_SLOT) 
             {
-                Serial.printf("NEW COMAND RECEIVED: ");
-                uint8_t cmdId = robot.appLayer.getReceivedCmdId();
-                Serial.println(cmdId);
-                if(cmdId == INFO_BLUE_PICK_SLOT && !hasBlueBoxesInfo)//should be value 5!
+                if (robot.appLayer.getReceivedParamLen() > 0) 
                 {
-                    Serial.println("STORING VALUES.......");
                     uint8_t len = robot.appLayer.getReceivedParamLen();
                     Serial.printf("Len of params received: %d\n",len); 
                     const uint8_t* params = robot.appLayer.getReceivedParams();
@@ -386,21 +413,21 @@ void fsm_round3::next_state_rules()
 
                     if (len >= 1) this->S_blue_PICK[0] = params[0]; 
                     if(len == 2) this->S_blue_PICK[1] = params[1];
-                    hasBlueBoxesInfo = true;
-                    Serial.printf("[SLAVE_01] blue pick slot:");
-                    for(int i = 0; i< SLAVE_blueBox; i++) Serial.printf("%d-",S_blue_PICK[i]);
+            
+                    set_next_state(S1_NAV_MACHINE_A);//for now we will move the slave to machine OUTPUT!     
                 }
             }
         }
-        if(intersections == 1)
-        {
-            target_distance = d_mv_aft_intersection;
-            move_direction = 1;
-            turn_direction = 1;
-            target_turn_angle = PI/2;
-            state_after_maneuver = S1_NAV_MACHINE_A_ALIGN;
-            set_next_state(GEN_MOVE_X);
-        }
+        robot.appLayer.clearNewCommand();
+    }
+    else if(state == S1_NAV_MACHINE_A && intersections == 1)
+    {
+        target_distance = d_mv_aft_intersection;
+        move_direction = 1;
+        turn_direction = 1;
+        target_turn_angle = PI/2;
+        state_after_maneuver = S1_NAV_MACHINE_A_ALIGN;
+        set_next_state(GEN_MOVE_X);
     }
     else if(state == S1_NAV_MACHINE_A_ALIGN)
     {
@@ -433,15 +460,16 @@ void fsm_round3::next_state_rules()
     {
         set_next_state(S1_PICK_BOX_A);//entering here, activate the magnet!!!!!
     }
-    else if(state == S1_PICK_BOX_A && tis > 0.5)
+    else if(state == S1_PICK_BOX_A && tis > 0.4)
     {
-        target_distance = d_retrive_process_box;
+        target_distance = d_aft_dropRed;
         move_direction = -1;
         turn_direction = -1;
         target_turn_angle = PI/2;
         state_after_maneuver = S1_NAV_DROP_B;
         set_next_state(GEN_MOVE_X);
     }
+    //add a logic that if fails sening the blue pick slot the master picks!
     else if (state == S1_NAV_DROP_B && intersections == 1)
     {
         target_distance = d_mv_aft_intersection;
@@ -453,16 +481,17 @@ void fsm_round3::next_state_rules()
     }
     else if(state == S1_ALIGN_DROP_B && tis> 1.7)
     {
+        robot.send_command(NodeId::SLAVE_00,CMD_ID::CMD_EXECUTE_PICK_GREEN);
         robot.front.actuators.magnetOff();
         //Turn OUT!
         current_box_index++;
         processBox_MachineA--;
-        target_distance = d_retrive_process_box;
+        target_distance = d_aft_dropRed;
         move_direction = -1;
         turn_direction = -1;
         target_turn_angle = PI/2;
         if(processBox_MachineA > 0 ) state_after_maneuver = S1_NAV_MACHINE_A_FROM_B;
-        else if(processBox_MachineA == 0 && SLAVE_blueBox > 0 ) state_after_maneuver = M_EXT_PROC_MACH_BLUE;
+        else if(processBox_MachineA <= 0 && SLAVE_blueBox > 0 ) state_after_maneuver = M_EXT_PROC_MACH_BLUE;
         else state_after_maneuver = NAV_DOCKING_STATION;
         set_next_state(GEN_MOVE_X);
     }
@@ -478,7 +507,24 @@ void fsm_round3::next_state_rules()
             state_after_maneuver = S_WAIT_PICK_CMD;
             set_next_state(GEN_MOVE_X);
         }
-    }   
+    }  
+    else if(state == COM_SLV_01_WAIT)
+    {
+        if(robot.appLayer.hasNewCommand())
+        {
+            uint8_t cmdId = robot.appLayer.getReceivedCmdId();
+            if (cmdId == CMD_CAN_ENTER_PICK) 
+            {
+                set_next_state(S1_ENTER_PICK);
+            }
+            //RESET THE COM FLAGS!
+            robot.appLayer.clearNewCommand();
+        }
+    }
+    else if(state == S1_ENTER_PICK && intersections == 3)
+    {
+        set_next_state(GEN_PICK_ZONE);    
+    }
     #endif
     // ==========================================================
     //               GEN_MOVE & GEN_TURN
@@ -506,7 +552,7 @@ void fsm_round3::next_state_rules()
     else if(state == M_EXT_PROC_MACH_BLUE )
     {
         if(intersections > 0 && tis < 0.08/robot.v_req) intersections = 0;
-        if(intersections == 4)
+        if(intersections == 3)
         {
             target_distance = d_mv_aft_intersection;
             state_after_maneuver = NAV_LEAVING_CENTER;
@@ -635,7 +681,7 @@ void fsm_round3::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    // - 620 - 305 - 320
+
     else if(state == GEN_DROP_COUNT)//inside here I do follow Right!
     {
         if(currentBox.drop_slot == robot.front.sensor.intersections)
@@ -745,7 +791,9 @@ void fsm_round3::next_state_rules()
     else if(state == NAV_TO_WEARHOUSE)
     {
         if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
-
+        #ifdef ROBOT_SLAVE_01
+        if(intersections == 2) set_next_state(COM_SLV_01_WAIT);
+        #endif
         if(intersections == 3)
         {
             if(robot.front.actuators.isMagnetOn)
@@ -812,9 +860,24 @@ void fsm_round3:: enter_state_actions_rules()
         else if(this->total_blues > 0) robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BLUE_BOX, this->total_blues); //there are 4 blue boxes! 
         //In the case of 4 blue boxes - we should call the fsm_round1 !!! so this never appens! 
     }
+    else if(state == COM_BLUE_SLOT_SLAVE_01)
+    {
+        robot.setRobotVW(0,0);
+        if (this->SLAVE_blueBox == 1) 
+        {
+            robot.send_command_param( NodeId::SLAVE_01, INFO_BLUE_PICK_SLOT, S_blue_PICK[0]);
+            Serial.print("Sending...");Serial.print(S_blue_PICK[0]);
+        }
+        else if (this->SLAVE_blueBox == 2) 
+        {
+            robot.send_command_param(NodeId::SLAVE_01,INFO_BLUE_PICK_SLOT, S_blue_PICK[0], S_blue_PICK[1]);
+        }
+
+    }
     else if(state == M_SYS_LEAVE_START)
     {
         robot.front.sensor.intersections = 0;
+        
     }
     #endif
 
@@ -823,10 +886,9 @@ void fsm_round3:: enter_state_actions_rules()
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX Green/Red
     // ==========================================================
-    else if(state == M_NAV_PROCESS_GREEN_BOX || state == M_EXT_PROC_MACH_GREEN || 
-            state == M_NAV_FROM_MACHINE        || state == M_EXT_PROC_MACH_BLUE  ||
-            state == EXITING_PICK_ZONE_RED   || state == M_NAV_DROP_RED || 
-            state == M_NAV_PICK_FROM_RED )
+    #ifdef ROBOT_MASTER
+    if(state == M_EXT_PROC_MACH_GREEN || state == M_NAV_FROM_MACHINE  || state == M_EXT_PROC_MACH_BLUE ||
+        state == EXITING_PICK_ZONE_RED   || state == M_NAV_DROP_RED || state == M_NAV_PICK_FROM_RED )
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -835,6 +897,17 @@ void fsm_round3:: enter_state_actions_rules()
     {
         robot.front.actuators.magnetOff();
     }
+    else if(state == M_NAV_PROCESS_GREEN_BOX)
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.sensor.wasIntersection = false;
+
+        if(this->total_greens == 0 )
+        {
+            robot.send_command(SLAVE_01,CMD_CAN_ENTER_PICK);
+        }
+    }
+    #endif
     
 
     
@@ -915,6 +988,8 @@ void fsm_round3:: enter_state_actions_rules()
         robot.front.sensor.intersections = 0;
     }
     else if(state == S1_PICK_BOX_A) robot.front.actuators.magnetOn();
+    else if(state == COM_WAIT_BLUE_SLOT || state == COM_SLV_01_WAIT) robot.setRobotVW(0,0);
+    
 
     #endif
     
@@ -953,20 +1028,13 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == M_EXT_PROC_MACH_BLUE)
     {
-
-        if(intersections == 0)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection:: UP);
-        }
+        robot.followLine_v2(0.1, robot.front, Side2Follow::LEFT,EdgeDetection:: DOWN);
+        /*
         else if(intersections == 1 )
         {
             robot.front.sensor.getLineError(Side2Follow::LEFT, EdgeDetection:: DOWN);            
-            robot.setRobotVW(0.08,0);
-        }
-        else if(intersections > 1)
-        {
-            robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection:: UP);
-        }
+            robot.setRobotVW(0.04,0);
+        }*/
     }
 
     // ==========================================================
@@ -976,15 +1044,6 @@ void fsm_round3::state_actions_rules()
     else if(state == M_SYS_START) robot.setRobotVW(0 ,0); // wait ACK from SLAVE
     else if(state == M_SYS_LEAVE_START)
     {
-        //always sending! the slave will only store once! 
-        if (this->SLAVE_blueBox == 1) 
-        {//NEED AT SLAVE01 store the numSLAVEBOXES CORRECtlY! 
-            robot.send_command_param( NodeId::SLAVE_01, INFO_BLUE_PICK_SLOT, S_blue_PICK[0]);
-        }
-        else if (this->SLAVE_blueBox == 2) 
-        {
-            robot.send_command_param(NodeId::SLAVE_01,INFO_BLUE_PICK_SLOT, S_blue_PICK[0], S_blue_PICK[1]);
-        }
         robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == EXITING_PICK_ZONE_RED)
@@ -1001,7 +1060,7 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == M_NAV_PROCESS_GREEN_BOX || state == M_GEN_DROP_ALIGN)
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }
     else if(state == M_EXT_PROC_MACH_GREEN)
     {
@@ -1013,14 +1072,18 @@ void fsm_round3::state_actions_rules()
         robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
     }
     //RED Box:
-    else if(state == M_NAV_DROP_RED || state == M_DROP_ALIGN_RED)
+    else if(state == M_DROP_ALIGN_RED)
+    {
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+    }
+    else if(state == M_NAV_DROP_RED )
     {
         
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+        robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }
     else if(state == M_NAV_PICK_FROM_RED)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     #endif
     
@@ -1083,7 +1146,7 @@ void fsm_round3::state_actions_rules()
     //                       GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
 
-    else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_TO_WEARHOUSE || state == NAV_LEAVING_CENTER)
+    else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_TO_WEARHOUSE || state == NAV_LEAVING_CENTER || state ==S1_ENTER_PICK )
     {
         robot.followLine(0.12, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
@@ -1100,13 +1163,17 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == S_NAV_MACHINE_OUT)//get out at fifth intersection! 
     {
-        if(intersections == 0) robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-        else if(intersections <4) robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
+        if(intersections == 0) robot.followLine(0.13, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        else if(intersections <4) robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
         else robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
     }
     else if(state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
+        if(this->current_box_index == 0) robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
+        else
+        {
+            robot.followLine(0.12, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
+        }
     }
     else if(state == S_MACHINE_ALIGN_PICK)
     {
@@ -1117,20 +1184,25 @@ void fsm_round3::state_actions_rules()
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.04, 0.8);
+            robot.setRobotVW(0.04, 0.6);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.04, -0.8);
+            robot.setRobotVW(0.04, -0.6);
         }
         else{
             robot.setRobotVW(0.08, 0);
         }
     }
-    else if(state == S_NAV_MACHINE_TO_DROP | state == S_NAV_EXIT_DROP_ZONE_2_MACHINE)
+    else if(state == S_NAV_MACHINE_TO_DROP)
+    {
+        robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+    }
+    else if( state == S_NAV_EXIT_DROP_ZONE_2_MACHINE)
     {
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
+    
     
     
     #endif
@@ -1142,7 +1214,7 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == S1_NAV_MACHINE_A)
     {
-        robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == S1_NAV_MACHINE_A_ALIGN)
     {
@@ -1157,15 +1229,15 @@ void fsm_round3::state_actions_rules()
     {
         robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
-    else if(state ==S1_PICK_BOX_A)
+    else if(state == S1_PICK_BOX_A)
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.04, 0.8);
+            robot.setRobotVW(0.04, 0.4);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.04, -0.8);
+            robot.setRobotVW(0.04, -0.4);
         }
         else
         {
@@ -1186,7 +1258,7 @@ void fsm_round3::state_actions_rules()
         /*
         else
         {
-            robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+            robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
         }*/
         
     }
