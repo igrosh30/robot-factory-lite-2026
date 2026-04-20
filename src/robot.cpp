@@ -266,7 +266,7 @@ void robot_t::updateComState()
           case ComState::COM_LISTEN:
             //Serial.println("Listeting FRAMES");
             appLayer.update();                 
-            if(appLayer.hasNewCommand())
+            if(appLayer.hasNewCommand() && hasPendingCommandSend)
             {
                 Serial.println("[SLAVE_01] Received PICK_RED. Waiting for FSM to trigger send...");
                 currentComState = ComState::COM_WAIT_SEND; 
@@ -303,7 +303,7 @@ void robot_t::updateComState()
                 pendingParamLen = 0;
                 currentComState = ComState::COM_LISTEN; // Success! Reset to listening
             }
-            else if(millis() - comTimer > 2000) 
+            else if(millis() - comTimer > 500) 
             {
                 // Timeout! Resend the frame.
                 comTimer = millis();

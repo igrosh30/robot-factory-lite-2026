@@ -31,7 +31,6 @@ public:
     //---------GREEN BOX-----------//
     uint8_t green_pick_slots[4];
     uint8_t total_greens = 0;
-    uint8_t current_green_index = 0; 
 
     //---------BLUE BOX-----------//
     uint8_t blue_pick_slots[4]; //here we have all the slots of the blue boxes at the beggining of the round
@@ -55,6 +54,7 @@ public:
     //This will be sent to SLAVE_01 by MASTER!!
     uint8_t SLAVE_greenBox = 0;
     uint8_t S_green_PICK[2];
+    uint8_t current_green_index = 0; // do I need current blue index? I just need box_index
     uint8_t SLAVE_blueBox = 0; // number of times that the slave will need to pick from that spot a box!
     uint8_t S_blue_PICK[2];
     uint8_t current_blue_index = 0; // do I need current blue index? I just need box_index
@@ -74,10 +74,10 @@ public:
     int state_after_maneuver;
     float d_retrive_process_box = 0.19f;
     float d_retrive_from_wearhouse = 0.1f; 
-    float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
+    float d_mv_aft_intersection = 0.04f; //distance to moove before turning!
     float d_mv_aft_intersection_drop = 0.04f;
     float d_mv_aft_intersection_B = 0.06f;
-    float d_aft_dropRed = 0.17f;
+    float d_aft_dropRed = 0.16f;
     float ref_s;
     float target_distance = 0.0f;
     int move_direction = 0;

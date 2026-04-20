@@ -101,7 +101,7 @@ void fsm_round2::next_state_rules()
     // ==========================================================
     //               NAV SEQUENCES:
     // ==========================================================
-    else if(state == M_NAV_PROCESS_GREEN_BOX)
+    else if(state == NAV_PROCESS_GREEN_BOX)
     {
         if(path_strategy == FOLLOW_LINE)
         {

@@ -14,6 +14,7 @@
 //#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
 #define ROBOT_SLAVE_01
+//798- 
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
@@ -137,11 +138,6 @@ typedef enum {
     SYS_LEAVE_START        = 4, 
     SYS_APPROACH_WAREHOUSE = 5, 
 
-    NAV_TO_WEARHOUSE       = 799,
-    NAV_LEAVING_WEARHOUSE  = 798,
-    NAV_LEAVING_CENTER     = 796,
-    M_NAV_FROM_MACHINE     = 797,
-
     // ==========================================
     // --- COMMUNICATION STATES:
     // ==========================================
@@ -153,26 +149,7 @@ typedef enum {
     COM_WAIT_BLUE_SLOT          = 45,
     COM_SLV_01_WAIT             = 46,
 
-    // ==========================================
-    // --- GENERIC MANEUVERS- from Start Point
-    // ==========================================
-    GEN_TURN_90            = 900,
-    GEN_MOVE_X             = 800,
     
-    GEN_PICK_ZONE          = 500,
-    GEN_PICK_COUNT_NAV_FROM_START   = 510,
-    GEN_PICK_COUNT_FROM_MACHINE = 511,
-    GEN_PICK_ALIGN         = 520,
-    GEN_PICK_BOX           = 530,
-    GEN_PICK_TURN_OUT      = 540,
-    EXITING_PICK_ZONE      = 550,
-    EXITING_PICK_ZONE_RED  = 555,
-
-    GEN_DROP_BOX           = 600,
-    GEN_DROP_COUNT         = 610,
-    GEN_DROP_ALIGN         = 620,
-    GEN_DROP_TURN_OUT      = 630,
-    EXITING_DROP_ZONE      = 640,
     
 
     // ==========================================
@@ -183,18 +160,22 @@ typedef enum {
     M_SYS_START             = 100,
     M_SYS_LEAVE_START       = 101, // SEND SLAVE- pickSlots blue box!  
 
-    // --- Green Box
-    NAV_PROCESS_GREEN_BOX         = 200,
-    M_GEN_DROP_ALIGN                = 201,
-    M_GEN_DROP_TURN_OUT             = 202,
-    M_EXT_PROC_MACH_GREEN           = 203,
-    M_EXT_PROC_MACH_BLUE            = 204,      
-    
     //-----Red Box
-    M_NAV_DROP_RED                  = 210,
-    M_DROP_ALIGN_RED                = 211,
-    M_DROP_TURN_OUT_RED             = 212,
-    M_NAV_PICK_FROM_RED             = 213,
+    M_NAV_DROP_RED                  = 110,
+    M_DROP_ALIGN_RED                = 111,
+    M_DROP_TURN_OUT_RED             = 112,
+    M_NAV_PICK_FROM_RED             = 113,
+
+    // --- Green Box
+    NAV_PROCESS_GREEN_BOX           = 200,
+    M_WAIT_SLAVE_DROP               = 201,
+    NAV_PROCESS_GREEN_BOX_ALIGN     = 202,
+    M_GEN_DROP_ALIGN                = 210,
+    M_GEN_DROP_TURN_OUT             = 220,
+    M_EXT_PROC_MACH_GREEN           = 230,
+    M_EXT_PROC_MACH_BLUE            = 240,      
+    
+    
 
 
 
@@ -215,18 +196,42 @@ typedef enum {
     
     //SLAVE 01 STATES:
     S1_WAIT_GREEN_SLOT               = 400,
+    S1_LEAVE_START                   = 401,
     S1_NAV_MACHINE_A                 = 410,
     S1_NAV_MACHINE_A_ALIGN           = 411,
-    S1_ALIGN_PICK_A                  = 410,
-    S1_PICK_BOX_A                    = 411,
+    S1_ALIGN_PICK_A                  = 412,
+    S1_PICK_BOX_A                    = 413,
     S1_NAV_DROP_B                    = 420,
     S1_ALIGN_DROP_B                  = 430,
     S1_NAV_MACHINE_A_FROM_B          = 440,
     S1_ENTER_PICK                    = 450,
 
+    // ==========================================
+    // --- GENERIC MANEUVERS- from Start Point
+    // ==========================================
+    GEN_PICK_ZONE          = 500,
+    GEN_PICK_COUNT_NAV_FROM_START   = 510,
+    GEN_PICK_COUNT_FROM_MACHINE = 511,
+    GEN_PICK_ALIGN         = 520,
+    GEN_PICK_BOX           = 530,
+    GEN_PICK_TURN_OUT      = 540,
+    EXITING_PICK_ZONE      = 550,
+    EXITING_PICK_ZONE_RED  = 555,
 
+    GEN_DROP_BOX           = 600,
+    GEN_DROP_COUNT         = 610,
+    GEN_DROP_ALIGN         = 620,
+    GEN_DROP_TURN_OUT      = 630,
+    EXITING_DROP_ZONE      = 640,
 
-    NAV_DOCKING_STATION           = 9999,
+    NAV_TO_WEARHOUSE       = 799,
+    NAV_LEAVING_WEARHOUSE  = 798,
+    NAV_LEAVING_CENTER     = 796,
+    M_NAV_FROM_MACHINE     = 797,
+
+    GEN_TURN_90            = 900,
+    GEN_MOVE_X             = 800,
+    NAV_DOCKING_STATION    = 9999,
     
 
 } fsm_state;

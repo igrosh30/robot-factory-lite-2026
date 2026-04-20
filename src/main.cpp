@@ -469,6 +469,7 @@ void loop() {
             #ifdef ROBOT_SLAVE_01
             serial_commands.send_command("flg_box", fsm.hasBlueBoxesInfo);
             serial_commands.send_command("boxA", fsm.processBox_MachineA);
+            serial_commands.send_command("sGrBox", fsm.SLAVE_greenBox);
             serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);
             #endif
             #ifdef ROBOT_SLAVE_00
