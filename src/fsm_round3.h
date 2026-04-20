@@ -37,12 +37,14 @@ public:
     uint8_t blue_pick_slots[4]; //here we have all the slots of the blue boxes at the beggining of the round
     uint8_t total_blues = 0;
     
+    uint8_t M_green_PICK[4];
+    uint8_t MASTER_greenBox = 0;
 
     uint8_t M_blue_PICK[2];
     uint8_t MASTER_blueBox = 0;
 
     void build_sequence_from_IR(String ir_data);
-    void build_blueBoxPick();
+    void build_slaveSlots();
     #endif
 
     #ifdef ROBOT_SLAVE_00
@@ -51,6 +53,8 @@ public:
 
     #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
     //This will be sent to SLAVE_01 by MASTER!!
+    uint8_t SLAVE_greenBox = 0;
+    uint8_t S_green_PICK[2];
     uint8_t SLAVE_blueBox = 0; // number of times that the slave will need to pick from that spot a box!
     uint8_t S_blue_PICK[2];
     uint8_t current_blue_index = 0; // do I need current blue index? I just need box_index

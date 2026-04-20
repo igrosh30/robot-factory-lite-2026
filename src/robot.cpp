@@ -266,7 +266,7 @@ void robot_t::updateComState()
           case ComState::COM_LISTEN:
             //Serial.println("Listeting FRAMES");
             appLayer.update();                 
-            if(appLayer.hasNewCommand() && appLayer.getReceivedCmdId() == CMD_ID::CMD_EXECUTE_PICK_RED)
+            if(appLayer.hasNewCommand())
             {
                 Serial.println("[SLAVE_01] Received PICK_RED. Waiting for FSM to trigger send...");
                 currentComState = ComState::COM_WAIT_SEND; 

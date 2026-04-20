@@ -408,7 +408,7 @@ void fsm_round2::next_state_rules()
         if( 3 - robot.front.sensor.intersections == currentBox.pick_slot)
         {
             isFromMachine = false;
-            if(currentBox.color == 'g') set_next_state(M_NAV_PROCESS_GREEN_BOX);
+            if(currentBox.color == 'g') set_next_state(NAV_PROCESS_GREEN_BOX);
             else if(currentBox.color == 'b') set_next_state(NAV_LEAVING_WEARHOUSE);
         }
     }
@@ -574,7 +574,7 @@ void fsm_round2::enter_state_actions_rules()
     // ==========================================================
     //             GENERIC NAV to PROCESS BOX
     // ==========================================================
-    else if(state == M_NAV_PROCESS_GREEN_BOX || state == M_EXT_PROC_MACH_GREEN || 
+    else if(state == NAV_PROCESS_GREEN_BOX || state == M_EXT_PROC_MACH_GREEN || 
             state == M_NAV_FROM_MACHINE)
     {
         robot.front.sensor.intersections = 0;
@@ -718,7 +718,7 @@ void fsm_round2::state_actions_rules()
         }
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
-    else if(state == M_NAV_PROCESS_GREEN_BOX || state == M_GEN_DROP_ALIGN)
+    else if(state == NAV_PROCESS_GREEN_BOX || state == M_GEN_DROP_ALIGN)
     {
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }

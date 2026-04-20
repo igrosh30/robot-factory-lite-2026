@@ -145,12 +145,13 @@ typedef enum {
     // ==========================================
     // --- COMMUNICATION STATES:
     // ==========================================
-    COM_INIT               = 40, 
-    COM_BOXES_SLAVE_00     = 41,
-    COM_BOXES_SLAVE_01     = 42,
-    COM_BLUE_SLOT_SLAVE_01 = 43, 
-    COM_WAIT_BLUE_SLOT     = 44,
-    COM_SLV_01_WAIT        = 45,
+    COM_INIT                    = 40, 
+    COM_BOXES_SLAVE_00          = 41,
+    COM_BOXES_SLAVE_01_A        = 42,
+    COM_BOXES_SLAVE_01_GREEN    = 43,
+    COM_BLUE_SLOT_SLAVE_01      = 44, 
+    COM_WAIT_BLUE_SLOT          = 45,
+    COM_SLV_01_WAIT             = 46,
 
     // ==========================================
     // --- GENERIC MANEUVERS- from Start Point
@@ -183,7 +184,7 @@ typedef enum {
     M_SYS_LEAVE_START       = 101, // SEND SLAVE- pickSlots blue box!  
 
     // --- Green Box
-    M_NAV_PROCESS_GREEN_BOX         = 200,
+    NAV_PROCESS_GREEN_BOX         = 200,
     M_GEN_DROP_ALIGN                = 201,
     M_GEN_DROP_TURN_OUT             = 202,
     M_EXT_PROC_MACH_GREEN           = 203,
@@ -213,8 +214,9 @@ typedef enum {
     S_NAV_MACHINE_TO_DROP           = 350,
     
     //SLAVE 01 STATES:
-    S1_NAV_MACHINE_A                 = 400,
-    S1_NAV_MACHINE_A_ALIGN           = 401,
+    S1_WAIT_GREEN_SLOT               = 400,
+    S1_NAV_MACHINE_A                 = 410,
+    S1_NAV_MACHINE_A_ALIGN           = 411,
     S1_ALIGN_PICK_A                  = 410,
     S1_PICK_BOX_A                    = 411,
     S1_NAV_DROP_B                    = 420,

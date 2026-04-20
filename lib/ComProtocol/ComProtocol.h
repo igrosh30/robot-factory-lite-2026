@@ -91,7 +91,7 @@ enum CMD_ID : uint8_t
     INFO_GREEN_BOX            = 14,
     INFO_BLUE_BOX             = 15,
     INFO_BLUE_PICK_SLOT       = 16,
-
+    INFO_GREEN_PICK_SLOT      = 17,
     
     
 

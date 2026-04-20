@@ -20,7 +20,7 @@ void fsm_COM::enter_state_actions_rules()
         Serial.printf("[MASTER] Sending to SLAVE_00 process %d boxes from Machine B \n", t_box);
         robot.send_command_param(NodeId::SLAVE_00, CMD_ID::INFO_BOX_MACHINE_B, t_box);
     }
-    else if(state == COM_BOXES_SLAVE_01)
+    else if(state == COM_BOXES_SLAVE_01_A)
     {
         Serial.printf("[MASTER] Sending to SLAVE_01 process %d boxes from Machine A \n", 1);
         robot.send_command_param(NodeId::SLAVE_01, CMD_ID::INFO_BOX_MACHINE_A, 1);        
@@ -86,10 +86,10 @@ void fsm_COM::next_state_rules()
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_B))
         {
             Serial.println("[MASTER] ACK received from SLAVE_00!");
-            set_next_state(COM_BOXES_SLAVE_01);
+            set_next_state(COM_BOXES_SLAVE_01_A);
         }
     }
-    else if(state == COM_BOXES_SLAVE_01)
+    else if(state == COM_BOXES_SLAVE_01_A)
     {
         // Same here, just wait for the ACK!
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BOX_MACHINE_A))
