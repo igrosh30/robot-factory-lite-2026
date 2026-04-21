@@ -62,6 +62,7 @@ public:
     bool hasBlueBoxesInfo;
     #endif
 
+    int intersections_trigger = 0;
 
     BoxRound2 currentBox;
     int current_box_index;

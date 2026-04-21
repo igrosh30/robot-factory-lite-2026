@@ -27,7 +27,7 @@ public:
 
     //PICK LOGIC
     Box sequence[2];
-    uint8_t current_box_index = 0;
+    uint8_t current_box_index;
 
     //std::vector<int> pick_sequence;
     //std::vector<int> drop_sequence;
