@@ -1105,6 +1105,7 @@ void fsm_round3:: enter_state_actions_rules()
     
     else if(state == GEN_MOVE_X)
     {
+        robot.thetae = 0;
         ref_s = robot.rel_s;
     }
     else if(state == GEN_TURN_90)
@@ -1318,7 +1319,7 @@ void fsm_round3::state_actions_rules()
     
     else if(state == GEN_MOVE_X)
     {
-        robot.setRobotVW(move_direction*0.1, 0);
+        robot.setRobotVW(move_direction*0.1, -robot.thetae*robot.k_thetae);
     }
     else if(state == GEN_TURN_90)
     {

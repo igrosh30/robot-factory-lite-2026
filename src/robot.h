@@ -60,6 +60,9 @@ public:
 
   //MotorController motor1;
   //MotorController motor2;
+
+  float enc1_k = 1920.0;
+  float enc2_k = 1920.0;
   
   
   int enc1, enc2;
@@ -71,6 +74,7 @@ public:
   float ds, dtheta;
   float rel_s, rel_theta;
   float xe, ye, thetae;
+  float k_thetae; 
 
   float dt;
   float v, w;

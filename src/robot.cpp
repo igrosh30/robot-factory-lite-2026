@@ -42,6 +42,7 @@ robot_t::robot_t(pico4drive_t& driver)
   p1e = 0;
   p2e = 0;
 
+  k_thetae = 2;
   follow_k = -0.15;
   follow_v = 0.20;
 
@@ -366,8 +367,8 @@ void robot_t::slave01_dropGreenBox() // trigers that the slave01 dropped a green
 void robot_t::odometry(void)
 {
   // Estimate wheels speed using the encoders
-  w1e = enc1 * (TWO_PI / (64.0 * 2.0 * 1920.0));
-  w2e = enc2 * (TWO_PI / (64.0 * 2.0 * 1920.0));
+  w1e = enc1 * (TWO_PI / (64.0 * 2.0 * enc1_k));
+  w2e = enc2 * (TWO_PI / (64.0 * 2.0 * enc2_k));
 
   v1e = w1e * wheel_radius;//wheel_radius is a paramether that we'll need to estimate so we have a good aproximation
   v2e = w2e * wheel_radius;

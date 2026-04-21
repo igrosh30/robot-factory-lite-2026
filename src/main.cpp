@@ -394,6 +394,7 @@ void loop() {
         read_PIO_encoders();
         robot.odometry();
         
+        
         //Actuators Update, Switches&Magnets
         robot.front.actuators.update();
         //robot.back.actuators.update();
@@ -509,7 +510,7 @@ void loop() {
             serial_commands.send_command("ki2", robot.motors.ki2);
 
             serial_commands.send_command("er1", robot.motors.e1);
-            serial_commands.send_command("er2", robot.motors.e2);*/
+            serial_commands.send_command("er2", robot.motors.e2);
 
 
 
@@ -546,7 +547,7 @@ void loop() {
             serial_commands.send_command("irmi2", robot.front.sensor.minValues[2]);
             serial_commands.send_command("irmi3", robot.front.sensor.minValues[3]);
             serial_commands.send_command("irmi4", robot.front.sensor.minValues[4]);
-            
+            */
             serial_commands.send_command("cnt",robot.front.sensor.intersections);
 
             
@@ -587,5 +588,3 @@ void loop() {
     }
 }
 
-/*
-*/
