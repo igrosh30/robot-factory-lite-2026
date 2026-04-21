@@ -14,7 +14,7 @@
 //#define ROBOT_MASTER
 #define ROBOT_SLAVE_00
 //#define ROBOT_SLAVE_01
-//798- 
+
 
 // Proteção de compilação
 #if !defined(ROBOT_MASTER) && !defined(ROBOT_SLAVE_00) && !defined(ROBOT_SLAVE_01)
@@ -188,9 +188,10 @@ typedef enum {
     S_NAV_MACHINE_OUT               = 310,
     S_NAV_EXIT_DROP_ZONE_2_MACHINE  = 305,
     S_NAV_TO_MACHINE_FROM_WHOUSE    = 320,
-    S_WAIT_PICK_CMD                 = 399,
-    S_MACHINE_ALIGN_PICK            = 331,
+    S_WAIT_PICK_CMD_2               = 398,
+    S_WAIT_PICK_CMD                 = 399, 
     S_MACHINE_PICK_BOX              = 330,
+    S_MACHINE_ALIGN_PICK            = 331,
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
     
@@ -203,8 +204,10 @@ typedef enum {
     S1_PICK_BOX_A                    = 413,
     S1_NAV_DROP_B                    = 420,
     S1_ALIGN_DROP_B                  = 430,
+    S1_DROP_B2                       = 431,
     S1_NAV_MACHINE_A_FROM_B          = 440,
     S1_ENTER_PICK                    = 450,
+    S1_LEAVE_CENTER                  = 460,
 
     // ==========================================
     // --- GENERIC MANEUVERS- from Start Point

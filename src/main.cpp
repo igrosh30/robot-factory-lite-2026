@@ -450,7 +450,7 @@ void loop() {
 
             #if (DEBUG_LEVEL != 3)
             //serial_commands.send_buffer("ang",fsm.target_turn_angle*RAD_TO_DEG);
-            #ifdef  ROBOT_MASTER
+            
             //CURRENT BOX DEBUG:
             serial_commands.send_buffer("COM_t",robot.sendTries);
             serial_commands.send_command("b_idx", fsm.current_box_index);
@@ -458,7 +458,7 @@ void loop() {
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);
 
-            //Boxes calculations:
+            #ifdef  ROBOT_MASTER
             serial_commands.send_command("r_box", fsm.total_reds);
             serial_commands.send_command("r_idx", fsm.red_pick_slots[fsm.current_red_index]);
             serial_commands.send_command("g_box", fsm.total_greens);

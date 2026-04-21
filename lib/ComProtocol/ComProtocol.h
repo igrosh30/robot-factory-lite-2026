@@ -75,12 +75,13 @@ union PayloadData//Size of a union is always the size of it's biggest member!
 enum CMD_ID : uint8_t
 {
     // --- MASTER TO SLAVE COMMANDS (Actions) ---
-    CMD_WAIT                  = 1,   // Tell slave to hold position
-    CMD_GO_PROCESS_MACHINE    = 2,   // Tell slave to navigate to the process machine (Your GO_PICK_GREEN)
-    CMD_SLAVE_START           = 3,
-    CMD_SLAVE_WAIT            = 4,
-    CMD_EXECUTE_PICK_BLUE     = 5,   // Tell slave to go handle a blue box (Your PICK_BLUE)
-    CMD_EXECUTE_PICK_GREEN    = 6,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
+    CMD_WAIT                  = 0,   // Tell slave to hold position
+    CMD_GO_PROCESS_MACHINE    = 1,   // Tell slave to navigate to the process machine (Your GO_PICK_GREEN)
+    CMD_SLAVE_START           = 2,
+    CMD_SLAVE_WAIT            = 3,
+    CMD_EXECUTE_PICK_BLUE     = 4,   // Tell slave to go handle a blue box (Your PICK_BLUE)
+    CMD_EXECUTE_PICK_GREEN    = 5,   // Tell slave the box is ready, pick it and deliver (Your PICK_GREEN)
+    CMD_EXECUTE_PICK_GREEN_2  = 6,  
     CMD_EXECUTE_PICK_RED      = 7,
     CMD_GO_RETRIEVE_ZONE      = 8,   // Tell slave to go to the final retrieve zone
     CMD_CAN_ENTER_PICK        = 9,
