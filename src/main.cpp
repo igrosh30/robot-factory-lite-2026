@@ -449,6 +449,7 @@ void loop() {
             
 
             #if (DEBUG_LEVEL != 3)
+            serial_commands.send_buffer("ang",fsm.target_turn_angle*RAD_TO_DEG);
             #ifdef  ROBOT_MASTER
             //CURRENT BOX DEBUG:
             serial_commands.send_buffer("COM_t",robot.sendTries);
@@ -473,6 +474,7 @@ void loop() {
             serial_commands.send_command("sBlBox", fsm.SLAVE_blueBox);
             #endif
             #ifdef ROBOT_SLAVE_00
+            serial_commands.send_command("d_slot",fsm.currentBox.drop_slot);
             serial_commands.send_command("boxB", fsm.processBox_MachineB);
             #endif
             #endif

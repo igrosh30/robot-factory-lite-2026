@@ -75,7 +75,7 @@ public:
     float d_retrive_process_box = 0.19f;
     float d_retrive_from_wearhouse = 0.1f; 
     float d_mv_aft_intersection = 0.04f; //distance to moove before turning!
-    float d_mv_aft_intersection_drop = 0.04f;
+    float d_mv_aft_intersection_drop = 0.03f;
     float d_mv_aft_intersection_B = 0.06f;
     float d_aft_dropRed = 0.16f;
     float ref_s;

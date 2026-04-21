@@ -40,6 +40,8 @@ void fsm_round3::next_state_rules()
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
+        processBox_MachineB = 3;
+        set_next_state(S_NAV_MACHINE_OUT);
         /*
         TEST WITHOUT COM! 
         #ifdef ROBOT_MASTER
@@ -61,7 +63,7 @@ void fsm_round3::next_state_rules()
         this->processBox_MachineB = 3;
         set_next_state(S_NAV_MACHINE_OUT);
         #endif*/
-        set_next_state(COM_INIT);
+        //set_next_state(COM_INIT);
     }
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
@@ -328,13 +330,13 @@ void fsm_round3::next_state_rules()
     }
     else if (state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
-        if(intersections == 1 && tis < 0.2/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections > 0 && tis < 0.2/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
         if(intersections == 2)
         {
             target_distance = d_mv_aft_intersection_B;
             move_direction = 1;
             turn_direction = 1;
-            target_turn_angle = PI/2;
+            target_turn_angle = DEG_TO_RAD*80;
             state_after_maneuver = S_WAIT_PICK_CMD;
             set_next_state(GEN_MOVE_X);
         }
@@ -344,7 +346,7 @@ void fsm_round3::next_state_rules()
         #ifdef WAIT_CMD_WITH_TIME
         if(this->current_box_index == 0)
         {
-            if(tis > 20)
+            if(tis > 2)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -352,7 +354,7 @@ void fsm_round3::next_state_rules()
         }
         else if(this->current_box_index > 0)
         {
-            if(tis > 15)
+            if(tis > 1)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -404,7 +406,7 @@ void fsm_round3::next_state_rules()
         {
             set_next_state(S_NAV_TO_MACHINE_FROM_WHOUSE);
         }
-        if(currentBox.drop_slot - intersections == 0)
+        else if(currentBox.drop_slot - intersections == 0)
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
@@ -768,10 +770,10 @@ void fsm_round3::next_state_rules()
         }
         else
         {
-            target_distance = d_mv_aft_intersection;
+            target_distance = d_mv_aft_intersection_drop;
             move_direction = 1;
             turn_direction = -1;
-            target_turn_angle = PI/2;
+            target_turn_angle = DEG_TO_RAD*80;
             state_after_maneuver = GEN_DROP_COUNT;
             set_next_state(GEN_MOVE_X);
         }
@@ -784,7 +786,7 @@ void fsm_round3::next_state_rules()
             target_distance = d_mv_aft_intersection_drop;
             move_direction = 1;
             turn_direction = 1;
-            target_turn_angle = PI/2;
+            target_turn_angle = DEG_TO_RAD*80;
             state_after_maneuver = GEN_DROP_ALIGN;
             set_next_state(GEN_MOVE_X);
         }
@@ -823,7 +825,7 @@ void fsm_round3::next_state_rules()
         {
             state_after_maneuver = S_NAV_EXIT_DROP_ZONE_2_MACHINE;
             turn_direction = 1; 
-            target_turn_angle = (currentBox.drop_slot == 0)? DEG_TO_RAD*175: PI/2;
+            target_turn_angle = (currentBox.drop_slot == 0)? DEG_TO_RAD*175: DEG_TO_RAD*80;
         }
         #endif
         
@@ -1260,11 +1262,12 @@ void fsm_round3::state_actions_rules()
     // ==========================================================
     else if(state == GEN_DROP_COUNT || state == EXITING_DROP_ZONE)
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == GEN_DROP_ALIGN )
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        if(currentBox.drop_slot == 0) robot.setRobotVW(0.08,0);
+        else robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
 
     // ==========================================================
@@ -1289,8 +1292,7 @@ void fsm_round3::state_actions_rules()
     else if(state == S_NAV_MACHINE_OUT)//get out at fifth intersection! 
     {
         if(intersections == 0) robot.followLine(0.13, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-        else if(intersections <4) robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
-        else robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
+        else robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
     }
     else if(state == S_NAV_TO_MACHINE_FROM_WHOUSE )
     {
@@ -1302,7 +1304,7 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == S_MACHINE_ALIGN_PICK)
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
         //robot.setRobotVW(0.08,0);// or follow the line?!
     }
     else if(state == S_MACHINE_PICK_BOX)
@@ -1321,11 +1323,11 @@ void fsm_round3::state_actions_rules()
     }
     else if(state == S_NAV_MACHINE_TO_DROP)
     {
-        robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if( state == S_NAV_EXIT_DROP_ZONE_2_MACHINE)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(0.08, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     
     
