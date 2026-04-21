@@ -28,6 +28,7 @@ public:
     //PICK LOGIC
     Box sequence[2];
     uint8_t current_box_index;
+    uint8_t box;
 
     //std::vector<int> pick_sequence;
     //std::vector<int> drop_sequence;
@@ -37,7 +38,7 @@ public:
     //DROP LOGIC
     int drop_slot = -1;  // 0 | 1 | 2 | 3
     float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
-    
+    float d_leave_docking = 0.3f;
     //ALWAYS state what's the next state after manuever
     int state_after_maneuver;
     

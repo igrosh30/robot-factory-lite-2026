@@ -26,9 +26,9 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-//fsm_round1 fsm(robot);
+fsm_round1 fsm(robot);
 //fsm_round2 fsm(robot);
-fsm_round3 fsm(robot);
+//fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
 
 
@@ -453,6 +453,7 @@ void loop() {
             //serial_commands.send_buffer("ang",fsm.target_turn_angle*RAD_TO_DEG);
             
             //CURRENT BOX DEBUG:
+            /*
             serial_commands.send_buffer("COM_t",robot.sendTries);
             serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
@@ -477,9 +478,8 @@ void loop() {
             #ifdef ROBOT_SLAVE_00
             serial_commands.send_command("d_slot",fsm.currentBox.drop_slot);
             serial_commands.send_command("boxB", fsm.processBox_MachineB);
+            #endif*/
             #endif
-            #endif
-            
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             //serial_commands.send_command("redpath", fsm.path_strategy);

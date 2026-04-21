@@ -322,8 +322,9 @@ void fsm_round3::next_state_rules()
                     set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
                 }
             }
+            robot.appLayer.clearNewCommand();
         }
-        robot.appLayer.clearNewCommand();
+        
     }
     
     else if(state == S_NAV_MACHINE_OUT)

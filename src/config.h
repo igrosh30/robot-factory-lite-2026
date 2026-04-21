@@ -136,7 +136,10 @@ typedef enum {
     SYS_CALIBRATION        = 1, 
     SYS_WAIT_IR            = 2,
     SYS_LEAVE_START        = 4, 
-    SYS_APPROACH_WAREHOUSE = 5, 
+    SYS_APPROACH_WAREHOUSE = 5,
+    SYS_LEAVE_DOCKING      = 6, 
+    NAV_END_ROUND          = 7,
+    END_ROUND              = 8,
 
     // ==========================================
     // --- COMMUNICATION STATES:
@@ -170,6 +173,7 @@ typedef enum {
     NAV_PROCESS_GREEN_BOX           = 200,
     M_WAIT_SLAVE_DROP               = 201,
     NAV_PROCESS_GREEN_BOX_ALIGN     = 202,
+    M_WAIT                          = 203, 
     M_GEN_DROP_ALIGN                = 210,
     M_GEN_DROP_TURN_OUT             = 220,
     M_EXT_PROC_MACH_GREEN           = 230,
