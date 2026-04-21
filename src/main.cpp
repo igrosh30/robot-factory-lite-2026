@@ -449,7 +449,7 @@ void loop() {
             
 
             #if (DEBUG_LEVEL != 3)
-            serial_commands.send_buffer("ang",fsm.target_turn_angle*RAD_TO_DEG);
+            //serial_commands.send_buffer("ang",fsm.target_turn_angle*RAD_TO_DEG);
             #ifdef  ROBOT_MASTER
             //CURRENT BOX DEBUG:
             serial_commands.send_buffer("COM_t",robot.sendTries);
