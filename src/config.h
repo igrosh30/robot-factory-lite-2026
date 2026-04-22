@@ -11,9 +11,9 @@
 #define ROUND_2
 
 
-//#define ROBOT_MASTER
+#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
@@ -31,12 +31,13 @@
 //                          PINOS
 // ================================================================
 
+#define Rx_IR_PIN 5
+
 //left&right looking to front of the robot
 #define SWITCHL_PIN 27 
 #define SWITCHR_PIN 26
-//left&right looking to the back of the robot
-#define BACK_L_SWITCH_PIN 4
-#define BACK_R_SWITCH_PIN 5
+
+
 
 #define ENC1_PIN_A 8 
 #define ENC1_PIN_B 9

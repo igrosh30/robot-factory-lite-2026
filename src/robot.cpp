@@ -27,6 +27,7 @@ robot_t::robot_t(pico4drive_t& driver)
   #endif
   
 
+  received_IR = false;
   stoped = false;
   wheel_dist = 0.075;
   wheel_radius = 0.0689 / 2;
@@ -320,6 +321,79 @@ void robot_t::updateComState()
             break;    
     }
     #endif
+}
+bool robot_t::robot_getIR(String& sequence)
+{
+    static String buffer = "";
+    static bool started = false;
+    static unsigned long lastByteTime = 0;
+    static int byteCount = 0;
+    
+    // Timeout after 1 second of no data
+    if (started && millis() - lastByteTime > 1000) {
+        buffer = "";
+        started = false;
+        byteCount = 0;
+    }
+    
+    while (Serial2.available()) {
+        char c = Serial2.read();
+        
+        lastByteTime = millis();
+      
+        Serial.print("IR received hex: 0x");
+        Serial.println(c, HEX);
+
+        // Debug: print received bytes
+        Serial.print("IR received: ");
+        Serial.println(c);
+        
+        // Look for start message 'W'
+        if (!started) {
+            if (c == 'W') {
+                started = true;
+                byteCount = 1;
+                buffer = "W";
+                Serial.println("IR: Start detected!");
+            }
+            // 'U' is test message, ignore for sequence
+            else if (c == 'U') {
+                Serial.println("IR: Test message received");
+                received_IR = true; // Signal that IR is working
+            }
+            continue;
+        }
+        
+        // We've started, collect the next 4 bytes (parts order)
+        if (started && byteCount < 5) {
+            // Valid characters: 'w' (red), 'u' (green), 'o' (blue)
+            if (c == 'w' || c == 'u' || c == 'o') {
+                buffer += c;
+                byteCount++;
+                Serial.print("IR: Part ");
+                Serial.print(byteCount - 1);
+                Serial.print(" = ");
+                Serial.println(c);
+            }
+            // Ignore other characters
+        }
+        
+        // We have all 5 bytes (W + 4 parts)
+        if (byteCount == 5) {
+            sequence = buffer;  // Returns "W" + 4 chars like "Wwuuo"
+            Serial.print("IR: Complete sequence: ");
+            Serial.println(sequence);
+            
+            // Reset for next time
+            buffer = "";
+            started = false;
+            byteCount = 0;
+            received_IR = true;
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 void robot_t::send_command(uint8_t dst,uint8_t cmdId)

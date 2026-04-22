@@ -27,6 +27,7 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 fsm_round1 fsm(robot);
+String seq;
 //fsm_round2 fsm(robot);
 //fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
@@ -66,7 +67,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 1;
+int debug_level = 0;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -224,6 +225,7 @@ void setup() {
     // ========== COMROBOT COMMUNICATION SETUP ==========
     Serial.begin(115200);
     delay(1000);// Give time for serial to initialize
+    
 
 
     pico4drive.init();  
@@ -244,6 +246,10 @@ void setup() {
     Serial1.begin(9600);
     robot.init_COM(&Serial1);
 
+    Serial2.setRX(Rx_IR_PIN);
+    Serial2.setInvertRX(true);
+    Serial2.begin(2400);
+
 
     // ========== REGISTER COMMANDS ==========
     pars_list.max_sparce_send = 4;
@@ -260,15 +266,17 @@ void setup() {
     
 
     // PID parameters
-    pars_list.register_command("xe", &robot.xe);
+    /*pars_list.register_command("xe", &robot.xe);
     pars_list.register_command("ye", &robot.ye);
-    pars_list.register_command("te", &robot.thetae);
+    pars_list.register_command("te", &robot.thetae);*/
 
     pars_list.register_command("kp1", &robot.motors.kp1);
     pars_list.register_command("ki1", &robot.motors.ki1);
     pars_list.register_command("kp2", &robot.motors.kp2);
     pars_list.register_command("ki2", &robot.motors.ki2);
 
+    pars_list.register_command("v_nav", &fsm.v_req_nav);
+    pars_list.register_command("v_lv", &fsm.v_req_leaving_pickZ);
     
     //pars_list.register_command("redpath", &fsm.path_strategy);
     //pars_list.register_command("d_slot", &fsm.currentBox);
@@ -276,9 +284,6 @@ void setup() {
     // Line following parameters
     pars_list.register_command("kl", &robot.front.sensor.kl);
     
-    //COM debug:
-    pars_list.register_command("s_debug", &robot.send_debug);
-    pars_list.register_command("cmdID", &robot.cmdID_send_debug);
 
     //pars_list.register_command("dosend", &robot.send_debug);    
 
@@ -404,6 +409,12 @@ void loop() {
         fsm.step();
         robot.motors.PIDController_Update();
 
+        /*
+        if(robot.front.actuators.isSwitch_left_On)
+        {
+            robot.robot_getIR(seq);
+        }*/
+        
 
         /*
         if(robot.front.sensor.intersections == 0) robot.front.sensor.getLineError(Side2Follow::LEFT, EdgeDetection:: UP);

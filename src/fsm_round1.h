@@ -29,16 +29,20 @@ public:
     Box sequence[2];
     uint8_t current_box_index;
     uint8_t box;
-
+    String box_sequence;
     //std::vector<int> pick_sequence;
     //std::vector<int> drop_sequence;
     int pick_slot = -1; // 0 | 1 | 2 | 3 
     float d_retrive_from_wearhouse = 0.1f; 
     
+    //Velocity parameters:
+    float v_req_nav;
+    float v_req_leaving_pickZ;
+
     //DROP LOGIC
     int drop_slot = -1;  // 0 | 1 | 2 | 3
-    float d_mv_aft_intersection = 0.05f; //distance to moove before turning!
-    float d_leave_docking = 0.3f;
+    float d_mv_aft_intersection = 0.03f; //distance to moove before turning!
+    float d_leave_docking = 0.25f;
     //ALWAYS state what's the next state after manuever
     int state_after_maneuver;
     

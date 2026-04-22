@@ -48,6 +48,8 @@ public:
   RobotSide front;
   RobotSide back;
 
+  bool received_IR;
+
   //COM state:
   ComState currentComState;
   NodeId robot_id;
@@ -132,7 +134,7 @@ public:
   uint8_t pendingParamLen;
 
   robot_t(pico4drive_t& driver);
-
+  bool robot_getIR(String& sequence);
   void odometry(void);
   void setRobotVW(float Vnom, float Wnom);
   float getAngleDiff(float target_angle, float current_angle);//map to π and -π

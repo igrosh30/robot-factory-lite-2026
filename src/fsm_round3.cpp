@@ -86,7 +86,7 @@ void fsm_round3::next_state_rules()
         //_________________________________//
         // INITIAL BOX LOGIC               //
         //_________________________________//
-        build_sequence_from_IR("Wwouu");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
+        build_sequence_from_IR("Woouu");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
         build_slaveSlots();
         set_next_state(COM_BOXES_SLAVE_00);
     }
@@ -130,7 +130,7 @@ void fsm_round3::next_state_rules()
     {
         //here send the slots to the robot slave when entering this state!
         //build_currentBox(this->currentBox);
-        
+ 
         set_next_state(GEN_PICK_ZONE);
     }
 

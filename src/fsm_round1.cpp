@@ -4,20 +4,28 @@
 fsm_round1::fsm_round1(robot_t& r) : robot(r)
 {
     force_state(SYS_IDLE);
-    current_box_index = 0;
     #ifdef ROBOT_MASTER
+    this->current_box_index = 0;
+    this->v_req_nav = 0.25;
+    this -> v_req_leaving_pickZ = 0.15;
     sequence[0].pick_slot = 3;
     sequence[0].drop_slot = 3;
-    sequence[1].pick_slot = 0;
-    sequence[1].drop_slot = 0;
+    sequence[1].pick_slot = 2;
+    sequence[1].drop_slot = 2;
     box = 2;
     #endif
     #ifdef ROBOT_SLAVE_00
-    sequence[0].pick_slot = 2;
-    sequence[0].drop_slot = 2;
+    this->current_box_index = 0;
+    this->v_req_nav = 0.2;
+    this -> v_req_leaving_pickZ = 0.13;
+    sequence[0].pick_slot = 0;
+    sequence[0].drop_slot = 0;
     box = 1;
     #endif
     #ifdef ROBOT_SLAVE_01
+    this->current_box_index = 0;
+    this->v_req_nav = 0.2;
+    this -> v_req_leaving_pickZ = 0.13;
     sequence[0].pick_slot = 1;
     sequence[0].drop_slot = 1;
     box = 1;
@@ -59,25 +67,43 @@ void fsm_round1::next_state_rules()
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
         #ifdef ROBOT_MASTER
-        set_next_state(SYS_LEAVE_START);
+        if(robot.currentComState == ComState::COM_WAIT_SEND) set_next_state(SYS_LEAVE_START);
+        //set_next_state(SYS_WAIT_IR);
         #endif
         
-        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
-        set_next_state(S_WAIT_CMD_START);
+        #ifdef ROBOT_SLAVE_01
+        if(robot.currentComState == ComState::COM_LISTEN) set_next_state(S_WAIT_CMD_START);
         #endif
-
+        #ifdef ROBOT_SLAVE_00
+        if(robot.currentComState == ComState::COM_LISTEN) set_next_state(S_WAIT_CMD_START);
+        #endif
+    }
+    else if(state == SYS_WAIT_IR && robot.robot_getIR(box_sequence))
+    {
+        set_next_state(SYS_LEAVE_START);
     }
     else if(state == S_WAIT_CMD_START)
     {
+        #ifdef ROBOT_SLAVE_01
+        if(tis > 2)
+        {
+            if(robot.currentComState == ComState::COM_LISTEN) set_next_state(S1_LEAVE_START);
+        }
+        #endif
+        #ifdef ROBOT_SLAVE_00
+        if(tis > 8)
+        if(robot.currentComState == ComState::COM_LISTEN) set_next_state(SYS_LEAVE_DOCKING);
+        #endif
+        /*
         if(robot.appLayer.hasNewCommand())
         {
             #ifdef ROBOT_SLAVE_01
             set_next_state(S1_LEAVE_START);
             #endif
             #ifdef ROBOT_SLAVE_00
-            set_next_state(SYS_LEAVE_DOCKING);
+            
             #endif
-            /*
+        
             uint8_t cmd = robot.appLayer.getReceivedCmdId();
             if(cmd == CMD_ID::CMD_SLAVE_GO)
             {
@@ -87,9 +113,9 @@ void fsm_round1::next_state_rules()
                 #ifdef ROBOT_SLAVE_00
                 set_next_state(SYS_LEAVE_DOCKING);
                 #endif
-            }*/
+            }
             robot.appLayer.clearNewCommand();
-        }   
+        }*/  
     }
     else if(state == SYS_LEAVE_DOCKING)
     {
@@ -112,20 +138,22 @@ void fsm_round1::next_state_rules()
     else if(state==SYS_LEAVE_START)
     {
         //STATE transition:
-        if(intersections == 2)
+        /*if(intersections == 2)
         {
             #ifdef ROBOT_MASTER
             robot.send_command(NodeId::SLAVE_01,CMD_SLAVE_GO);   
             #endif
-        }
+        }*/
         if(intersections == 3)
         {
+            set_next_state(GEN_PICK_ZONE);
+            /*
             #ifdef ROBOT_MASTER
             set_next_state(M_WAIT);
             #endif
             #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
             set_next_state(GEN_PICK_ZONE);
-            #endif
+            #endif*/
         }
     }
     else if(state == M_WAIT)
@@ -168,7 +196,7 @@ void fsm_round1::next_state_rules()
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = -1;
-            target_turn_angle = PI/2;
+            target_turn_angle = DEG_TO_RAD*80;
             state_after_maneuver = GEN_PICK_COUNT_NAV_FROM_START;
             set_next_state(GEN_MOVE_X);
         }
@@ -306,7 +334,7 @@ void fsm_round1::next_state_rules()
             {
                 state_after_maneuver = NAV_TO_WEARHOUSE;
                 turn_direction = -1;
-                target_turn_angle = PI/4; //45
+                target_turn_angle = DEG_TO_RAD*60; 
                 set_next_state(GEN_TURN_90);
             }
         }
@@ -478,15 +506,11 @@ void fsm_round1::state_actions_rules()
     }
     else if(state == SYS_LEAVE_DOCKING || state == S1_LEAVE_START)
     {
-        robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
+        robot.followLine(0.12, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
     }
     else if(state == SYS_LEAVE_START)
     {
-        robot.followLine(0.13, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);   
-    }
-    else if(state == SYS_APPROACH_WAREHOUSE)
-    {
-        robot.setRobotVW(0.05, 0);
+        robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);   
     }
 
     // ==========================================================
@@ -495,44 +519,55 @@ void fsm_round1::state_actions_rules()
     
     else if(state == GEN_MOVE_X || state == END_ROUND)
     {
-        robot.setRobotVW(move_direction* 0.08, -robot.thetae*robot.k_thetae);
+        robot.setRobotVW(move_direction*0.13, -robot.thetae*robot.k_thetae);
     }
     else if(state == GEN_TURN_90)
     {
-        robot.setRobotVW(0.0, turn_direction*1.5);//SEE this w velocity! 
+        robot.setRobotVW(0.0, turn_direction*2);//SEE this w velocity! 
     }
 
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
-    else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
+    else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN )
     {
-        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }
+    else if(state == EXITING_PICK_ZONE || state == EXITING_DROP_ZONE)
+    {
+        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);   
     }
     else if(state == GEN_PICK_BOX)
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.04, 0.4);
+            robot.setRobotVW(0.06, 0.4);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.04, -0.4);
+            robot.setRobotVW(0.06, -0.4);
         }
         else{
-            robot.setRobotVW(0.04, 0);
+            robot.setRobotVW(0.06, 0);
         }
     }
     
     // ==========================================================
     //                 GENERIC DROP BOX
     // ==========================================================
-    else if(state == EXITING_DROP_ZONE)
+    
+    else if(state == GEN_DROP_COUNT)
     {
-        robot.followLine(0.12, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        #ifdef ROBOT_MASTER
+        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        #endif
+        #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
+        robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        #endif
     }
-    else if(state == GEN_DROP_COUNT || state == GEN_DROP_ALIGN )
+    else if( state == GEN_DROP_ALIGN )
     {
+        
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
 
@@ -540,9 +575,14 @@ void fsm_round1::state_actions_rules()
     //                       GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
 
-    else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_TO_WEARHOUSE)
+    else if(state == NAV_TO_WEARHOUSE)
     {
-        robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        if(intersections < 1) robot.followLine(this->v_req_nav-0.08, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        else robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+    }
+    else if(state == NAV_LEAVING_WEARHOUSE )
+    {
+        robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
 
     // ==========================================================
@@ -551,7 +591,7 @@ void fsm_round1::state_actions_rules()
     else if(state == S_WAIT_PERMISSION) robot.setRobotVW(0,0);
     else if(state == NAV_END_ROUND)
     {
-        robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
 
 
