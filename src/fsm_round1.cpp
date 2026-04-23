@@ -6,7 +6,7 @@ fsm_round1::fsm_round1(robot_t& r) : robot(r)
     force_state(SYS_IDLE);
     #ifdef ROBOT_MASTER
     this->current_box_index = 0;
-    this->v_req_nav = 0.25;
+    this->v_req_nav = 0.3;
     this -> v_req_leaving_pickZ = 0.15;
     sequence[0].pick_slot = 3;
     sequence[0].drop_slot = 3;
@@ -24,8 +24,8 @@ fsm_round1::fsm_round1(robot_t& r) : robot(r)
     #endif
     #ifdef ROBOT_SLAVE_01
     this->current_box_index = 0;
-    this->v_req_nav = 0.2;
-    this -> v_req_leaving_pickZ = 0.13;
+    this->v_req_nav = 0.25;
+    this -> v_req_leaving_pickZ = 0.15;
     sequence[0].pick_slot = 1;
     sequence[0].drop_slot = 1;
     box = 1;
@@ -562,7 +562,7 @@ void fsm_round1::state_actions_rules()
     }*/
     else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN )
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == EXITING_PICK_ZONE || state == EXITING_DROP_ZONE)
     {

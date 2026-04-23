@@ -8,6 +8,7 @@ fsm_round23:: fsm_round23(robot_t& r) : robot(r)
     this -> v_req_leaving_pickZ = 0.15;
 
     current_box_index = 0;
+    
     #ifdef ROBOT_SLAVE_00
     drop_sequence[0] = 0;
     drop_sequence[1] = 1;
@@ -35,10 +36,17 @@ void fsm_round23::next_state_rules()
     // ==========================================================
     if(state == SYS_IDLE && robot.front.actuators.isSwitch_left_On)
     {
+        /*
+        Serial.println("In state Idle");
+        Serial.println("Transitting to WAIT....");
+        target_time = 5;
+        state_after_timeout = SYS_CALIBRATION;
+        set_next_state(GEN_WAIT_Y);*/
         set_next_state(SYS_CALIBRATION);
     }
     else if(state == SYS_CALIBRATION && (robot.thetae > 6.2 || !CALIBRATION_MODE ))
     {
+        Serial.print("In CALIBRATE STATE!");
         for(int i = 0; i<5; i++) {
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
@@ -64,7 +72,7 @@ void fsm_round23::next_state_rules()
             this->M_blue_PICK[0] = 1;
             this->MASTER_blueBox = 1;
             
-            set_next_state(SYS_LEAVE_DOCKING);
+            set_next_state(NAV_LEAVING_CENTER);
             #endif
         #endif
         /*
@@ -90,7 +98,12 @@ void fsm_round23::next_state_rules()
         this->processBox_MachineB = 3;
         set_next_state(S_NAV_MACHINE_OUT);
         #endif*/
-        set_next_state(COM_INIT);
+        #ifndef RUN_WITOUTH_COM
+            #ifdef ROBOT_MASTER
+            init_boxes = "Wuuoo";
+            #endif
+            set_next_state(COM_INIT);
+        #endif
     }
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
@@ -111,12 +124,13 @@ void fsm_round23::next_state_rules()
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == M_WAIT_IR && tis > 2) //Simulate 2 second waitting!
+    if(state == M_WAIT_IR ) //&& robot.robot_getIR(init_boxes) Simulate 2 second waitting!
     {
         //_________________________________//
         // INITIAL BOX LOGIC               //
         //_________________________________//
-        build_sequence_from_IR("Woouu");//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
+
+        build_sequence_from_IR(init_boxes);//processBox_MachineA =total_reds &&  processBox_MachineB = total_reds+total_greens 
         build_slaveSlots();
         set_next_state(COM_BOXES_SLAVE_00);
     }
@@ -144,7 +158,24 @@ void fsm_round23::next_state_rules()
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_GREEN_PICK_SLOT))
         {
             Serial.printf("[MASTER] ack received from SLAVE_01!\n");
-            set_next_state(SYS_LEAVE_DOCKING);
+            turn_direction = 1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = NAV_LEAVING_CENTER;
+            set_next_state(GEN_TURN_90);
+            //set_next_state(SYS_LEAVE_DOCKING);
+        }
+    }
+    else if (state == NAV_LEAVING_CENTER )
+    {
+        if(intersections > 0 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections == 1)
+        {
+            target_distance = d_mv_aft_intersection;
+            state_after_maneuver = NAV_TO_WEARHOUSE;
+            turn_direction = -1;
+            move_direction = 1;
+            target_turn_angle = PI/2; //45
+            set_next_state(GEN_MOVE_X);
         }
     }
     else if(state == NAV_PROCESS_GREEN_BOX)
@@ -152,12 +183,15 @@ void fsm_round23::next_state_rules()
         if(intersections > 0 && tis < 0.15 / robot.v_req) intersections = 0;
         if(intersections == 1)
         {
+
             //set_next_state(M_WAIT_SLAVE_DROP);
             target_distance = d_mv_aft_intersection;
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = PI/2;
-            state_after_maneuver = NAV_PROCESS_GREEN_BOX_ALIGN;
+            state_after_timeout  = NAV_PROCESS_GREEN_BOX_ALIGN;
+            state_after_maneuver = GEN_WAIT_Y;
+            target_time = 4;
             set_next_state(GEN_MOVE_X);
         }
     }
@@ -262,7 +296,8 @@ void fsm_round23::next_state_rules()
                     processBox_MachineB = val;//This is what we need to perform 
                     //build_blueBoxPick(total_greens,NodeId::SLAVE); only called in the master side! 
                     Serial.println("GOING TO NAV_MACHINE OUT....");
-                    set_next_state(SYS_LEAVE_DOCKING);//for now we will move the slave to machine OUTPUT!     
+                    //set_next_state(SYS_LEAVE_DOCKING);//for now we will move the slave to machine OUTPUT!     
+                    set_next_state(S_NAV_MACHINE_OUT);//for now we will move the slave to machine OUTPUT!     
                 }
             }
             robot.appLayer.clearNewCommand();
@@ -495,6 +530,19 @@ void fsm_round23::next_state_rules()
         target_turn_angle = PI/2; //45
         set_next_state(GEN_MOVE_X);
     }
+    else if(state == NAV_LEAVING_CENTER )
+    {
+        if(intersections > 0 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
+        if(intersections == 1)
+        {
+            target_distance = d_mv_aft_intersection;
+            state_after_maneuver = NAV_TO_WEARHOUSE;
+            turn_direction = -1;
+            move_direction = 1;
+            target_turn_angle = PI/2; //45
+            set_next_state(GEN_MOVE_X);
+        }
+    }
     #endif
     // ==========================================================
     //               GEN_MOVE & GEN_TURN
@@ -518,6 +566,13 @@ void fsm_round23::next_state_rules()
             turn_direction = 0;//reset
         }
     }
+    else if(state == GEN_WAIT_Y)
+    {
+        if( tis > target_time)
+        {
+            set_next_state(state_after_timeout);
+        }
+    }
     //------EXIT FROM DROP@Input MACHINE B to pick blue box! 
     else if(state == M_EXT_PROC_MACH_BLUE )
     {
@@ -533,15 +588,19 @@ void fsm_round23::next_state_rules()
         }
     }
     // ==========================================================
-    //                GENERIC PICK BOX & DROP BOX
+    //                GENERIC PICK BOX & DROP BOX                   
     // ==========================================================
     else if(state == GEN_PICK_ZONE)
     {
-        //SEE HOW MANY boxes there are to process - if we have green to process - send to pick Area!
-        //Or I should send the total boxes and the robots agree at the begining who takes what?!
+        #ifdef ROBOT_MASTER
         if(!isFromMachine)
         {
-            if(currentBox.pick_slot == 0) set_next_state(GEN_PICK_ALIGN);
+            if(currentBox.pick_slot == 0)
+            {
+                target_time = 3;
+                state_after_timeout = GEN_PICK_ALIGN;
+                set_next_state(GEN_WAIT_Y);
+            } 
             else
             {
                 robot.setRobotVW(0,0);
@@ -558,6 +617,34 @@ void fsm_round23::next_state_rules()
             robot.front.sensor.intersections = 0;
             set_next_state(GEN_PICK_COUNT_FROM_MACHINE);    
         }
+        #endif
+        #ifdef ROBOT_SLAVE_01
+        if(!isFromMachine)
+        {
+            if(currentBox.pick_slot == 0 && current_box_index != 0)
+            {
+                target_time = 3;
+                state_after_timeout = GEN_PICK_ALIGN;
+                set_next_state(GEN_WAIT_Y);
+            } 
+            else
+            {
+                robot.setRobotVW(0,0);
+                target_distance = d_mv_aft_intersection;
+                move_direction = 1;
+                turn_direction = -1;
+                target_turn_angle = PI/2;
+                state_after_maneuver = GEN_PICK_COUNT_NAV_FROM_START;
+                set_next_state(GEN_MOVE_X);
+            }
+        }
+        else
+        {
+            robot.front.sensor.intersections = 0;
+            set_next_state(GEN_PICK_COUNT_FROM_MACHINE);    
+        }
+        #endif
+        
     }
     else if(state == GEN_PICK_COUNT_NAV_FROM_START)
     {
@@ -589,7 +676,17 @@ void fsm_round23::next_state_rules()
     }
     else if(state == GEN_PICK_BOX && tis > 0.4)
     {
-        set_next_state(GEN_PICK_TURN_OUT);
+        if(current_box_index != 0)
+        {
+            /*
+            target_time = 3;
+            state_after_timeout = GEN_PICK_TURN_OUT;
+            set_next_state(GEN_WAIT_Y);*/
+            set_next_state(GEN_PICK_TURN_OUT);
+        }
+        else{
+            set_next_state(GEN_PICK_TURN_OUT);
+        }
     }
     else if(state == GEN_PICK_TURN_OUT)
     {
@@ -708,19 +805,7 @@ void fsm_round23::next_state_rules()
         
         }
     }
-    else if(state == NAV_LEAVING_CENTER)
-    {
-        if(intersections > 0 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
-        if(intersections == 1)
-        {
-            target_distance = d_mv_aft_intersection;
-            state_after_maneuver = NAV_TO_WEARHOUSE;
-            turn_direction = -1;
-            move_direction = 1;
-            target_turn_angle = PI/2; //45
-            set_next_state(GEN_MOVE_X);
-        }
-    }
+    
     else if(state == NAV_LEAVING_WEARHOUSE )
     {
         if(intersections == 1 && tis < 0.1/robot.v_req) intersections = 0; // reset if after the turn count 1 one int more!
@@ -876,6 +961,11 @@ void fsm_round23:: enter_state_actions_rules()
     else if(state == GEN_TURN_90)
     {
         ref_theta = robot.rel_theta;
+    }
+    else if(state == GEN_WAIT_Y)
+    {
+        
+        robot.setRobotVW(0,0);
     }
 
     // ==========================================================
@@ -1090,14 +1180,14 @@ void fsm_round23::state_actions_rules()
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.06, 1);
+            robot.setRobotVW(0.08, 1);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.06, -1);
+            robot.setRobotVW(0.08, -1);
         }
         else{
-            robot.setRobotVW(0.06, 0);
+            robot.setRobotVW(0.08, 0);
         }
     }
     
@@ -1133,7 +1223,6 @@ void fsm_round23::state_actions_rules()
     //                       SLAVE ACTIONS:
     // ==========================================================
     #ifdef ROBOT_SLAVE_00
-
     if(state == S_WAIT_BOX_INFO || state == S_WAIT_PICK_CMD || state == S_WAIT_PICK_CMD_2 )
     {
         robot.setRobotVW(0,0);
@@ -1188,9 +1277,11 @@ void fsm_round23::state_actions_rules()
     {
         robot.setRobotVW(0,0);
     }
+
+    //---------SLAVE 01 to PICK FIRST BOX ------------------
     else if(state == S1_LEAVE_START)
     {
-        robot.followLine(0.18, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     if(state == NAV_PROCESS_GREEN_BOX_ALIGN)
     {

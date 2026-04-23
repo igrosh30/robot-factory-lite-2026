@@ -42,6 +42,7 @@ public:
     uint8_t M_blue_PICK[2];
     uint8_t MASTER_blueBox = 0;
 
+    String init_boxes;
     void build_sequence_from_IR(String ir_data);
     void build_slaveSlots();
     #endif
@@ -86,6 +87,9 @@ public:
     float ref_s;
     float target_distance = 0.0f;
     int move_direction = 0;
+
+    int state_after_timeout = 0;
+    uint32_t target_time = 0;
 
     float ref_theta;
     float target_turn_angle = PI/2;

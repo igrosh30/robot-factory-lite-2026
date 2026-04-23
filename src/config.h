@@ -11,9 +11,9 @@
 //#define ROUND_2
 
 
-//#define ROBOT_MASTER
+#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
@@ -31,7 +31,7 @@
 //                          PINOS
 // ================================================================
 
-//#define RUN_WITOUTH_COM
+#define RUN_WITOUTH_COM
 
 #define Rx_IR_PIN 5
 
@@ -243,6 +243,7 @@ typedef enum {
 
     GEN_TURN_90            = 900,
     GEN_MOVE_X             = 800,
+    GEN_WAIT_Y             = 1000,
     NAV_DOCKING_STATION    = 9999,
     
 
