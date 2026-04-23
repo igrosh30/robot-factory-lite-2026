@@ -6,7 +6,7 @@ fsm_round1::fsm_round1(robot_t& r) : robot(r)
     force_state(SYS_IDLE);
     #ifdef ROBOT_MASTER
     this->current_box_index = 0;
-    this->v_req_nav = 0.2;
+    this->v_req_nav = 0.25;
     this -> v_req_leaving_pickZ = 0.15;
     sequence[0].pick_slot = 3;
     sequence[0].drop_slot = 3;
@@ -206,7 +206,7 @@ void fsm_round1::next_state_rules()
         if(pick_slot == 0) set_next_state(GEN_PICK_ALIGN);
         else
         {
-            target_distance = d_mv_aft_intersection;
+            target_distance = d_mv_aft_intersection-0.05;
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = DEG_TO_RAD*80;
@@ -264,7 +264,7 @@ void fsm_round1::next_state_rules()
         }
         else
         {
-            target_distance = d_mv_aft_intersection;
+            target_distance = d_mv_aft_intersection-0.05;
             move_direction = 1;
             turn_direction = -1;
             target_turn_angle = PI/2;
@@ -380,7 +380,7 @@ void fsm_round1::next_state_rules()
         target_distance = d_mv_aft_intersection+0.2;
         #endif
         #ifdef ROBOT_SLAVE_01
-        target_distance = d_mv_aft_intersection+0.5;
+        target_distance = d_mv_aft_intersection+0.4;
         #endif
         
         state_after_maneuver = END_ROUND;
@@ -590,7 +590,7 @@ void fsm_round1::state_actions_rules()
     else if(state == GEN_DROP_COUNT)
     {
         #ifdef ROBOT_MASTER
-        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
         #endif
         #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
         robot.followLine(0.08, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
