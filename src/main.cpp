@@ -27,12 +27,12 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-//fsm_round1 fsm(robot);
+fsm_round1 fsm(robot);
 String seq;
 //fsm_round2 fsm(robot);
 //fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
-fsm_round23 fsm(robot);
+//fsm_round23 fsm(robot);
 
 
 // ================================================================
@@ -69,7 +69,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 2;
+int debug_level = 0;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -249,8 +249,8 @@ void setup() {
     robot.init_COM(&Serial1);
 
     Serial2.setRX(Rx_IR_PIN);
-    Serial2.setInvertRX(true);
-    Serial2.begin(2400);
+    //Serial2.setInvertRX(true);
+    Serial2.begin(2400,SERIAL_8N1);//
 
 
     // ========== REGISTER COMMANDS ==========
@@ -319,7 +319,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 1 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
@@ -413,10 +413,34 @@ void loop() {
         robot.motors.PIDController_Update();
 
         /*
-        if(robot.front.actuators.isSwitch_left_On)
-        {
+        if (robot.front.actuators.isSwitch_left_On) {
             robot.robot_getIR(seq);
+            
+            while (Serial2.available() > 0) {
+                int c = Serial2.read();
+
+                Serial.print("IR raw  dec=");
+                Serial.print(c);
+
+                Serial.print(" hex=0x");
+                if (c < 0x10) Serial.print('0');
+                Serial.print(c, HEX);
+
+                Serial.print(" ascii=");
+                if (c >= 32 && c <= 126) {
+                    Serial.write((char)c);
+                } else {
+                    Serial.print('.');
+                }
+
+                Serial.println();
+            }
+        }
+        if(robot.front.actuators.isSwitch_right_On)
+        {
+            Serial.print(seq);
         }*/
+
         
 
         /*
@@ -494,12 +518,14 @@ void loop() {
             serial_commands.send_command("boxB", fsm.processBox_MachineB);
             #endif*/
             #endif
+            #ifdef ROUND_2
             serial_commands.send_command("b_idx", fsm.current_box_index);
             serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
             serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
             serial_commands.send_command("boxColor", fsm.currentBox.color);
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
+            #endif
             //serial_commands.send_command("redpath", fsm.path_strategy);
 
             //COM debug:

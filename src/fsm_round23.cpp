@@ -95,7 +95,7 @@ void fsm_round23::next_state_rules()
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
         #ifdef ROBOT_MASTER
-        set_next_state(SYS_WAIT_IR);
+        set_next_state(M_WAIT_IR);
         #endif
         #ifdef ROBOT_SLAVE_01
         set_next_state(COM_WAIT_BLUE_SLOT);
@@ -111,7 +111,7 @@ void fsm_round23::next_state_rules()
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
+    if(state == M_WAIT_IR && tis > 2) //Simulate 2 second waitting!
     {
         //_________________________________//
         // INITIAL BOX LOGIC               //
@@ -760,7 +760,7 @@ void fsm_round23::next_state_rules()
         }
         #endif*/
     }
-    else if(state == COM_SLV_01_WAIT && tis > 3)
+    else if(state == COM_SLV_01_WAIT && tis > 5)
     {
         set_next_state(GEN_PICK_ZONE);
     }

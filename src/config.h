@@ -7,13 +7,13 @@
 //Slave00- IP: 10.227.21.115 com7 
 //SLAVE01- IP: 10.227.21.110 com8
 
-//#define ROUND_1
-#define ROUND_2
+#define ROUND_1
+//#define ROUND_2
 
 
-//#define ROBOT_MASTER
+#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
@@ -137,7 +137,7 @@ typedef enum {
     // ==========================================
     SYS_IDLE               = 0, 
     SYS_CALIBRATION        = 1, 
-    SYS_WAIT_IR            = 2,
+    M_WAIT_IR            = 2,
     SYS_LEAVE_START        = 4, 
     SYS_APPROACH_WAREHOUSE = 5,
     SYS_LEAVE_DOCKING      = 6, 
@@ -189,6 +189,7 @@ typedef enum {
     // ==========================================
     // ---          SLAVE STATES:
     // ==========================================
+    
     S_WAIT_CMD_START                = 300, 
     S_WAIT_PERMISSION               = 301,
     S_WAIT_BOX_INFO                 = 302,   
@@ -201,6 +202,7 @@ typedef enum {
     S_MACHINE_ALIGN_PICK            = 331,
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
+    S_WAIT_IR                       = 360,
     
     //SLAVE 01 STATES:
     S1_WAIT_GREEN_SLOT               = 400,

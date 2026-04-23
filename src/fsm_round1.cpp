@@ -50,9 +50,16 @@ void fsm_round1::next_state_rules()
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
-
-        robot.currentComState = ComState::COM_START;//does PING/PONG
+        #ifdef ROBOT_MASTER
+        //set_next_state(M_WAIT_IR);
+        //set_next_state(SYS_LEAVE_START);
         set_next_state(COM_INIT);
+        
+        #endif
+
+        #if defined(ROBOT_SLAVE_00) || defined(ROBOT_SLAVE_01)
+        set_next_state(COM_INIT);
+        #endif
         /*
         #ifdef ROBOT_MASTER
         set_next_state(SYS_LEAVE_START);
@@ -63,6 +70,12 @@ void fsm_round1::next_state_rules()
         #ifdef ROBOT_SLAVE_01
         set_next_state(S1_LEAVE_START);
         #endif*/
+    }
+    else if(state == M_WAIT_IR && robot.robot_getIR(box_sequence))
+    {
+        //MASTER got the IR message! starts the COM Part! 
+        robot.currentComState = ComState::COM_START;//does PING/PONG
+        set_next_state(COM_INIT);
     }
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
@@ -78,21 +91,16 @@ void fsm_round1::next_state_rules()
         if(robot.currentComState == ComState::COM_LISTEN) set_next_state(S_WAIT_CMD_START);
         #endif
     }
-    else if(state == SYS_WAIT_IR && robot.robot_getIR(box_sequence))
-    {
-        set_next_state(SYS_LEAVE_START);
-    }
     else if(state == S_WAIT_CMD_START)
     {
         #ifdef ROBOT_SLAVE_01
         if(tis > 2)
         {
-            if(robot.currentComState == ComState::COM_LISTEN) set_next_state(S1_LEAVE_START);
+            set_next_state(S1_LEAVE_START);
         }
         #endif
         #ifdef ROBOT_SLAVE_00
-        if(tis > 8)
-        if(robot.currentComState == ComState::COM_LISTEN) set_next_state(SYS_LEAVE_DOCKING);
+        if(tis > 8) set_next_state(SYS_LEAVE_DOCKING);
         #endif
         /*
         if(robot.appLayer.hasNewCommand())
@@ -299,7 +307,7 @@ void fsm_round1::next_state_rules()
         }
     }
     // ==========================================================
-    //                       GENERIC NAV_TO_WEARHOUSE
+    //              GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
     
     else if(state == NAV_TO_WEARHOUSE )//state == NAV_TO_WEARHOUSE_PICK, ver ==3! 
@@ -383,7 +391,7 @@ void fsm_round1::enter_state_actions_rules()
     // ==========================================================
     //                    SYSTEM & STARTUP
     // ==========================================================
-    if(state == SYS_IDLE)
+    if(state == SYS_IDLE )
     {
         robot.setRobotVW(0,0);
         robot.front.actuators.magnetOff();
@@ -401,6 +409,11 @@ void fsm_round1::enter_state_actions_rules()
     else if(state == GEN_TURN_90)
     {
         ref_theta = robot.rel_theta;
+    }
+    else if(state == M_WAIT_IR)
+    {
+        robot.setRobotVW(0,0);
+
     }
     else if(state == M_WAIT)
     {
@@ -572,7 +585,7 @@ void fsm_round1::state_actions_rules()
     }
 
     // ==========================================================
-    //                       GENERIC NAV_TO_WEARHOUSE
+    //            GENERIC NAV_TO_WEARHOUSE
     // ==========================================================
 
     else if(state == NAV_TO_WEARHOUSE)
@@ -589,6 +602,7 @@ void fsm_round1::state_actions_rules()
     //                       SLAVE ACTIONS:
     // ==========================================================
     else if(state == S_WAIT_PERMISSION) robot.setRobotVW(0,0);
+
     else if(state == NAV_END_ROUND)
     {
         robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);

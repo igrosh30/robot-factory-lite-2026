@@ -42,7 +42,7 @@ public:
     //DROP LOGIC
     int drop_slot = -1;  // 0 | 1 | 2 | 3
     float d_mv_aft_intersection = 0.03f; //distance to moove before turning!
-    float d_leave_docking = 0.25f;
+    float d_leave_docking = 0.3f;
     //ALWAYS state what's the next state after manuever
     int state_after_maneuver;
     

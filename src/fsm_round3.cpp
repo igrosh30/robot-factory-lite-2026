@@ -68,7 +68,7 @@ void fsm_round3::next_state_rules()
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
         #ifdef ROBOT_MASTER
-        set_next_state(SYS_WAIT_IR);
+        set_next_state(M_WAIT_IR);
         #endif
         
         #if defined(ROBOT_SLAVE_01) || defined(ROBOT_SLAVE_00)
@@ -81,7 +81,7 @@ void fsm_round3::next_state_rules()
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == SYS_WAIT_IR && tis > 2) //Simulate 2 second waitting!
+    if(state == M_WAIT_IR && tis > 2) //Simulate 2 second waitting!
     {
         //_________________________________//
         // INITIAL BOX LOGIC               //
