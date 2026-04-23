@@ -51,6 +51,7 @@ void fsm_round23::next_state_rules()
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
+        /*
         #ifdef RUN_WITOUTH_COM
             #ifdef ROBOT_SLAVE_01
             this->SLAVE_greenBox = 1;
@@ -75,7 +76,6 @@ void fsm_round23::next_state_rules()
             set_next_state(NAV_LEAVING_CENTER);
             #endif
         #endif
-        /*
         TEST WITHOUT COM! 
         For SLAVE_00:
         #ifdef ROBOT_MASTER
@@ -98,12 +98,11 @@ void fsm_round23::next_state_rules()
         this->processBox_MachineB = 3;
         set_next_state(S_NAV_MACHINE_OUT);
         #endif*/
-        #ifndef RUN_WITOUTH_COM
-            #ifdef ROBOT_MASTER
-            init_boxes = "Wuuoo";
-            #endif
-            set_next_state(COM_INIT);
+    
+        #ifdef ROBOT_MASTER
+        init_boxes = "Wuuoo";
         #endif
+        set_next_state(COM_INIT);
     }
     else if(state == COM_INIT)//Enter state triggers state at COM 
     {
@@ -124,7 +123,7 @@ void fsm_round23::next_state_rules()
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == M_WAIT_IR ) //&& robot.robot_getIR(init_boxes) Simulate 2 second waitting!
+    if(state == M_WAIT_IR ) //&& robot.robot_getIR(init_boxes) UNCOMENT FOR THE IR RECEPTION!
     {
         //_________________________________//
         // INITIAL BOX LOGIC               //
@@ -208,7 +207,7 @@ void fsm_round23::next_state_rules()
             set_next_state(GEN_MOVE_X);
         }
     }
-    else if(state == M_GEN_DROP_ALIGN && tis > 2.5)//this was a GREEN BOX RIGHT?! 
+    else if(state == M_GEN_DROP_ALIGN && tis > 2)//this was a GREEN BOX RIGHT?! 
     {
         robot.send_command(NodeId::SLAVE_00, CMD_ID::CMD_EXECUTE_PICK_GREEN);
         //MASTER DROPED BOX!
@@ -234,6 +233,7 @@ void fsm_round23::next_state_rules()
     }
     else if(state == M_EXT_PROC_MACH_GREEN)
     {
+        if(intersections > 0 && tis < 0.1/robot.v_req) intersections = 0;
         if (robot.front.sensor.intersections == 1 )
         {
             target_distance = d_mv_aft_intersection;
@@ -347,7 +347,7 @@ void fsm_round23::next_state_rules()
                 //RESET THE COM FLAGS!
                 robot.appLayer.clearNewCommand();
             }
-            else if(tis > 10)
+            else if(tis > 13)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -927,8 +927,8 @@ void fsm_round23:: enter_state_actions_rules()
     //             GENERIC NAV to PROCESS BOX Green/Red
     // ==========================================================
     #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
-    if(state == M_EXT_PROC_MACH_GREEN || state == M_NAV_FROM_MACHINE  || state == M_EXT_PROC_MACH_BLUE ||
-        state == EXITING_PICK_ZONE_RED   || state == M_NAV_DROP_RED || state == M_NAV_PICK_FROM_RED )
+    if(state == M_EXT_PROC_MACH_GREEN    || state == M_NAV_FROM_MACHINE  || state == M_EXT_PROC_MACH_BLUE ||
+        state == EXITING_PICK_ZONE_RED   || state == M_NAV_DROP_RED      || state == M_NAV_PICK_FROM_RED )
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -1135,7 +1135,7 @@ void fsm_round23::state_actions_rules()
     }
     else if(state == M_GEN_DROP_ALIGN)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+        robot.followLine(0.13, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }
     else if(state == M_EXT_PROC_MACH_GREEN)
     {
