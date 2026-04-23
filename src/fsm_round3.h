@@ -22,7 +22,6 @@ public:
     
     #ifdef ROBOT_MASTER
     
-    
     //---------RED BOX-----------//
     uint8_t red_pick_slots[4];
     uint8_t total_reds = 0;

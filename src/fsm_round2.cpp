@@ -376,7 +376,7 @@ void fsm_round2::next_state_rules()
     }
     else if(state == GEN_PICK_COUNT_FROM_MACHINE)
     {
-        if(3 - currentBox.pick_slot == intersections)
+        if(4 - currentBox.pick_slot == intersections)
         {
             target_distance = d_mv_aft_intersection;
             move_direction = 1;

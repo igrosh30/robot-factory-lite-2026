@@ -15,6 +15,7 @@
 #include "fsm_round1.h"
 #include "fsm_round2.h"
 #include "fsm_round3.h"
+#include "fsm_round23.h"
 #include "COM_fsm.h"
 // ================================================================
 //                      YOUR ROBOT CONFIGURATION
@@ -26,11 +27,12 @@ pin_size_t encoder_pins[NUM_ENCODERS] = {ENC1_PIN_A, ENC2_PIN_A};
 // Global robot instance
 pico4drive_t pico4drive;
 robot_t robot(pico4drive);
-fsm_round1 fsm(robot);
+//fsm_round1 fsm(robot);
 String seq;
 //fsm_round2 fsm(robot);
 //fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
+fsm_round23 fsm(robot);
 
 
 // ================================================================
@@ -67,7 +69,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 0;
+int debug_level = 2;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -275,9 +277,10 @@ void setup() {
     pars_list.register_command("kp2", &robot.motors.kp2);
     pars_list.register_command("ki2", &robot.motors.ki2);
 
+    #ifdef ROUND_1
     pars_list.register_command("v_nav", &fsm.v_req_nav);
     pars_list.register_command("v_lv", &fsm.v_req_leaving_pickZ);
-    
+    #endif
     //pars_list.register_command("redpath", &fsm.path_strategy);
     //pars_list.register_command("d_slot", &fsm.currentBox);
     
@@ -491,6 +494,10 @@ void loop() {
             serial_commands.send_command("boxB", fsm.processBox_MachineB);
             #endif*/
             #endif
+            serial_commands.send_command("b_idx", fsm.current_box_index);
+            serial_commands.send_command("p_slot", fsm.currentBox.pick_slot);
+            serial_commands.send_command("d_slot", fsm.currentBox.drop_slot);
+            serial_commands.send_command("boxColor", fsm.currentBox.color);
             serial_commands.send_command("ve", robot.ve);
             serial_commands.send_command("we", robot.we);
             //serial_commands.send_command("redpath", fsm.path_strategy);
