@@ -69,7 +69,7 @@ static int state_cmd_value;
 uint32_t interval, last_cycle;
 uint32_t loop_micros;
 uint32_t cycle_count;
-int debug_level = 0;
+int debug_level = 1;
 
 // ================================================================
 //                      HELPER FUNCTIONS
@@ -530,6 +530,31 @@ void loop() {
 
             //COM debug:
             serial_commands.send_command("st_com", uint8_t(robot.currentComState));
+            serial_commands.send_command("ir0", robot.front.sensor.IR_Values[0]);
+            serial_commands.send_command("ir1", robot.front.sensor.IR_Values[1]);
+            serial_commands.send_command("ir2", robot.front.sensor.IR_Values[2]);
+            serial_commands.send_command("ir3", robot.front.sensor.IR_Values[3]);
+            serial_commands.send_command("ir4", robot.front.sensor.IR_Values[4]);
+
+           
+            serial_commands.send_command("irn0", robot.front.sensor.IR_norm[0]);
+            serial_commands.send_command("irn1", robot.front.sensor.IR_norm[1]);
+            serial_commands.send_command("irn2", robot.front.sensor.IR_norm[2]);
+            serial_commands.send_command("irn3", robot.front.sensor.IR_norm[3]);
+            serial_commands.send_command("irn4", robot.front.sensor.IR_norm[4]);
+
+            serial_commands.send_command("irma0", robot.front.sensor.maxValues[0]);
+            serial_commands.send_command("irma1", robot.front.sensor.maxValues[1]);
+            serial_commands.send_command("irma2", robot.front.sensor.maxValues[2]);
+            serial_commands.send_command("irma3", robot.front.sensor.maxValues[3]);
+            serial_commands.send_command("irma4", robot.front.sensor.maxValues[4]);
+
+            serial_commands.send_command("irmi0", robot.front.sensor.minValues[0]);
+            serial_commands.send_command("irmi1", robot.front.sensor.minValues[1]);
+            serial_commands.send_command("irmi2", robot.front.sensor.minValues[2]);
+            serial_commands.send_command("irmi3", robot.front.sensor.minValues[3]);
+            serial_commands.send_command("irmi4", robot.front.sensor.minValues[4]);
+            
 
             //serial_commands.send_command("d1_slot", fsm.drop_slot);
             //serial_commands.send_command("p1_slot", fsm.pick_slot);

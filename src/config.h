@@ -3,7 +3,7 @@
 #include <vector>
 #include <Arduino.h>
 
-//Master - IP: 10.227.21.112
+//Master - IP: 10.227.21.112 com6
 //Slave00- IP: 10.227.21.115 com7 
 //SLAVE01- IP: 10.227.21.110 com8
 
@@ -11,9 +11,9 @@
 //#define ROUND_2
 
 
-#define ROBOT_MASTER
+//#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-//#define ROBOT_SLAVE_01
+#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
@@ -69,7 +69,7 @@
 #define MAX_VOLTAGE_USAGE 5.5
 #define SENSOR_TARGET_NOR 0.33 //0*500 + 4*1000 / 1500 = 2.666/8 - 0.33
 #define SENSOR_TARGET     500.0
-#define CALIBRATION_MODE false 
+#define CALIBRATION_MODE false
 const uint8_t INVALID_SLOT = 255;
 
 //Communications with ComRobot
@@ -84,17 +84,17 @@ const uint8_t INVALID_SLOT = 255;
 
 // (Paste your 'savedMin' array here)
 #ifdef ROBOT_MASTER
-const uint16_t HARDCODED_FRONT_MIN[] = { 114, 99, 91, 77, 80 }; 
-const uint16_t HARDCODED_FRONT_MAX[] = { 962, 959, 951, 954, 850 };
+const uint16_t HARDCODED_FRONT_MIN[] = { 92, 82, 75, 60, 71 }; 
+const uint16_t HARDCODED_FRONT_MAX[] = { 964, 961, 951, 954, 852 };
 #endif
 
 #ifdef ROBOT_SLAVE_00
-const uint16_t HARDCODED_FRONT_MIN[] = { 181, 186, 186, 112, 126 }; 
+const uint16_t HARDCODED_FRONT_MIN[] = { 134, 135, 141, 91, 106 }; 
 const uint16_t HARDCODED_FRONT_MAX[] = { 981, 980, 981, 975, 975 };
 #endif
 
 #ifdef ROBOT_SLAVE_01
-const uint16_t HARDCODED_FRONT_MIN[] = { 136, 125, 132, 139, 127 }; 
+const uint16_t HARDCODED_FRONT_MIN[] = { 102, 94, 108, 98, 99 }; 
 const uint16_t HARDCODED_FRONT_MAX[] = { 972, 967, 972, 974, 972 };
 #endif
 

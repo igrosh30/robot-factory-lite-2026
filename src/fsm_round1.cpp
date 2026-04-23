@@ -6,7 +6,7 @@ fsm_round1::fsm_round1(robot_t& r) : robot(r)
     force_state(SYS_IDLE);
     #ifdef ROBOT_MASTER
     this->current_box_index = 0;
-    this->v_req_nav = 0.25;
+    this->v_req_nav = 0.2;
     this -> v_req_leaving_pickZ = 0.15;
     sequence[0].pick_slot = 3;
     sequence[0].drop_slot = 3;
@@ -46,18 +46,23 @@ void fsm_round1::next_state_rules()
     {
         
         for(int i = 0; i<5; i++)
-        {
+        {   
             robot.front.sensor.minValues[i] = robot.front.sensor.minValues[i] - 5;
             robot.front.sensor.maxValues[i] = robot.front.sensor.maxValues[i] + 10;
         }
+        
         #ifdef ROBOT_MASTER
-        //set_next_state(M_WAIT_IR);
+        robot.currentComState = ComState::COM_START;//does PING/PONG
+        set_next_state(M_WAIT_IR);
         //set_next_state(SYS_LEAVE_START);
-        set_next_state(COM_INIT);
+        /*
+        robot.currentComState = ComState::COM_START;//does PING/PONG
+        set_next_state(COM_INIT);*/
         
         #endif
 
         #if defined(ROBOT_SLAVE_00) || defined(ROBOT_SLAVE_01)
+        robot.currentComState = ComState::COM_START;//does PING/PONG
         set_next_state(COM_INIT);
         #endif
         /*
@@ -74,7 +79,7 @@ void fsm_round1::next_state_rules()
     else if(state == M_WAIT_IR && robot.robot_getIR(box_sequence))
     {
         //MASTER got the IR message! starts the COM Part! 
-        robot.currentComState = ComState::COM_START;//does PING/PONG
+        
         set_next_state(COM_INIT);
     }
     else if(state == COM_INIT)//Enter state triggers state at COM 
@@ -368,7 +373,16 @@ void fsm_round1::next_state_rules()
     }
     else if(state == NAV_END_ROUND && intersections == 1)
     {
-        target_distance = d_mv_aft_intersection;
+        #ifdef ROBOT_MASTER
+        target_distance = d_mv_aft_intersection+0.1;
+        #endif
+        #ifdef ROBOT_SLAVE_00
+        target_distance = d_mv_aft_intersection+0.2;
+        #endif
+        #ifdef ROBOT_SLAVE_01
+        target_distance = d_mv_aft_intersection+0.5;
+        #endif
+        
         state_after_maneuver = END_ROUND;
         turn_direction = 1;
         move_direction = 1;
@@ -378,7 +392,7 @@ void fsm_round1::next_state_rules()
     else if(state == END_ROUND)
     {
         float distance_moved = abs(robot.rel_s - ref_s);
-        if(distance_moved >= target_distance)
+        if(distance_moved >= d_leave_docking)
         {
             set_next_state(SYS_IDLE);
             ref_s = 0;
@@ -410,7 +424,7 @@ void fsm_round1::enter_state_actions_rules()
     {
         ref_theta = robot.rel_theta;
     }
-    else if(state == M_WAIT_IR)
+    else if(state == M_WAIT_IR || state == COM_INIT)
     {
         robot.setRobotVW(0,0);
 
@@ -542,9 +556,13 @@ void fsm_round1::state_actions_rules()
     // ==========================================================
     //                 GENERIC PICK BOX
     // ==========================================================
+    /*else if(state == GEN_PICK_ALIGN)
+    {
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+    }*/
     else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN )
     {
-        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == EXITING_PICK_ZONE || state == EXITING_DROP_ZONE)
     {
@@ -554,14 +572,14 @@ void fsm_round1::state_actions_rules()
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.06, 0.4);
+            robot.setRobotVW(0.08, 1);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.06, -0.4);
+            robot.setRobotVW(0.08, -1);
         }
         else{
-            robot.setRobotVW(0.06, 0);
+            robot.setRobotVW(0.08, 0);
         }
     }
     
