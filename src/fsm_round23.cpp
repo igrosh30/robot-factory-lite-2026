@@ -595,9 +595,9 @@ void fsm_round23::next_state_rules()
         #ifdef ROBOT_MASTER
         if(!isFromMachine)
         {
+            target_time = 2.5;
             if(currentBox.pick_slot == 0)
             {
-                target_time = 3;
                 state_after_timeout = GEN_PICK_ALIGN;
                 set_next_state(GEN_WAIT_Y);
             } 
@@ -609,7 +609,9 @@ void fsm_round23::next_state_rules()
                 turn_direction = -1;
                 target_turn_angle = PI/2;
                 state_after_maneuver = GEN_PICK_COUNT_NAV_FROM_START;
-                set_next_state(GEN_MOVE_X);
+                state_after_timeout = GEN_MOVE_X;
+                set_next_state(GEN_WAIT_Y);
+                //set_next_state(GEN_MOVE_X);
             }
         }
         else
@@ -623,7 +625,7 @@ void fsm_round23::next_state_rules()
         {
             if(currentBox.pick_slot == 0 && current_box_index != 0)
             {
-                target_time = 3;
+                target_time = 1.5;
                 state_after_timeout = GEN_PICK_ALIGN;
                 set_next_state(GEN_WAIT_Y);
             } 
@@ -674,7 +676,7 @@ void fsm_round23::next_state_rules()
     {
         set_next_state(GEN_PICK_BOX);
     }
-    else if(state == GEN_PICK_BOX && tis > 0.4)
+    else if(state == GEN_PICK_BOX && tis > 0.35)
     {
         if(current_box_index != 0)
         {
@@ -1217,14 +1219,14 @@ void fsm_round23::state_actions_rules()
     {
         if(robot.front.actuators.isSwitch_left_On)
         {
-            robot.setRobotVW(0.08, 1);
+            robot.setRobotVW(0.1, 1.5);
         }
         else if(robot.front.actuators.isSwitch_right_On)
         {
-            robot.setRobotVW(0.08, -1);
+            robot.setRobotVW(0.1, -1.5);
         }
         else{
-            robot.setRobotVW(0.08, 0);
+            robot.setRobotVW(0.1, 0);
         }
     }
     
