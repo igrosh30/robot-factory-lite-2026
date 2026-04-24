@@ -29,7 +29,6 @@ pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 //fsm_round1 fsm(robot);
 String seq;
-//fsm_round2 fsm(robot);
 //fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
 fsm_round23 fsm(robot);
@@ -321,7 +320,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 1 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }

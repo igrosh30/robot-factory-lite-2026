@@ -148,7 +148,7 @@ void fsm_round23::next_state_rules()
         //we wait an ack of the INFO_BOX_MAHCHINE_B!!!!
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_BLUE_PICK_SLOT))
         {
-            Serial.printf("[MASTER] ack received from SLAVE_01!\n");
+            Serial.printf("[MASTER] BLUE PICK: ack received from SLAVE_01!\n");
             set_next_state(COM_BOXES_SLAVE_01_GREEN);
         }
     }
@@ -156,7 +156,7 @@ void fsm_round23::next_state_rules()
     {
         if(robot.appLayer.hasReceivedAck(CMD_ID::INFO_GREEN_PICK_SLOT))
         {
-            Serial.printf("[MASTER] ack received from SLAVE_01!\n");
+            Serial.printf("[MASTER] GREEN: ack received from SLAVE_01!\n");
             turn_direction = 1;
             target_turn_angle = PI/2;
             state_after_maneuver = NAV_LEAVING_CENTER;
@@ -1189,13 +1189,17 @@ void fsm_round23::state_actions_rules()
     //                 PICK & DROP BOX/ MANUEVERS 
     // ==========================================================
     
-    else if(state == GEN_MOVE_X || END_ROUND)
+    else if(state == GEN_MOVE_X)
     {
         robot.setRobotVW(move_direction*0.1, -robot.thetae*robot.k_thetae);
     }
     else if(state == GEN_TURN_90)
     {
         robot.setRobotVW(0.0, turn_direction*2);//SEE this w velocity! 
+    }
+    else if(state == END_ROUND)
+    {
+        robot.setRobotVW(move_direction*0.1, -robot.thetae*robot.k_thetae); 
     }
 
     // ==========================================================
