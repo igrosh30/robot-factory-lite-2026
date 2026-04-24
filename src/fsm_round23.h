@@ -67,6 +67,7 @@ public:
 
     float v_req_nav;
     float v_req_leaving_pickZ;
+    float v_nav_count;
 
     BoxRound2 currentBox;
     int current_box_index;

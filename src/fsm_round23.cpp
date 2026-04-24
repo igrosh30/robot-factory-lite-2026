@@ -6,6 +6,7 @@ fsm_round23:: fsm_round23(robot_t& r) : robot(r)
 
     this->v_req_nav = 0.2;
     this -> v_req_leaving_pickZ = 0.15;
+    this-> v_nav_count = 0.15;
 
     current_box_index = 0;
     
@@ -347,7 +348,7 @@ void fsm_round23::next_state_rules()
                 //RESET THE COM FLAGS!
                 robot.appLayer.clearNewCommand();
             }
-            else if(tis > 12)
+            else if(tis > 10)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -363,11 +364,11 @@ void fsm_round23::next_state_rules()
         set_next_state(S_MACHINE_PICK_BOX);
     }
 
-    else if(state == S_MACHINE_PICK_BOX && tis > 0.4) set_next_state(S_MACHINE_TURN_OUT);
+    else if(state == S_MACHINE_PICK_BOX && tis > 0.3) set_next_state(S_MACHINE_TURN_OUT);
     
     else if(state == S_MACHINE_TURN_OUT)
     {
-        target_distance = d_retrive_process_box;
+        target_distance = d_retrive_process_box - 0.02;
         move_direction = -1;
         turn_direction = 1;
         target_turn_angle = PI/2;
@@ -376,13 +377,15 @@ void fsm_round23::next_state_rules()
     }
     else if (state == S_NAV_MACHINE_TO_DROP)
     {
-        if(intersections > 0 && tis < 0.05/robot.v_req) intersections = 0;
+        if(processBox_MachineB == 2) if(intersections > 0 && tis < 0.15/robot.v_req) intersections = 0;
+        
         if(current_box_index == 0)
         {
             if(intersections == 1) set_next_state(GEN_DROP_BOX);
         }
         else 
         {
+            //if(intersections > 0 && tis < 0.04/robot.v_req) intersections = 0;
             if(intersections == 2) set_next_state(GEN_DROP_BOX);
         }
         //Let's see the drop slots left! 
@@ -475,12 +478,16 @@ void fsm_round23::next_state_rules()
 
     else if (state == S1_NAV_DROP_B && intersections == 1)
     {
-        target_distance = d_mv_aft_intersection;
-        move_direction = 1;
-        turn_direction = -1;
-        target_turn_angle = PI/2;
-        state_after_maneuver = S1_ALIGN_DROP_B;
-        set_next_state(GEN_MOVE_X);
+        if(intersections > 0 && tis < 0.1/robot.v_req) intersections = 0;
+        if(intersections == 1)
+        {
+            target_distance = d_mv_aft_intersection;
+            move_direction = 1;
+            turn_direction = -1;
+            target_turn_angle = PI/2;
+            state_after_maneuver = S1_ALIGN_DROP_B;
+            set_next_state(GEN_MOVE_X);
+        }
     }
     else if(state == NAV_PROCESS_GREEN_BOX)
     {
@@ -625,7 +632,7 @@ void fsm_round23::next_state_rules()
         {
             if(currentBox.pick_slot == 0 && current_box_index != 0)
             {
-                target_time = 1.5;
+                target_time = 1;
                 state_after_timeout = GEN_PICK_ALIGN;
                 set_next_state(GEN_WAIT_Y);
             } 
@@ -676,7 +683,7 @@ void fsm_round23::next_state_rules()
     {
         set_next_state(GEN_PICK_BOX);
     }
-    else if(state == GEN_PICK_BOX && tis > 0.35)
+    else if(state == GEN_PICK_BOX && tis > 0.4)
     {
         if(current_box_index != 0)
         {
@@ -1143,7 +1150,7 @@ void fsm_round23::state_actions_rules()
     // ==========================================================
     else if(state == NAV_PROCESS_GREEN_BOX)
     {
-        robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
+        robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection:: DOWN);
     }
     
     #ifdef ROBOT_MASTER
@@ -1193,7 +1200,7 @@ void fsm_round23::state_actions_rules()
     
     else if(state == GEN_MOVE_X)
     {
-        robot.setRobotVW(move_direction*0.1, -robot.thetae*robot.k_thetae);
+        robot.setRobotVW(move_direction*0.15, -robot.thetae*robot.k_thetae);
     }
     else if(state == GEN_TURN_90)
     {
@@ -1209,7 +1216,7 @@ void fsm_round23::state_actions_rules()
     // ==========================================================
     else if(state == GEN_PICK_COUNT_NAV_FROM_START || state == GEN_PICK_ALIGN || state == EXITING_PICK_ZONE)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(this->v_nav_count, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == GEN_PICK_COUNT_FROM_MACHINE)
     {
@@ -1235,7 +1242,7 @@ void fsm_round23::state_actions_rules()
     // ==========================================================
     else if(state == GEN_DROP_COUNT || state == EXITING_DROP_ZONE)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == GEN_DROP_ALIGN )
     {
@@ -1249,12 +1256,20 @@ void fsm_round23::state_actions_rules()
 
     else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_LEAVING_CENTER)
     {
-        robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == NAV_TO_WEARHOUSE)
     {
-        if(intersections == 2) robot.followLine(0.16, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
-        else robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        #ifdef ROBOT_MASTER
+        if(robot.front.actuators.isMagnetOn)
+        {
+            if(intersections == 2) robot.followLine(v_req_leaving_pickZ - 0.05, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+            else robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        }
+        #endif
+
+        if(intersections == 2) robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        else robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
 
 
@@ -1268,15 +1283,15 @@ void fsm_round23::state_actions_rules()
     }
     else if(state == S_NAV_MACHINE_OUT)//get out at fifth intersection! 
     {
-        if(intersections == 0) robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
-        else robot.followLine(0.15, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
+        if(intersections == 0) robot.followLine(0.18, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        else robot.followLine(0.18, robot.front, Side2Follow::LEFT, EdgeDetection::UP);
     }
     else if(state == S_NAV_TO_MACHINE_FROM_WHOUSE)
     {
         if(this->current_box_index == 0) robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
         else
         {
-            robot.followLine(0.13, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
+            robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::UP);
         }
     }
     else if(state == S_MACHINE_ALIGN_PICK)
@@ -1300,16 +1315,26 @@ void fsm_round23::state_actions_rules()
     }
     else if(state == S_NAV_MACHINE_TO_DROP)
     {
-        robot.followLine(0.16, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        if(processBox_MachineB != 2)
+        {
+
+            if(intersections == 0 ) robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+            else robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        }
+        else 
+        {
+            robot.followLine(v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        }
     }
     else if( state == S_NAV_EXIT_DROP_ZONE_2_MACHINE)
     {
         robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
-    
-    
-    
     #endif
+
+    // ==========================================================
+    //                       SLAVE 01: 
+    // ==========================================================
 
     #ifdef ROBOT_SLAVE_01
     if(state == S_WAIT_BOX_INFO || state == S_WAIT_PICK_CMD)
@@ -1324,19 +1349,19 @@ void fsm_round23::state_actions_rules()
     }
     if(state == NAV_PROCESS_GREEN_BOX_ALIGN)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
+        robot.followLine_v2(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection:: DOWN);
     }
     else if( state == S1_DROP_B2)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
     }
     else if(state == S1_NAV_DROP_B)
     {
-        robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == S1_ALIGN_DROP_B)
     {
-        robot.followLine(0.1, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        robot.followLine(this->v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == S1_LEAVE_CENTER)
     {
