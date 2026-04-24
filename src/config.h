@@ -12,8 +12,8 @@
 
 
 //#define ROBOT_MASTER
-#define ROBOT_SLAVE_00
-//#define ROBOT_SLAVE_01
+//#define ROBOT_SLAVE_00
+#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
