@@ -246,7 +246,7 @@ void fsm_round23::next_state_rules()
     }
     else if(state == M_NAV_FROM_MACHINE)
     {
-        if(intersections == 1 && tis == 0.20/robot.v_req ) intersections == 0; // reset if count wrong
+        if(intersections > 0 && tis == 0.20/robot.v_req ) intersections == 0; // reset if count wrong
         if(intersections == 1)
         {
             isFromMachine = true;
@@ -347,7 +347,7 @@ void fsm_round23::next_state_rules()
                 //RESET THE COM FLAGS!
                 robot.appLayer.clearNewCommand();
             }
-            else if(tis > 13)
+            else if(tis > 14)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -791,15 +791,15 @@ void fsm_round23::next_state_rules()
         {    
             #ifdef ROBOT_MASTER
             if(MASTER_blueBox > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
-            else set_next_state (NAV_DOCKING_STATION);
+            else set_next_state (NAV_END_ROUND);
             #endif
             #ifdef ROBOT_SLAVE_01
             if(SLAVE_blueBox > 0) set_next_state(NAV_LEAVING_WEARHOUSE);
-            else set_next_state (NAV_DOCKING_STATION);
+            else set_next_state (NAV_END_ROUND);
             #endif
             
             #ifdef ROBOT_SLAVE_00
-            set_next_state(NAV_DOCKING_STATION); 
+            set_next_state(NAV_END_ROUND); 
             #endif
         
         
@@ -852,6 +852,33 @@ void fsm_round23::next_state_rules()
     else if(state == NAV_DOCKING_STATION)
     {
         robot.setRobotVW(0,0);
+    }
+    else if(state == NAV_END_ROUND && intersections == 1)
+    {
+        #ifdef ROBOT_MASTER
+        target_distance = d_mv_aft_intersection+0.1;
+        #endif
+        #ifdef ROBOT_SLAVE_00
+        target_distance = d_mv_aft_intersection+0.2;
+        #endif
+        #ifdef ROBOT_SLAVE_01
+        target_distance = d_mv_aft_intersection+0.4;
+        #endif
+        
+        state_after_maneuver = END_ROUND;
+        turn_direction = 1;
+        move_direction = 1;
+        target_turn_angle = PI/2; //45
+        set_next_state(GEN_MOVE_X);
+    }
+    else if(state == END_ROUND)
+    {
+        float distance_moved = abs(robot.rel_s - ref_s);
+        if(distance_moved >= d_leave_docking)
+        {
+            set_next_state(SYS_IDLE);
+            ref_s = 0;
+        }
     }
 }
 
@@ -927,8 +954,13 @@ void fsm_round23:: enter_state_actions_rules()
     //             GENERIC NAV to PROCESS BOX Green/Red
     // ==========================================================
     #if defined(ROBOT_SLAVE_01) || defined(ROBOT_MASTER)
-    if(state == M_EXT_PROC_MACH_GREEN    || state == M_NAV_FROM_MACHINE  || state == M_EXT_PROC_MACH_BLUE ||
+    if(state == M_EXT_PROC_MACH_GREEN    || state == M_EXT_PROC_MACH_BLUE ||
         state == EXITING_PICK_ZONE_RED   || state == M_NAV_DROP_RED      || state == M_NAV_PICK_FROM_RED )
+    {
+        robot.front.sensor.intersections = 0;
+        robot.front.sensor.wasIntersection = false;
+    }
+    else if(state == M_NAV_FROM_MACHINE)
     {
         robot.front.sensor.intersections = 0;
         robot.front.sensor.wasIntersection = false;
@@ -953,7 +985,7 @@ void fsm_round23:: enter_state_actions_rules()
     
 
     
-    else if(state == GEN_MOVE_X)
+    else if(state == GEN_MOVE_X || state == END_ROUND)
     {
         robot.thetae = 0;
         ref_s = robot.rel_s;
@@ -1060,11 +1092,12 @@ void fsm_round23:: enter_state_actions_rules()
         robot.front.sensor.wasIntersection = false;
         robot.front.sensor.intersections = 0;
     }
-
-    
-    
-
     #endif
+    else if(state == NAV_END_ROUND)
+    {
+        robot.front.sensor.wasIntersection = false;
+        robot.front.sensor.intersections = 0;
+    }
     
 
 }
@@ -1156,7 +1189,7 @@ void fsm_round23::state_actions_rules()
     //                 PICK & DROP BOX/ MANUEVERS 
     // ==========================================================
     
-    else if(state == GEN_MOVE_X)
+    else if(state == GEN_MOVE_X || END_ROUND)
     {
         robot.setRobotVW(move_direction*0.1, -robot.thetae*robot.k_thetae);
     }
@@ -1303,9 +1336,11 @@ void fsm_round23::state_actions_rules()
     {
         robot.followLine_v2(v_req_leaving_pickZ,robot.front,Side2Follow::LEFT,EdgeDetection::UP);
     }
-
-
     #endif
+    else if(state == NAV_END_ROUND)
+    {
+        robot.followLine(this->v_req_nav, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+    }
 
 }
 
