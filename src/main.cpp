@@ -301,8 +301,10 @@ void setup() {
     
     // WiFi configuration
     // CHANGE THESE TO YOUR WIFI!
-    strcpy(ssid, "FEUP-I-108");      
-    strcpy(password, "5dpo5dpo");      
+    //strcpy(ssid, "FEUP-I-108");      
+    //strcpy(password, "5dpo5dpo");      
+    strcpy(ssid, "RaF40");          
+    strcpy(password, "RaF40#2026");      
     pars_list.register_command("ssid", ssid, max_wifi_str);
     pars_list.register_command("pass", password, max_wifi_str)->sparse_send = false;
 
@@ -319,7 +321,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
-    for (int i = 0; i < 1 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 100 && WiFi.status() != WL_CONNECTED; i++) {
         Serial.print(".");
         delay(500);
     }
