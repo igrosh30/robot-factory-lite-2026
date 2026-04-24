@@ -11,7 +11,7 @@ fsm_round23:: fsm_round23(robot_t& r) : robot(r)
     
     #ifdef ROBOT_SLAVE_00
     drop_sequence[0] = 0;
-    drop_sequence[1] = 1;
+    drop_sequence[1] = 3;
     #endif
     #ifdef ROBOT_MASTER
     this->MASTER_blueBox = 0;
@@ -22,8 +22,8 @@ fsm_round23:: fsm_round23(robot_t& r) : robot(r)
     #ifdef ROBOT_SLAVE_01
     this->hasBlueBoxesInfo = false;
     this->SLAVE_blueBox = 0;
-    drop_sequence[0] = 3;
-    drop_sequence[1] = 3;
+    drop_sequence[0] = 1;
+    drop_sequence[1] = 1;
     #endif
 }
 
@@ -100,7 +100,7 @@ void fsm_round23::next_state_rules()
         #endif*/
     
         #ifdef ROBOT_MASTER
-        init_boxes = "Wuuoo";
+        //init_boxes = "Wuuoo";
         #endif
         set_next_state(COM_INIT);
     }
@@ -123,7 +123,7 @@ void fsm_round23::next_state_rules()
     //               LÓGICA EXCLUSIVA DO MASTER 
     // ==========================================================
     #ifdef ROBOT_MASTER
-    if(state == M_WAIT_IR ) //&& robot.robot_getIR(init_boxes) UNCOMENT FOR THE IR RECEPTION!
+    if(state == M_WAIT_IR && robot.robot_getIR(init_boxes)) //&& robot.robot_getIR(init_boxes) UNCOMENT FOR THE IR RECEPTION!
     {
         //_________________________________//
         // INITIAL BOX LOGIC               //
@@ -347,7 +347,7 @@ void fsm_round23::next_state_rules()
                 //RESET THE COM FLAGS!
                 robot.appLayer.clearNewCommand();
             }
-            else if(tis > 14)
+            else if(tis > 12)
             {
                 set_next_state(S_MACHINE_ALIGN_PICK);   
                 robot.appLayer.clearNewCommand();
@@ -1279,7 +1279,7 @@ void fsm_round23::state_actions_rules()
     }
     else if(state == S_MACHINE_ALIGN_PICK)
     {
-        robot.followLine(0.15, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
+        robot.followLine(0.18, robot.front, Side2Follow::RIGHT, EdgeDetection::DOWN);
         //robot.setRobotVW(0.08,0);// or follow the line?!
     }
     else if(state == S_MACHINE_PICK_BOX)
