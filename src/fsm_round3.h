@@ -61,8 +61,12 @@ public:
     bool hasBlueBoxesInfo;
     #endif
 
-    int intersections_trigger = 0;
+    float d_leave_docking = 0.45f;
 
+    int intersections_trigger = 0;
+    
+
+    String box_sequence;
     BoxRound2 currentBox;
     int current_box_index;
     int drop_sequence[4]; //this is Globaly defined!
@@ -86,6 +90,10 @@ public:
     float target_turn_angle = PI/2;
     int turn_direction = 0;// 1: left / -1: right 
 
+    uint32_t target_time = 0;
+    int state_after_timeout;
+
+    int calculate_targ_time();
     fsm_round3(robot_t& r);   
     void build_currentBox(BoxRound2& box);
     //stores the slots and the number of blueBoxes to process at MASTER side - then SEND TO SLAVE it's number! 

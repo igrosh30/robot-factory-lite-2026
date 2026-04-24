@@ -142,7 +142,8 @@ typedef enum {
     SYS_APPROACH_WAREHOUSE = 5,
     SYS_LEAVE_DOCKING      = 6, 
     NAV_END_ROUND          = 7,
-    END_ROUND              = 8,
+    NAV_END_ROUND_CENTER   = 8,
+    END_ROUND              = 9,
 
     // ==========================================
     // --- COMMUNICATION STATES:

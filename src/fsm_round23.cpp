@@ -998,7 +998,6 @@ void fsm_round23:: enter_state_actions_rules()
     }
     else if(state == GEN_WAIT_Y)
     {
-        
         robot.setRobotVW(0,0);
     }
 
@@ -1249,10 +1248,14 @@ void fsm_round23::state_actions_rules()
 
     else if(state == NAV_LEAVING_WEARHOUSE || state == NAV_LEAVING_CENTER)
     {
+        
         robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
     else if(state == NAV_TO_WEARHOUSE)
     {
+        #ifdef ROBOT_MASTER
+        robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
+        #endif
         if(intersections == 2) robot.followLine(0.16, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
         else robot.followLine(v_req_leaving_pickZ, robot.front, Side2Follow::LEFT, EdgeDetection::DOWN);
     }
