@@ -29,9 +29,9 @@ pico4drive_t pico4drive;
 robot_t robot(pico4drive);
 //fsm_round1 fsm(robot);
 String seq;
-//fsm_round3 fsm(robot);
+fsm_round3 fsm(robot);
 //fsm_COM fsm(robot);
-fsm_round23 fsm(robot);
+//fsm_round23 fsm(robot);
 
 
 // ================================================================

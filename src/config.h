@@ -7,13 +7,13 @@
 //Slave00- IP: 10.227.21.115 com7 
 //SLAVE01- IP: 10.227.21.110 com8
 
-#define ROUND_1
+//#define ROUND_1
 //#define ROUND_2
+#define ROUND_3
 
-
-#define ROBOT_MASTER
+//#define ROBOT_MASTER
 //#define ROBOT_SLAVE_00
-//#define ROBOT_SLAVE_01
+#define ROBOT_SLAVE_01
 
 
 // Proteção de compilação
@@ -165,7 +165,8 @@ typedef enum {
     
     // --- MASTER init states
     M_SYS_START             = 100,
-    M_SYS_LEAVE_START       = 101, // SEND SLAVE- pickSlots blue box!  
+    M_NAV_LEAVING_CENTER    = 101,
+    M_SYS_LEAVE_START       = 102, // SEND SLAVE- pickSlots blue box!  
 
     //-----Red Box
     M_NAV_DROP_RED                  = 110,
@@ -204,6 +205,7 @@ typedef enum {
     S_MACHINE_TURN_OUT              = 340,
     S_NAV_MACHINE_TO_DROP           = 350,
     S_WAIT_IR                       = 360,
+    S_MOVE                          = 370,
     
     //SLAVE 01 STATES:
     S1_WAIT_GREEN_SLOT               = 400,

@@ -7,7 +7,7 @@
 
 
 
-struct BoxRoun3
+struct BoxRound3
 {
     uint8_t pick_slot;
     uint8_t drop_slot;
@@ -64,10 +64,12 @@ public:
     float d_leave_docking = 0.45f;
 
     int intersections_trigger = 0;
-    
+    float v_req_nav;
+    float v_req_nav_v1;
+    float v_slave00;
 
     String box_sequence;
-    BoxRound2 currentBox;
+    BoxRound3 currentBox;
     int current_box_index;
     int drop_sequence[4]; //this is Globaly defined!
 
@@ -95,7 +97,7 @@ public:
 
     int calculate_targ_time();
     fsm_round3(robot_t& r);   
-    void build_currentBox(BoxRound2& box);
+    void build_currentBox(BoxRound3& box);
     //stores the slots and the number of blueBoxes to process at MASTER side - then SEND TO SLAVE it's number! 
     
 
